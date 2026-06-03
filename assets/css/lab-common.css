@@ -93,6 +93,13 @@
   min-width: 0;
 }
 
+.lab-global-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .lab-learning-sheet,
 .lab-exercise-sheet,
 .lab-notebook-sheet,
@@ -108,6 +115,9 @@
   border: 1px solid rgba(148, 163, 184, 0.24);
   background: rgba(15, 23, 42, 0.88);
   box-shadow: 0 14px 28px rgba(2, 6, 23, 0.16);
+  position: sticky;
+  top: 10px;
+  z-index: 20;
 }
 
 .lab-pedagogy-bar__title {
@@ -528,6 +538,15 @@
   color: #cbd5e1;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.lab-guide-note--floating {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(15, 23, 42, 0.88);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.14);
 }
 
 .lab-teacher-toggle {
@@ -1009,6 +1028,17 @@
   .lab-guide-fab {
     right: 12px;
     bottom: 12px;
+  }
+
+  .lab-global-header__inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lab-global-header__brand,
+  .lab-global-header__actions {
+    align-items: flex-start;
+    justify-content: flex-start;
   }
 
   .lab-measure-row {

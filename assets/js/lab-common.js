@@ -67,6 +67,18 @@
     }
   };
 
+  function getPageGuideOverrides() {
+    const overrides = {};
+    Object.keys(LAB_STRUCTURE).forEach(function (moduleKey) {
+      (LAB_STRUCTURE[moduleKey].pages || []).forEach(function (page) {
+        if (page && page.id && LAB_GUIDE_DEFAULTS[page.id]) {
+          overrides[page.id] = LAB_GUIDE_DEFAULTS[page.id];
+        }
+      });
+    });
+    return overrides;
+  }
+
   const LAB_TP_PAGE_DEFAULTS = {
     'analogique-emetteur': [{
       prefilledRows: [['AM', 'fm nominale', 'fp nominale', 'm ou β', 'B relevée'], ['FM', 'fm nominale', 'fp nominale', 'm ou β', 'B relevée'], ['Comparaison', '', '', '', 'Conclusion']],
@@ -1355,6 +1367,10 @@
       renderLearningSupport(document.body.dataset.labSection || '', document.body.dataset.labPage || '');
     });
 
+    safeExecute(function () {
+      renderHeaderPedagogyActions();
+    });
+
     if (opts.trackVisit !== false) {
       safeExecute(function () {
         trackRecentPage({
@@ -1370,8 +1386,9 @@
 
   function getGuideDefinition(section, pageId) {
     const moduleKey = pageId === 'home' || section === 'home' ? 'home' : getActiveModule(section);
-    const baseGuide = LAB_GUIDE_DEFAULTS[moduleKey] || LAB_GUIDES.home || {};
-    const directGuide = LAB_GUIDES[pageId] || LAB_GUIDES[section] || {};
+    const pageGuideOverrides = getPageGuideOverrides();
+    const baseGuide = LAB_GUIDE_DEFAULTS[moduleKey] || LAB_GUIDE_DEFAULTS.home || {};
+    const directGuide = pageGuideOverrides[pageId] || pageGuideOverrides[section] || {};
     const evalGuide = LAB_EVAL_DEFAULTS[moduleKey] || LAB_EVAL_DEFAULTS.home || {};
     const practiceGuide = LAB_PRACTICE_DEFAULTS[moduleKey] || LAB_PRACTICE_DEFAULTS.home || {};
 
@@ -1704,41 +1721,167 @@
     }
 
     actions.appendChild(createButton('TP', function () {
-      const target = document.querySelector('.lab-notebook-sheet');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      ensurePedagogyPanel('tp', '.lab-notebook-sheet');
     }, true));
     actions.appendChild(createButton('Exercices', function () {
-      const target = document.querySelector('.lab-exercise-sheet');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      ensurePedagogyPanel('exercises', '.lab-exercise-sheet');
     }));
     actions.appendChild(createButton('Quiz', function () {
-      const target = document.querySelector('.lab-quiz-sheet');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      ensurePedagogyPanel('quiz', '.lab-quiz-sheet');
     }));
     actions.appendChild(createButton('Mode enseignant', function () {
       setTeacherMode(!getTeacherMode());
+      ensurePedagogyPanel('teacher', '.lab-notebook-sheet');
     }));
     actions.appendChild(createButton('Assistant pédagogique', function () {
-      const fab = document.querySelector('.lab-guide-fab');
-      if (fab) {
-        fab.click();
-      } else {
-        const target = document.querySelector('.lab-learning-sheet');
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }
+      ensurePedagogyPanel('help', '.lab-learning-sheet');
     }));
 
     bar.appendChild(title);
     bar.appendChild(actions);
-    host.appendChild(bar);
+
+    const firstSection = host.querySelector('.lab-learning-sheet, .lab-exercise-sheet, .lab-quiz-sheet, .lab-notebook-sheet, .lab-achievement-sheet');
+    if (firstSection && firstSection.parentNode === host) {
+      host.insertBefore(bar, firstSection);
+    } else if (host.firstChild) {
+      host.insertBefore(bar, host.firstChild.nextSibling);
+    } else {
+      host.appendChild(bar);
+    }
+  }
+
+  function openGuideDrawerPanel(panelName) {
+    const drawer = document.querySelector('.lab-guide-drawer');
+    if (!drawer) {
+      return false;
+    }
+
+    drawer.classList.add('is-open');
+    const tabs = drawer.querySelectorAll('.lab-guide-drawer__tab');
+    const panels = drawer.querySelectorAll('.lab-guide-panel');
+    let found = false;
+
+    tabs.forEach(function (tab) {
+      const isActive = tab.dataset.panel === panelName;
+      tab.classList.toggle('active', isActive);
+      if (isActive) {
+        found = true;
+      }
+    });
+
+    panels.forEach(function (panel) {
+      panel.classList.toggle('active', panel.dataset.panel === panelName);
+    });
+
+    if (!found) {
+      const firstTab = drawer.querySelector('.lab-guide-drawer__tab');
+      const firstPanel = drawer.querySelector('.lab-guide-panel');
+      if (firstTab) {
+        firstTab.classList.add('active');
+      }
+      if (firstPanel) {
+        firstPanel.classList.add('active');
+      }
+    }
+
+    if (typeof drawer.scrollTo === 'function') {
+      drawer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return true;
+  }
+
+  function ensurePedagogyPanel(panelName, selector) {
+    let opened = openGuideDrawerPanel(panelName);
+    let target = selector ? document.querySelector(selector) : null;
+
+    if (!opened && !target) {
+      const section = document.body.dataset.labSection || '';
+      const pageId = document.body.dataset.labPage || '';
+      const pageKey = pageId || section || 'home';
+      const guide = getGuideDefinition(section, pageId);
+
+      safeExecute(function () { renderLearningSheet(guide); });
+      safeExecute(function () { renderPedagogyQuickBar(pageKey); });
+      safeExecute(function () { renderExerciseSheet(guide, pageKey); });
+      safeExecute(function () { renderQuizSheet(guide, pageKey); });
+      safeExecute(function () { renderNotebookSheet(guide, pageKey); });
+      safeExecute(function () { renderAchievementSheet(); });
+      safeExecute(function () { renderGuideDrawer(guide, pageKey); });
+
+      opened = openGuideDrawerPanel(panelName);
+      target = selector ? document.querySelector(selector) : null;
+    }
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+
+    if (opened) {
+      return true;
+    }
+
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return false;
+    }
+
+    const notice = document.createElement('div');
+    notice.className = 'lab-guide-note lab-guide-note--floating';
+    notice.textContent = panelName === 'teacher'
+      ? 'Le mode enseignant est activé. Ouvrez le panneau pédagogique flottant s’il apparaît en bas à droite.'
+      : 'Le contenu pédagogique de cette page est en cours de chargement. Faites défiler la page pour voir les blocs pédagogiques.';
+    host.insertBefore(notice, host.firstChild);
+    global.setTimeout(function () {
+      if (notice.parentNode) {
+        notice.parentNode.removeChild(notice);
+      }
+    }, 3000);
+    return false;
+  }
+
+  function renderHeaderPedagogyActions() {
+    if (document.querySelector('.lab-global-header__actions')) {
+      return;
+    }
+
+    const headerInner = document.querySelector('.lab-global-header__inner');
+    if (!headerInner) {
+      return;
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'lab-global-header__actions';
+
+    function createButton(text, handler, primary) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'lab-guide-btn' + (primary ? ' lab-guide-btn--primary' : '');
+      button.textContent = text;
+      button.addEventListener('click', handler);
+      return button;
+    }
+
+    function goToPedagogy(selector, panelName) {
+      const target = document.querySelector(selector);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      openGuideDrawerPanel(panelName);
+    }
+
+    actions.appendChild(createButton('TP', function () {
+      ensurePedagogyPanel('tp', '.lab-notebook-sheet');
+    }, true));
+    actions.appendChild(createButton('Exercices', function () {
+      ensurePedagogyPanel('exercises', '.lab-exercise-sheet');
+    }));
+    actions.appendChild(createButton('Enseignant', function () {
+      setTeacherMode(!getTeacherMode());
+      ensurePedagogyPanel('teacher', '.lab-notebook-sheet');
+    }));
+
+    headerInner.appendChild(actions);
   }
 
   function renderExerciseSheet(guide, pageKey) {
