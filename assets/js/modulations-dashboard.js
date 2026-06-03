@@ -1,4 +1,6 @@
 ﻿LabCommon.initHeader({ bodySection: 'modulations-dashboard', pageId: 'modulations-dashboard' });
+LabCommon.initHeader({ bodySection: 'modulations', pageId: 'modulations-dashboard' });
+
 const modOptions = {
   ASK: [2, 4, 8, 16],
   PSK: [2, 4, 8, 16],
@@ -29,9 +31,14 @@ function resizeCanvas() {
   const canvases = ['constCanvas', 'berCanvas', 'timeCanvas'];
   canvases.forEach(id => {
     const c = document.getElementById(id);
-    c.width = c.clientWidth * window.devicePixelRatio;
-    c.height = c.clientHeight * window.devicePixelRatio;
-    document.getElementById(id).getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+    const ratio = window.devicePixelRatio || 1;
+    const width = Math.max(c.clientWidth, 320);
+    const height = Math.max(c.clientHeight, 220);
+    c.width = width * ratio;
+    c.height = height * ratio;
+    const ctx = c.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(ratio, ratio);
   });
 }
 window.addEventListener('resize', () => { resizeCanvas(); draw(); });
@@ -307,8 +314,9 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-window.onload = () => {
-  updateOrderOptions();
+window.addEventListener('load', () => {
   resizeCanvas();
-  animate(); 
-};
+  updateOrderOptions();
+  draw();
+  animate();
+});

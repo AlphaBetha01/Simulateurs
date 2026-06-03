@@ -67,6 +67,74 @@
     }
   };
 
+  const LAB_TP_PAGE_DEFAULTS = {
+    'analogique-emetteur': [{
+      prefilledRows: [['AM', 'fm nominale', 'fp nominale', 'm ou β', 'B relevée'], ['FM', 'fm nominale', 'fp nominale', 'm ou β', 'B relevée'], ['Comparaison', '', '', '', 'Conclusion']],
+      expectedValues: ['En AM, la bande relevée doit rester de l’ordre de 2 fm.', 'En FM, la bande relevée augmente avec la déviation et dépasse souvent le cas AM.', 'La comparaison doit distinguer enveloppe variable et fréquence instantanée variable.'],
+      rubric: [{ label: 'Mesures AM/FM correctement relevées', max: 4 }, { label: 'Comparaison physique correcte', max: 4 }, { label: 'Conclusion d’ingénierie', max: 2 }]
+    }],
+    'analogique-amplificateur': [{
+      prefilledRows: [['Linéaire', 'Vin', 'Gain', 'Vout crête', 'Sat %'], ['Limite', 'Vin', 'Gain', 'Vout crête', 'Sat %'], ['Écrêté', 'Vin', 'Gain', 'Vout crête', 'Sat %']],
+      expectedValues: ['En zone linéaire, Vout suit approximativement Vin × gain.', 'Au seuil de saturation, les crêtes cessent de croître proportionnellement.', 'Le taux de saturation doit augmenter quand la sortie atteint les limites d’alimentation.'],
+      rubric: [{ label: 'Identification du seuil de saturation', max: 4 }, { label: 'Exploitation des mesures', max: 3 }, { label: 'Lien entre fidélité et Vcc', max: 3 }]
+    }],
+    'analogique-recepteur': [{
+      prefilledRows: [['Bruit faible', 'τ', 'SNR', 'Qualité', 'Observation'], ['Bruit moyen', 'τ', 'SNR', 'Qualité', 'Observation'], ['Bruit fort', 'τ', 'SNR', 'Qualité', 'Observation']],
+      expectedValues: ['La qualité doit décroître quand le bruit augmente à filtrage constant.', 'Une constante trop faible laisse trop de fluctuations rapides.', 'Une constante trop forte lisse aussi le message utile.'],
+      rubric: [{ label: 'Choix des cas d’essai', max: 3 }, { label: 'Analyse bruit / filtrage', max: 4 }, { label: 'Conclusion sur le compromis', max: 3 }]
+    }],
+    'numerisation-can': [{
+      prefilledRows: [['Sous-Nyquist', 'f', 'Fe', 'B', 'Observation'], ['Nyquist', 'f', 'Fe', 'B', 'Observation'], ['Haute résolution', 'f', 'Fe', 'B', 'Observation']],
+      expectedValues: ['Un cas sous-Nyquist doit montrer un repliement spectral apparent.', 'Le pas de quantification diminue quand B augmente.', 'Le SQNR augmente avec B à fréquence d’échantillonnage fixée.'],
+      rubric: [{ label: 'Diagnostic aliasing', max: 4 }, { label: 'Diagnostic quantification', max: 3 }, { label: 'Justification numérique', max: 3 }]
+    }],
+    'modulations-symbol': [{
+      prefilledRows: [['Symbole 1', 'Mot binaire', 'I/Q', 'Mesure', 'Interprétation'], ['Symbole 2', 'Mot binaire', 'I/Q', 'Mesure', 'Interprétation'], ['Symbole 3', 'Mot binaire', 'I/Q', 'Mesure', 'Interprétation']],
+      expectedValues: ['Chaque mot binaire doit correspondre à un seul symbole valide.', 'En PSK, l’angle porte l’essentiel de l’information ; en QAM, amplitude et angle sont conjoints.', 'La mesure affichée doit être cohérente avec la position géométrique relevée.'],
+      rubric: [{ label: 'Correspondance bit / symbole', max: 4 }, { label: 'Lecture I/Q correcte', max: 3 }, { label: 'Interprétation temporelle', max: 3 }]
+    }],
+    'modulations-sequence': [{
+      prefilledRows: [['Séquence A', 'Famille', 'M', 'Trajectoire I/Q', 'Conclusion'], ['Séquence B', 'Famille', 'M', 'Trajectoire I/Q', 'Conclusion'], ['Comparaison', '', '', '', '']],
+      expectedValues: ['Deux séquences de même famille peuvent produire des trajectoires différentes si l’ordre change.', 'L’ordre M reste fixe mais la dynamique de transition dépend de l’enchaînement.', 'La lecture doit distinguer géométrie statique et trajet temporel.'],
+      rubric: [{ label: 'Construction de séquences pertinente', max: 3 }, { label: 'Analyse des trajectoires', max: 4 }, { label: 'Conclusion sur l’ordre symbolique', max: 3 }]
+    }],
+    'modulations-dashboard': [{
+      prefilledRows: [['Modulation robuste', 'Ordre', 'Roll-off', 'TEB', 'Efficacité'], ['Modulation dense', 'Ordre', 'Roll-off', 'TEB', 'Efficacité'], ['Comparaison', '', '', '', '']],
+      expectedValues: ['À Eb/N0 identique, une modulation dense présente en général un TEB moins favorable.', 'L’efficacité spectrale augmente avec l’ordre M.', 'Un roll-off plus élevé réduit l’efficacité spectrale à débit utile donné.'],
+      rubric: [{ label: 'Tableau comparatif cohérent', max: 3 }, { label: 'Lecture TEB / efficacité', max: 4 }, { label: 'Choix de modulation justifié', max: 3 }]
+    }],
+    'transmission-base': [{
+      prefilledRows: [['Nominal', 'SNR', 'BER', 'Marge', 'État'], ['Dégradé', 'SNR', 'BER', 'Marge', 'État'], ['Corrigé', 'SNR', 'BER', 'Marge', 'État']],
+      expectedValues: ['Le cas nominal doit garder une marge positive et un BER faible.', 'Le cas dégradé doit montrer une dégradation nette d’au moins un indicateur.', 'Le cas corrigé doit récupérer une partie mesurable de la marge ou du BER.'],
+      rubric: [{ label: 'Bilan de liaison relevé sur 3 cas', max: 4 }, { label: 'Choix de correction pertinent', max: 3 }, { label: 'Conclusion sur l’acceptabilité du lien', max: 3 }]
+    }],
+    'transmission-dsp': [{
+      prefilledRows: [['Cas robuste', 'Eb/N0', 'SER', 'Bande', 'Observation'], ['Cas dense', 'Eb/N0', 'SER', 'Bande', 'Observation'], ['Comparaison', '', '', '', '']],
+      expectedValues: ['Quand Eb/N0 baisse, le SER doit augmenter.', 'Une constellation plus dense réduit la distance de décision.', 'Le spectre et l’œil doivent être lus conjointement avec la constellation.'],
+      rubric: [{ label: 'Lecture croisée des 3 vues', max: 4 }, { label: 'Lien quantitatif Eb/N0 / SER', max: 3 }, { label: 'Conclusion système', max: 3 }]
+    }],
+    'multiplexage-e1': [{
+      prefilledRows: [['IT0', 'Rôle', 'Info portée', 'Débit utile', 'Commentaire'], ['IT16', 'Rôle', 'Info portée', 'Débit utile', 'Commentaire'], ['Voie utile', 'Rôle', 'Info portée', 'Débit utile', 'Commentaire']],
+      expectedValues: ['Une voie utile E1 correspond à 8 bits émis à 8000 trames/s, soit 64 kbit/s.', 'IT0 et IT16 doivent être identifiés comme champs de structure/signalisation.', 'La comparaison doit distinguer overhead et charge utile.'],
+      rubric: [{ label: 'Identification des champs', max: 4 }, { label: 'Justification du 64 kbit/s', max: 3 }, { label: 'Conclusion sur l’efficacité utile', max: 3 }]
+    }],
+    'multiplexage-compare': [{
+      prefilledRows: [['E1', 'Signalisation', 'Charge utile', 'Overhead', 'Conclusion'], ['T1', 'Signalisation', 'Charge utile', 'Overhead', 'Conclusion'], ['Comparaison', '', '', '', '']],
+      expectedValues: ['E1 et T1 doivent être distingués par leur logique de signalisation.', 'Le robbed bit signaling doit être identifié comme une intrusion dans l’utile.', 'La comparaison doit motiver un choix pour le transport de données modernes.'],
+      rubric: [{ label: 'Comparaison structurée des normes', max: 4 }, { label: 'Analyse de la signalisation', max: 3 }, { label: 'Recommandation motivée', max: 3 }]
+    }],
+    'multiplexage-pcm': [{
+      prefilledRows: [['Source audio', 'Code', 'Position trame', 'Niveau', 'Conclusion'], ['Deuxième essai', 'Code', 'Position trame', 'Niveau', 'Conclusion'], ['Synthèse', '', '', '', '']],
+      expectedValues: ['Un octet PCM complet doit pouvoir être relevé sur la voie audio.', 'La case correspondante doit être repérée dans la trame TDM.', 'La chaîne source analogique → octet → voie temporelle doit être explicitée.'],
+      rubric: [{ label: 'Suivi complet de la voie', max: 4 }, { label: 'Relevé binaire correct', max: 3 }, { label: 'Lien PCM / TDM bien expliqué', max: 3 }]
+    }],
+    'multiplexage-complet': [{
+      prefilledRows: [['PCM', 'Entrées', 'Sortie', 'Capacité', 'Conclusion'], ['Trame primaire', 'Entrées', 'Sortie', 'Capacité', 'Conclusion'], ['Hiérarchie', 'Entrées', 'Sortie', 'Capacité', 'Conclusion']],
+      expectedValues: ['Le flux élémentaire doit être suivi jusqu’au niveau hiérarchique.', 'La sortie agrégée doit être comparée à la somme utile et à l’overhead.', 'La conclusion doit relier tribut élémentaire et capacité réseau.'],
+      rubric: [{ label: 'Parcours multi-niveaux complet', max: 4 }, { label: 'Lecture capacité / overhead', max: 3 }, { label: 'Synthèse réseau cohérente', max: 3 }]
+    }]
+  };
+
   const LAB_PRACTICE_DEFAULTS = {
     home: {
       exercises: [
@@ -399,7 +467,7 @@
           question: 'Quel param\u00e8tre combat directement l\u2019aliasing ? ',
           options: ['La fr\u00e9quence d\u2019\u00e9chantillonnage', 'Le nombre de bits', 'La couleur du signal'],
           answer: 0,
-          explanation: 'L\u2019aliasing dispara\u00eet en relevant Fe au-del\u00e0 de la borne de Nyquist.'
+          explanation: 'L\u2019aliasing dispara\u00ee t en relevant Fe au-del\u00e0 de la borne de Nyquist.'
         },
         {
           question: 'Que fait principalement l\u2019augmentation du nombre de bits ? ',
@@ -552,7 +620,7 @@
       subtitle: 'Analysez la cha\u00eene compl\u00e8te avec ses limitations physiques : bruit, att\u00e9nuation, gigue et filtrage.',
       help: [
         'Commencez par le SNR et la marge de capacit\u00e9 avant d\u2019interpr\u00e9ter BER ou SER.',
-        'La gigue agit sur le temps de d\u00e9cision alors que le bruit agit sur l\u2019amplitude re\u00e7ue.',
+        'La gigue agit sur le temps de d\u2019\u00e9chantillonnage alors que le bruit agit sur l\u2019amplitude re\u00e7ue.',
         'Utilisez les pr\u00e9r\u00e9glages comme sc\u00e9narios de bilan de liaison.'
       ],
       objectives: [
@@ -589,487 +657,6 @@
         'Quel est l\u2019int\u00e9r\u00eat d\u2019une hi\u00e9rarchie synchrone face au PDH ?',
         'Que transporte r\u00e9ellement l\u2019overhead dans une trame r\u00e9seau ?'
       ],
-      tpSteps: [
-        { title: 'Identifier la structure', text: 'Commencez par distinguer les intervalles utiles des champs de cadrage et de signalisation.', target: '.lab-preset-bar' },
-        { title: 'Comparer deux normes', text: 'Passez d\u2019une architecture E1 \u00e0 T1 et relevez la diff\u00e9rence de logique r\u00e9seau.', target: '.lab-kpi-grid' },
-        { title: 'Monter en hi\u00e9rarchie', text: 'Observez comment une trame primaire devient un tribut d\u2019un niveau sup\u00e9rieur.', target: '#hierarchieSection' }
-      ]
-    }
-  };
-
-  const LAB_GUIDES = {
-    home: {
-      title: 'Portail du laboratoire virtuel',
-      subtitle: 'Utilisez l\u2019accueil comme carte d\u2019orientation pour construire un parcours progressif, du signal analogique jusqu\u2019aux r\u00e9seaux multiplex\u00e9s.',
-      help: [
-        'Commencez par la cha\u00eene analogique si vous souhaitez une progression p\u00e9dagogique classique.',
-        'Passez ensuite par le CAN puis les modulations avant d\u2019attaquer la transmission sur canal.',
-        'Terminez par le multiplexage pour replacer chaque flux dans une architecture r\u00e9seau r\u00e9elle.'
-      ],
-      objectives: [
-        'Identifier les grands blocs p\u00e9dagogiques du laboratoire.',
-        'Choisir un parcours coh\u00e9rent selon votre niveau.',
-        'Comprendre les passerelles entre couche physique, modulation et transport r\u00e9seau.'
-      ],
-      questions: [
-        'Quel ordre de visite permet de comprendre toute la cha\u00eene t\u00e9l\u00e9com ?',
-        'Quelle page relie le monde analogique au monde num\u00e9rique ?',
-        '\u00c0 quel moment la notion de capacit\u00e9 ou d\u2019overhead devient-elle centrale ?'
-      ],
-      tpSteps: [
-        { title: 'Choisir un parcours', text: 'Rep\u00e9rez le module de d\u00e9part selon votre objectif : analogique, num\u00e9risation, modulation, transmission ou multiplexage.', target: '.top-grid' },
-        { title: 'Filtrer les simulateurs', text: 'Utilisez la recherche rapide et les th\u00e8mes pour isoler un bloc pr\u00e9cis du laboratoire.', target: '.discovery-panel' },
-        { title: 'Planifier la progression', text: 'Suivez le parcours recommand\u00e9 pour passer du message analogique au transport r\u00e9seau.', target: '.sections' }
-      ]
-    },
-    'analogique-emetteur': {
-      title: '\u00c9metteur AM / FM',
-      subtitle: '\u00c9tudiez la formation du signal transmis en comparant modulation d\u2019amplitude et modulation de fr\u00e9quence.',
-      help: [
-        'En AM, l\u2019enveloppe suit le message utile.',
-        'En FM, l\u2019amplitude reste stable alors que la fr\u00e9quence instantan\u00e9e varie.',
-        'Comparez la bande occup\u00e9e estim\u00e9e selon la technique retenue.'
-      ],
-      objectives: [
-        'Diff\u00e9rencier AM et FM \u00e0 partir des formes d\u2019onde.',
-        'Relier fr\u00e9quence message et fr\u00e9quence porteuse.',
-        'Estimer l\u2019occupation spectrale d\u2019une modulation analogique.'
-      ],
-      questions: [
-        'Pourquoi la FM est-elle plus robuste \u00e0 l\u2019amplitude parasite ?',
-        '\u00c0 quoi correspond l\u2019indice de modulation en AM ?',
-        'Pourquoi la bande occup\u00e9e augmente-t-elle avec la d\u00e9viation FM ?'
-      ],
-      tpSteps: [
-        { title: 'Observer l\u2019information', text: 'Comparez le signal message et la porteuse avant modulation.', target: '.controls' },
-        { title: 'Basculer AM/FM', text: 'Activez alternativement AM puis FM et identifiez la grandeur modul\u00e9e.', target: '.lab-kpi-grid' },
-        { title: 'Conclure sur la bande', text: 'Reliez le r\u00e9glage choisi \u00e0 la bande occup\u00e9e affich\u00e9e.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Comparer AM et FM sur un m\u00eame message',
-          prompt: 'Expliquez ce qui change visuellement entre AM et FM quand la fr\u00e9quence du message reste identique.',
-          correction: [
-            'En AM, l\u2019enveloppe varie directement avec le message.',
-            'En FM, l\u2019amplitude reste presque constante et la fr\u00e9quence instantan\u00e9e varie.',
-            'Le support porteuse reste indispensable dans les deux cas pour transporter le message en haute fr\u00e9quence.'
-          ]
-        },
-        {
-          title: 'Justifier la bande occup\u00e9e',
-          prompt: 'Expliquez pourquoi la bande affich\u00e9e augmente quand la fr\u00e9quence du message augmente.',
-          correction: [
-            'En AM, les bandes lat\u00e9rales s\u2019\u00e9loignent de la porteuse quand fm augmente.',
-            'En FM, la d\u00e9viation et la r\u00e8gle de Carson lient aussi la bande \u00e0 fm.',
-            'Le message fixe donc directement une partie de l\u2019occupation spectrale.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Comparatif AM/FM',
-          objective: 'Relier grandeur modul\u00e9e et bande occup\u00e9e.',
-          actions: [
-            'Choisir un cas AM et relever les KPI.',
-            'Basculer en FM avec des r\u00e9glages voisins.',
-            'Comparer l\u2019allure du signal transmis et les mesures de bande.',
-            'Conclure sur le type d\u2019information port\u00e9 par chaque modulation.'
-          ],
-          measures: ['Mode', 'f message', 'f porteuse', 'Indice ou d\u00e9viation', 'Bande']
-        }
-      ],
-      measurementHints: ['Mode', 'R\u00e9glage', 'Mesure', 'Unit\u00e9', 'Conclusion']
-    },
-    'analogique-amplificateur': {
-      title: 'Amplificateur et saturation',
-      subtitle: 'Analysez le passage d\u2019un r\u00e9gime lin\u00e9aire \u00e0 un r\u00e9gime satur\u00e9 en observant gain et \u00e9cr\u00eatage.',
-      help: ['Le gain lin\u00e9aire se lit aussi en dB.', 'L\u2019\u00e9cr\u00eatage appara\u00eet quand la sortie atteint la limite d\u2019alimentation.', 'Une saturation augmente la distorsion harmonique.'],
-      objectives: ['Distinguer r\u00e9gime lin\u00e9aire et saturation.', 'Lire un taux de saturation.', 'Relier Vcc \u00e0 l\u2019amplitude r\u00e9ellement disponible.'],
-      questions: ['Pourquoi le gain ne peut-il pas cro\u00eetre ind\u00e9finiment ?', 'Que devient la forme spectrale d\u2019un sinus \u00e9cr\u00eat\u00e9 ?', 'Comment identifier visuellement une limite d\u2019alimentation ?'],
-      tpSteps: [
-        { title: 'Zone lin\u00e9aire', text: 'R\u00e9glez un gain mod\u00e9r\u00e9 puis relevez la cr\u00eate de sortie.', target: '.lab-preset-bar' },
-        { title: 'Approcher Vcc', text: 'Augmentez le gain jusqu\u2019\u00e0 voir appara\u00eetre la saturation.', target: '.lab-kpi-grid' },
-        { title: 'Comparer les puissances', text: 'Interpr\u00e9tez l\u2019\u00e9volution des vu-m\u00e8tres en entr\u00e9e et en sortie.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Rep\u00e9rer le d\u00e9but de saturation',
-          prompt: 'D\u00e9crivez les indices visuels qui montrent qu\u2019un amplificateur sort de son r\u00e9gime lin\u00e9aire.',
-          correction: [
-            'La sortie n\u2019est plus proportionnelle \u00e0 l\u2019entr\u00e9e.',
-            'Les cr\u00eates commencent \u00e0 s\u2019\u00e9cr\u00eater au voisinage des limites d\u2019alimentation.',
-            'Le taux de saturation et la note de mode confirment l\u2019entr\u00e9e en r\u00e9gime non lin\u00e9aire.'
-          ]
-        },
-        {
-          title: 'Relier gain et fid\u00e9lit\u00e9',
-          prompt: 'Expliquez pourquoi augmenter le gain n\u2019am\u00e9liore plus la transmission quand Vcc limite d\u00e9j\u00e0 la sortie.',
-          correction: [
-            'La sortie plafonne malgr\u00e9 l\u2019augmentation du gain th\u00e9orique.',
-            'L\u2019\u00e9nergie suppl\u00e9mentaire se traduit en distorsion et non en signal utile.',
-            'Le bon r\u00e9glage est donc celui qui maximise la fid\u00e9lit\u00e9 avant saturation.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Seuil de saturation',
-          objective: 'D\u00e9terminer exp\u00e9rimentalement la fronti\u00e8re de fonctionnement fid\u00e8le.',
-          actions: [
-            'Fixer l\u2019amplitude d\u2019entr\u00e9e.',
-            'Augmenter progressivement le gain.',
-            'Relever la premi\u00e8re apparition d\u2019\u00e9cr\u00eatage visible.',
-            'Comparer cr\u00eate de sortie, gain affich\u00e9 et taux de saturation.'
-          ],
-          measures: ['Entr\u00e9e', 'Gain', 'Cr\u00eate sortie', 'Taux saturation', 'Mode']
-        }
-      ],
-      measurementHints: ['Entr\u00e9e', 'Gain', 'Sortie', 'Taux', 'Interpr\u00e9tation']
-    },
-    'analogique-recepteur': {
-      title: 'R\u00e9cepteur et d\u00e9modulation d\u2019enveloppe',
-      subtitle: '\u00c9tudiez l\u2019effet combin\u00e9 du bruit re\u00e7u et du filtrage d\u2019enveloppe sur la restitution du message.',
-      help: ['Le redressement extrait l\u2019enveloppe positive.', 'Le filtre doit \u00eatre assez rapide pour suivre le message mais assez lent pour lisser la HF.', 'Le SNR estim\u00e9 aide \u00e0 relier le bruit visuel \u00e0 l\u2019intelligibilit\u00e9.'],
-      objectives: ['Comprendre la d\u00e9tection d\u2019enveloppe.', 'Choisir un filtrage coh\u00e9rent.', '\u00c9valuer la qualit\u00e9 du message restitu\u00e9.'],
-      questions: ['Pourquoi un filtre trop lent \u00e9touffe-t-il le message ?', 'Pourquoi un filtre trop rapide laisse-t-il passer les parasites ?', 'Quel lien faites-vous entre SNR et qualit\u00e9 per\u00e7ue ?'],
-      tpSteps: [
-        { title: 'Canal propre', text: 'Commencez par un cas peu bruit\u00e9 pour visualiser le fonctionnement id\u00e9al.', target: '.lab-preset-bar' },
-        { title: 'Faire varier le filtre', text: 'Modifiez seulement la constante de lissage pour isoler l\u2019effet du condensateur.', target: '.lab-kpi-grid' },
-        { title: 'Qualifier la restitution', text: 'Concluez \u00e0 partir du panneau final et de l\u2019indicateur de qualit\u00e9.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Choisir la bonne constante de temps',
-          prompt: 'Montrez pourquoi une constante trop faible et une constante trop forte d\u00e9gradent toutes deux le message.',
-          correction: [
-            'Si la constante est trop faible, le filtre suit aussi le bruit et la HF r\u00e9siduelle.',
-            'Si elle est trop forte, l\u2019enveloppe utile est trop liss\u00e9e.',
-            'Le r\u00e9glage optimal est donc un compromis entre suivi du message et rejet des variations rapides.'
-          ]
-        },
-        {
-          title: 'Interpr\u00e9ter la qualit\u00e9 restitu\u00e9e',
-          prompt: 'Reliez le SNR et le filtrage au niveau de qualit\u00e9 affich\u00e9 dans le panneau de r\u00e9ception.',
-          correction: [
-            'Le SNR \u00e9lev\u00e9 favorise une enveloppe plus propre.',
-            'Le filtrage doit rester coh\u00e9rent avec la dynamique du message.',
-            'Une mauvaise qualit\u00e9 peut venir du bruit, du filtre, ou de la combinaison des deux.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Compromis bruit / filtrage',
-          objective: 'Identifier la plage de r\u00e9glage offrant la meilleure restitution.',
-          actions: [
-            'Choisir plusieurs niveaux de bruit.',
-            'Pour chaque niveau, faire varier la constante de filtrage.',
-            'Relever SNR, constante et qualit\u00e9 finale.',
-            'Conclure sur la meilleure zone de fonctionnement.'
-          ],
-          measures: ['Bruit', 'Constante \u03c4', 'SNR', 'Qualit\u00e9', 'Conclusion']
-        }
-      ],
-      measurementHints: ['Bruit', '\u03c4', 'SNR', 'Qualit\u00e9', 'Commentaire']
-    },
-    'numerisation-can': {
-      title: 'Convertisseur CAN',
-      subtitle: 'Mettez en \u00e9vidence les contraintes fondamentales de tout convertisseur analogique-num\u00e9rique.',
-      help: ['L\u2019aliasing d\u00e9pend d\u2019abord de Fe.', 'Le bruit de quantification d\u00e9pend d\u2019abord de B.', 'Un bon diagnostic s\u00e9pare erreur temporelle et erreur d\u2019amplitude.'],
-      objectives: ['V\u00e9rifier Nyquist-Shannon.', 'Lire un pas de quantification.', 'Comparer plusieurs compromis convertisseur.'],
-      questions: ['Quel r\u00e9glage supprime l\u2019aliasing sans am\u00e9liorer la r\u00e9solution ?', 'Que signifie concr\u00e8tement un SQNR plus \u00e9lev\u00e9 ?', 'Pourquoi le nombre de niveaux suit-il une loi en puissance de deux ?'],
-      tpSteps: [
-        { title: 'Cr\u00e9er un d\u00e9faut d\u2019\u00e9chantillonnage', text: 'Utilisez le pr\u00e9r\u00e9glage de sous-\u00e9chantillonnage et d\u00e9crivez le repliement observ\u00e9.', target: '.lab-preset-bar' },
-        { title: 'Augmenter les bits', text: 'Gardez Fe constante puis augmentez B pour r\u00e9duire l\u2019\u00e9cart de quantification.', target: '.lab-kpi-grid' },
-        { title: 'Lire le code binaire', text: 'Associez un niveau quantifi\u00e9 \u00e0 sa repr\u00e9sentation num\u00e9rique.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Distinguer aliasing et quantification',
-          prompt: 'Expliquez comment reconna\u00eetre exp\u00e9rimentalement une erreur temporelle et une erreur d\u2019amplitude.',
-          correction: [
-            'L\u2019aliasing modifie la fr\u00e9quence apparente du signal reconstruit.',
-            'La quantification conserve le rythme global mais introduit des paliers et une erreur d\u2019amplitude.',
-            'Ces deux ph\u00e9nom\u00e8nes se corrigent par des param\u00e8tres diff\u00e9rents : Fe pour l\u2019un, B pour l\u2019autre.'
-          ]
-        },
-        {
-          title: 'Lire le pas de quantification',
-          prompt: 'Montrez comment le nombre de bits agit sur le nombre de niveaux et sur le SQNR.',
-          correction: [
-            'Le nombre de niveaux vaut 2^B.',
-            'Quand B augmente, le pas diminue.',
-            'Le SQNR augmente car l\u2019erreur de quantification moyenne devient plus faible.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Étude Fe / B à fréquence fixe',
-          objective: 'Séparer l\u2019impact de l\u2019échantillonnage et celui de la résolution.',
-          actions: [
-            'Fixer la fréquence du signal.',
-            'Faire varier Fe seule et relever l\u2019apparition éventuelle d\u2019aliasing.',
-            'Ramener Fe à une valeur correcte puis faire varier B seule.',
-            'Comparer les effets observés sur le tracé, les paliers et le code binaire.'
-          ],
-          measures: ['f', 'Fe', 'B', 'Pas quantif.', 'Observation'],
-          quantitativeHints: [
-            'Vérifier qu’un fonctionnement correct exige Fe au moins de l’ordre de 2 fmax.',
-            'Comparer le pas de quantification à mesure que B augmente : il doit décroître lorsque le nombre de niveaux augmente.',
-            'Relever un cas d’aliasing manifeste puis un cas correctement échantillonné à fréquence identique.'
-          ],
-          validationCriteria: [
-            'Le tableau doit distinguer explicitement l’effet de Fe et celui de B.',
-            'Au moins un cas doit montrer un repliement spectral observable.',
-            'La conclusion doit séparer erreur temporelle et erreur d’amplitude.'
-          ]
-        }
-      ],
-      measurementHints: ['Signal', 'Fe', 'B', 'Mesure', 'Conclusion']
-    },
-    'modulations-symbol': {
-      title: 'Analyse d\u2019un symbole',
-      subtitle: 'Utilisez un symbole unique pour relier bits, point I/Q et \u00e9quation temporelle.',
-      help: ['Un point I/Q est une repr\u00e9sentation g\u00e9om\u00e9trique d\u2019un symbole.', 'La phase se lit sur l\u2019angle et l\u2019amplitude sur la distance \u00e0 l\u2019origine.', 'En mode symbole unique, concentrez-vous sur l\u2019interpr\u00e9tation et non sur la transition.'],
-      objectives: ['Relier un mot binaire \u00e0 un seul symbole.', 'Lire amplitude, phase ou fr\u00e9quence selon la modulation.', 'Interpr\u00e9ter l\u2019\u00e9quation s(t).'],
-      questions: ['Quel param\u00e8tre change entre deux symboles PSK ?', 'Pourquoi QAM combine-t-elle deux degr\u00e9s de libert\u00e9 ?', 'Que repr\u00e9sente la distance \u00e0 l\u2019origine du plan I/Q ?'],
-      tpSteps: [
-        { title: 'Choisir un symbole', text: 'Saisissez un mot binaire valide et identifiez imm\u00e9diatement sa position en constellation.', target: '.panel' },
-        { title: 'Lire les mesures', text: 'Notez la phase, l\u2019amplitude ou ?f associ\u00e9e au symbole choisi.', target: '.lab-kpi-grid' },
-        { title: 'Interpr\u00e9ter l\u2019onde', text: 'Reliez les valeurs affich\u00e9es \u00e0 la forme s(t) produite.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Décoder un symbole unique',
-          prompt: 'Expliquez comment passer d’un mot binaire à un point I/Q puis à une forme d’onde.',
-          correction: [
-            'Le mot binaire sélectionne un symbole dans la constellation ou dans la loi de modulation.',
-            'Ce symbole fixe des coordonnées I/Q ou une grandeur équivalente.',
-            'La forme d’onde s(t) découle ensuite de cette représentation symbolique.'
-          ]
-        },
-        {
-          title: 'Interpréter la distance à l’origine',
-          prompt: 'Montrez pourquoi la distance à l’origine n’a pas la même signification selon les familles de modulation.',
-          correction: [
-            'En QAM, elle traduit directement une composante d’amplitude.',
-            'En PSK, les points sont souvent de module voisin et l’information est surtout portée par l’angle.',
-            'L’interprétation dépend donc de la grandeur physique réellement modulée.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Du bit au symbole',
-          objective: 'Relier représentation binaire, point I/Q et mesure affichée.',
-          actions: [
-            'Choisir plusieurs symboles valides.',
-            'Relever à chaque fois la position du point.',
-            'Noter phase, amplitude ou fréquence relative selon la famille.',
-            'Comparer la conséquence sur l’onde temporelle affichée.'
-          ],
-          measures: ['Mot binaire', 'I/Q ou équivalent', 'Mesure affichée', 'Famille', 'Conclusion'],
-          quantitativeHints: [
-            'Vérifier que chaque mot binaire correspond à un seul symbole valide.',
-            'Comparer au moins deux symboles d’une même famille pour voir l’effet sur phase ou amplitude.',
-            'En QAM, noter que la distance à l’origine varie ; en PSK, comparer surtout l’angle.'
-          ],
-          validationCriteria: [
-            'Le relevé doit contenir plusieurs symboles et non un seul exemple isolé.',
-            'L’analyse doit relier la position géométrique aux grandeurs physiques affichées.',
-            'La conclusion doit distinguer clairement le comportement des familles de modulation.'
-          ]
-        }
-      ],
-      measurementHints: ['Symbole', 'Position', 'Mesure', 'Unité', 'Interprétation']
-    },
-    'modulations-sequence': {
-      title: 'S\u00e9quence de symboles',
-      subtitle: 'Analysez les transitions entre symboles et leur traduction sur la trajectoire I/Q.',
-      help: ['La trajectoire entre points d\u00e9pend de l\u2019ordre des symboles.', 'Une s\u00e9quence permet d\u2019\u00e9tudier les transitions plus que la seule position.', 'Plus M augmente, plus l\u2019espace d\u00e9cisionnel se resserre.'],
-      objectives: ['Lire une s\u00e9quence compl\u00e8te de symboles.', 'Interpr\u00e9ter la trajectoire I/Q.', 'Comparer plusieurs familles de modulation.'],
-      questions: ['Pourquoi deux s\u00e9quences avec les m\u00eames symboles peuvent-elles produire des trajectoires diff\u00e9rentes ?', 'Quel int\u00e9r\u00eat p\u00e9dagogique a une s\u00e9quence multi-symboles ?', 'Quel compromis entre robustesse et efficacit\u00e9 observez-vous ?'],
-      tpSteps: [
-        { title: 'Composer une s\u00e9quence', text: 'Saisissez plusieurs symboles corrects puis observez l\u2019ordre de transition.', target: '.panel' },
-        { title: 'Comparer les familles', text: 'Passez de PSK \u00e0 QAM ou FSK et identifiez la grandeur dominante.', target: '.lab-kpi-grid' },
-        { title: 'Lire la trajectoire', text: 'Expliquez comment la suite de symboles se refl\u00e8te dans I/Q et dans s(t).', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Lire une trajectoire I/Q',
-          prompt: 'Expliquez pourquoi deux séquences différentes peuvent produire des trajectoires différentes même avec les mêmes symboles possibles.',
-          correction: [
-            'La trajectoire dépend de l’ordre temporel des symboles.',
-            'Les transitions successives relient des points différents dans le plan I/Q.',
-            'La lecture dynamique apporte donc plus d’information qu’une constellation statique seule.'
-          ]
-        },
-        {
-          title: 'Comparer robustesse et complexité',
-          prompt: 'Montrez comment une séquence permet de mieux percevoir le compromis entre richesse symbolique et sensibilité au canal.',
-          correction: [
-            'Quand M augmente, la distance de décision diminue.',
-            'Les transitions deviennent souvent plus serrées ou plus nombreuses.',
-            'La séquence rend visible la complexité temporelle associée à la densité de modulation.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Influence de l’ordre des symboles',
-          objective: 'Comparer l’effet de deux séquences sur la trajectoire et sur la forme d’onde.',
-          actions: [
-            'Construire une première séquence.',
-            'Construire une seconde séquence avec des symboles réordonnés.',
-            'Comparer les transitions I/Q et l’allure temporelle.',
-            'Conclure sur le rôle de l’ordre symbolique.'
-          ],
-          measures: ['Séquence', 'Famille', 'Ordre M', 'Observation I/Q', 'Conclusion'],
-          quantitativeHints: [
-            'Comparer au moins deux séquences de même famille et de même ordre M.',
-            'Conserver les mêmes symboles mais changer leur ordre pour isoler l’effet de transition.',
-            'Observer si la trajectoire devient plus longue, plus heurtée ou plus compacte selon la séquence.'
-          ],
-          validationCriteria: [
-            'La comparaison doit porter sur deux séquences construites selon une règle claire.',
-            'L’exploitation doit expliquer la différence de trajectoire sans confondre ordre M et ordre temporel.',
-            'La conclusion doit préciser ce que la séquence apporte de plus qu’une simple constellation.'
-          ]
-        }
-      ],
-      measurementHints: ['Séquence', 'Famille', 'Mesure', 'Observation', 'Conclusion']
-    },
-    'modulations-dashboard': {
-      title: 'Tableau de bord des modulations',
-      subtitle: 'Comparez la performance th\u00e9orique de plusieurs ordres de modulation sous contrainte de bruit et de bande.',
-      help: ['L\u2019efficacit\u00e9 spectrale augmente avec M mais la robustesse diminue.', 'Eb/N0 et BER sont des outils de comparaison entre modulations.', 'Le roll-off agit sur la bande plus que sur le bruit lui-m\u00eame.'],
-      objectives: ['Comparer plusieurs modulations sur des crit\u00e8res th\u00e9oriques.', 'Relier Eb/N0, BER et efficacit\u00e9 spectrale.', 'Choisir une modulation selon le contexte de canal.'],
-      questions: ['Pourquoi une modulation dense est-elle attractive malgr\u00e9 sa sensibilit\u00e9 ?', 'Quel r\u00f4le joue le roll-off dans l\u2019occupation spectrale ?', 'Dans quel cas pr\u00e9f\u00e9reriez-vous BPSK \u00e0 16-QAM ?'],
-      tpSteps: [
-        { title: 'Choisir deux modulations', text: 'S\u00e9lectionnez une modulation robuste puis une modulation dense \u00e0 comparer.', target: '.controls, .panel, .wrap' },
-        { title: 'Comparer BER et efficacit\u00e9', text: 'Relevez les indicateurs de performance th\u00e9orique pour justifier votre choix.', target: '.lab-kpi-grid, .stats-board' },
-        { title: 'Conclure sur le compromis', text: '\u00c9noncez dans quel contexte r\u00e9seau chaque modulation devient pertinente.', target: '.wrap' }
-      ],
-      exercises: [
-        {
-          title: 'Choisir une modulation selon le canal',
-          prompt: 'Expliquez comment choisir entre robustesse et efficacité spectrale selon un Eb/N0 donné.',
-          correction: [
-            'À Eb/N0 faible, une modulation d’ordre réduit est préférable.',
-            'À Eb/N0 plus élevé, une modulation dense devient exploitable et plus efficace spectralement.',
-            'Le choix dépend donc du compromis entre qualité cible et capacité recherchée.'
-          ]
-        },
-        {
-          title: 'Interpréter le roll-off',
-          prompt: 'Expliquez le rôle du roll-off dans la bande et dans l’efficacité spectrale affichée.',
-          correction: [
-            'Un roll-off plus élevé élargit la bande occupée.',
-            'L’efficacité spectrale diminue alors à débit binaire donné.',
-            'Le réglage doit équilibrer réalisme de filtrage et compacité spectrale.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Comparatif de performance',
-          objective: 'Mettre en tableau l’influence de M et du roll-off sur les KPI.',
-          actions: [
-            'Choisir une première modulation robuste.',
-            'Choisir une seconde modulation plus dense.',
-            'Faire varier ensuite le roll-off.',
-            'Comparer BER théorique, efficacité et nombre de bits par symbole.'
-          ],
-          measures: ['Famille', 'Ordre', 'Roll-off', 'TEB', 'Efficacité'],
-          quantitativeHints: [
-            'Comparer au moins une modulation robuste et une modulation dense à Eb/N0 voisin.',
-            'Vérifier qu’un roll-off plus élevé tend à réduire l’efficacité spectrale affichée.',
-            'Repérer l’ordre de grandeur du TEB lorsque la modulation se densifie.'
-          ],
-          validationCriteria: [
-            'Le tableau doit contenir plusieurs couples {ordre, roll-off}.',
-            'L’exploitation doit faire apparaître le compromis TEB / efficacité spectrale.',
-            'La conclusion doit recommander une modulation selon le contexte de canal.'
-          ]
-        }
-      ],
-      measurementHints: ['Famille', 'Ordre', 'Roll-off', 'Indicateur', 'Conclusion']
-    },
-    'transmission-base': {
-      title: 'Transmission p\u00e9dagogique compl\u00e8te',
-      subtitle: 'Faites un v\u00e9ritable bilan de liaison simplifi\u00e9 en suivant l\u2019effet du canal sur la r\u00e9cup\u00e9ration binaire.',
-      help: ['Le lien se juge d\u2019abord sur la marge de capacit\u00e9 et le SNR.', 'La gigue ferme l\u2019\u0153il sans forc\u00e9ment changer fortement l\u2019amplitude moyenne.', 'Le seuil de d\u00e9cision d\u00e9cale la fronti\u00e8re logique au r\u00e9cepteur.'],
-      objectives: ['\u00c9valuer la qualit\u00e9 d\u2019une transmission num\u00e9rique.', 'Relier BER \u00e0 un sc\u00e9nario de canal.', 'Utiliser les pr\u00e9r\u00e9glages comme cas d\u2019ing\u00e9nierie.'],
-      questions: ['Quel param\u00e8tre d\u00e9grade le plus vite le BER dans ce simulateur ?', 'Pourquoi la marge de capacit\u00e9 est-elle plus parlante qu\u2019un seul d\u00e9bit brut ?', 'Comment justifier l\u2019usage du Manchester ou du FEC ?'],
-      tpSteps: [
-        { title: 'Cas nominal', text: 'Commencez par une liaison propre puis relevez les indicateurs avant toute d\u00e9gradation.', target: '.lab-preset-bar' },
-        { title: 'Stress du lien', text: 'Appliquez un sc\u00e9nario radio ou satellite et observez l\u2019\u0153il ainsi que BER.', target: '.lab-kpi-grid' },
-        { title: 'Corriger le lien', text: 'Activez FEC, filtre ou gain TX pour r\u00e9cup\u00e9rer une marge acceptable.', target: '.stage' }
-      ]
-    },
-    'transmission-dsp': {
-      title: 'Traitement du signal avanc\u00e9',
-      subtitle: 'Liez constellation, spectre et diagramme de l\u2019\u0153il dans une lecture compl\u00e8te du canal num\u00e9rique.',
-      help: ['Le SER refl\u00e8te la s\u00e9paration r\u00e9elle des nuages de symboles.', 'Le spectre d\u00e9pend fortement du filtre de mise en forme et du roll-off.', 'Eb/N0 facilite la comparaison entre modulations d\u2019ordres diff\u00e9rents.'],
-      objectives: ['Relier spectre, I/Q et \u0153il \u00e0 un m\u00eame sc\u00e9nario de canal.', 'Comparer BPSK, QPSK et QAM.', 'Interpr\u00e9ter l\u2019effet du filtre RRC.'],
-      questions: ['Pourquoi le RRC r\u00e9duit-il l\u2019ISI ?', 'Comment expliquer une constellation plus floue mais un spectre plus contenu ?', 'Que r\u00e9v\u00e8le un \u0153il qui se ferme horizontalement ou verticalement ?'],
-      tpSteps: [
-        { title: 'Sc\u00e9nario robuste', text: 'D\u00e9marrez en BPSK ou QPSK pour visualiser une constellation tr\u00e8s s\u00e9par\u00e9e.', target: '.lab-preset-bar' },
-        { title: 'Densifier la modulation', text: 'Passez \u00e0 16-QAM ou 64-QAM et comparez l\u2019\u00e9cartement des points.', target: '.lab-kpi-grid' },
-        { title: 'Lire le canal', text: 'Confrontez SER, Eb/N0, spectre et \u0153il pour conclure sur la qualit\u00e9 de transmission.', target: '.stage' }
-      ],
-      exercises: [
-        {
-          title: 'Relier constellation et SER',
-          prompt: 'Expliquez pourquoi la constellation permet d’anticiper l’évolution du SER.',
-          correction: [
-            'Des nuages bien séparés laissent une marge de décision confortable.',
-            'Quand les points se rapprochent et se diffusent, les erreurs symbole augmentent.',
-            'La lecture géométrique complète donc utilement la mesure numérique de SER.'
-          ]
-        },
-        {
-          title: 'Lire le rôle du filtrage RRC',
-          prompt: 'Montrez comment le filtrage influe simultanément sur le spectre et sur l’ouverture de l’œil.',
-          correction: [
-            'Le filtrage façonne la bande occupée.',
-            'Il agit aussi sur l’ISI et donc sur la qualité de l’échantillonnage au bon instant.',
-            'Le bon compromis se lit conjointement dans le spectre et dans l’œil.'
-          ]
-        }
-      ],
-      manipulations: [
-        {
-          title: 'Lecture croisée spectre / œil / constellation',
-          objective: 'Relier trois vues du même canal numérique.',
-          actions: [
-            'Choisir une modulation et un média.',
-            'Faire varier distance ou ordre de modulation.',
-            'Relever SER, Eb/N0, bande et état visuel de la constellation.',
-            'Conclure en reliant ces trois représentations.'
-          ],
-          measures: ['Modulation', 'Eb/N0', 'SER', 'Bande', 'Observation visuelle'],
-          quantitativeHints: [
-            'Comparer au moins un cas robuste et un cas dense à média identique.',
-            'Repérer si une baisse de Eb/N0 s’accompagne d’une hausse sensible du SER.',
-            'Mettre en regard la compacité spectrale et l’ouverture de l’œil pour un même scénario.'
-          ],
-          validationCriteria: [
-            'Le tableau doit croiser au moins deux modulations ou deux distances.',
-            'L’analyse doit utiliser simultanément SER, Eb/N0 et une observation visuelle.',
-            'La conclusion doit relier qualité de canal, densité de constellation et bande occupée.'
-          ]
-        }
-      ],
-      measurementHints: ['Cas', 'Eb/N0', 'SER', 'Bande', 'Interprétation']
-    },
-    'multiplexage-e1': {
-      title: 'Multitrame E1',
-      subtitle: 'D\u00e9codez la logique interne d\u2019une structure PCM 30/32 \u00e0 l\u2019\u00e9chelle des intervalles de temps.',
-      help: ['IT0 cadra la trame, IT16 porte la signalisation de multitrame.', 'Une trame dure 125 \u00b5s et donc la cadence vaut 8000 trames/s.', 'La multitrame donne acc\u00e8s \u00e0 la logique CAS sur 16 trames.'],
-      objectives: ['Identifier FAS, NFAS, VMT et CAS.', 'Expliquer le r\u00f4le de la multitrame.', 'Relier IT utile et d\u00e9bit voix de 64 kbit/s.'],
-      questions: ['Pourquoi la signalisation CAS s\u2019\u00e9tale-t-elle sur plusieurs trames ?', 'Quel est le r\u00f4le pr\u00e9cis du VMT ?', 'Combien de voies utiles l\u2019E1 laisse-t-il r\u00e9ellement disponibles ?'],
       tpSteps: [
         { title: 'Cadrer la trame', text: 'Commencez par IT0 et distinguez trame paire et impaire.', target: '.lab-preset-bar' },
         { title: 'Observer la CAS', text: 'Passez sur IT16 pour comprendre l\u2019organisation de la signalisation.', target: '.lab-kpi-grid' },
@@ -1226,7 +813,7 @@
           validationCriteria: [
             'Le suivi doit être continu de la source audio jusqu’à la case de trame.',
             'Le relevé doit comporter un octet explicite et son emplacement.',
-            'La conclusion doit montrer comment une grandeur analogique devient un tribut numérique.'
+            'La conclusion doit décrire comment une grandeur analogique devient un tribut numérique.'
           ]
         }
       ],
@@ -1237,7 +824,7 @@
       subtitle: 'Reliez la source PCM, la trame TDM et la hi\u00e9rarchie PDH/SDH dans un seul parcours p\u00e9dagogique.',
       help: ['Le m\u00eame laboratoire couvre source, trame et agr\u00e9gation.', 'Utilisez les sauts rapides pour passer du niveau voie au niveau r\u00e9seau.', 'Les indicateurs de capacit\u00e9 permettent de relier architecture et \u00e9chelle de trafic.'],
       objectives: ['Comprendre le continuum PCM ? TDM ? hi\u00e9rarchie.', 'Comparer les architectures E1/PDH et T1/SONET.', 'Lire la capacit\u00e9 d\u2019agr\u00e9gation \u00e0 plusieurs niveaux.'],
-      questions: ['\u00c0 quel niveau appara\u00eet la notion de tribut ?', 'Pourquoi le transport optique synchrone simplifie-t-il l\u2019exploitation ?', 'Quel lien faites-vous entre voie \u00e0 64 kbit/s et capacit\u00e9 de niveau sup\u00e9rieur ?'],
+      questions: ['\u00c0 quel niveau appara\u00ee t la notion de tribut ?', 'Pourquoi le transport optique synchrone simplifie-t-il l\u2019exploitation ?', 'Quel lien faites-vous entre voie \u00e0 64 kbit/s et capacit\u00e9 de niveau sup\u00e9rieur ?'],
       tpSteps: [
         { title: 'Commencer au PCM', text: 'Observez d\u2019abord comment un octet est produit \u00e0 partir d\u2019une source audio.', target: '#pcmSection' },
         { title: 'Lire la matrice', text: 'Rep\u00e9rez ensuite la place de cet octet dans la trame primaire.', target: '#trameSection' },
@@ -1405,15 +992,21 @@
   function readProfile() {
     const profile = readJsonStorage(LAB_PROFILE_KEY, {});
     return {
+      establishmentName: profile.establishmentName || 'École d’ingénieurs — Département Télécommunications',
       studentName: profile.studentName || '',
-      certificateSigner: profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire'
+      partnerName: profile.partnerName || '',
+      groupName: profile.groupName || '',
+      certificateSigner: profile.certificateSigner || 'Responsable pédagogique du laboratoire'
     };
   }
 
   function saveProfile(profile) {
     writeJsonStorage(LAB_PROFILE_KEY, {
+      establishmentName: profile.establishmentName || 'École d’ingénieurs — Département Télécommunications',
       studentName: profile.studentName || '',
-      certificateSigner: profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire'
+      partnerName: profile.partnerName || '',
+      groupName: profile.groupName || '',
+      certificateSigner: profile.certificateSigner || 'Responsable pédagogique du laboratoire'
     });
     emitLabProgressUpdated({ profile: true });
   }
@@ -1455,6 +1048,7 @@
       global.localStorage.setItem(LAB_TEACHER_MODE_KEY, value ? '1' : '0');
     } catch (error) {
     }
+    emitLabProgressUpdated({ teacherMode: true });
   }
 
   function safeExecute(action) {
@@ -1582,6 +1176,8 @@
     const lines = ['Type;Identifiant;Titre;Visite;Quiz;Moyenne'];
 
     lines.push(['Profil', 'etudiant', profile.studentName || 'Non renseign\u00e9', '', '', ''].join(';'));
+    lines.push(['Profil', 'binome', profile.partnerName || 'Non renseign\u00e9', '', '', ''].join(';'));
+    lines.push(['Profil', 'groupe', profile.groupName || 'Non renseign\u00e9', '', '', ''].join(';'));
     lines.push(['Profil', 'signataire', profile.certificateSigner || 'Non renseign\u00e9', '', '', ''].join(';'));
 
     dashboard.forEach(function (item) {
@@ -1641,7 +1237,67 @@
       }).join('');
     }).join('');
 
-    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport p\u00e9dagogique</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1,h2{margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}ul{line-height:1.6}.sign{margin-top:20px;padding-top:12px;border-top:1px solid #cbd5e1}</style></head><body><h1>Rapport p\u00e9dagogique du laboratoire</h1><p><strong>\u00c9tudiant :</strong> ' + (profile.studentName || 'Non renseign\u00e9') + '<br><strong>Signataire :</strong> ' + (profile.certificateSigner || 'Non renseign\u00e9') + '</p><p>Export enseignant des visites, quiz et validations internes.</p><h2>Tableau de bord multi-pages</h2><table><thead><tr><th>Module</th><th>Visites</th><th>Quiz valid\u00e9s</th><th>Moyenne</th></tr></thead><tbody>' + rows + '</tbody></table><h2>Historique d\u00e9taill\u00e9 des tentatives</h2><table><thead><tr><th>Page</th><th>Tentative</th><th>Date</th><th>R\u00e9sultat</th></tr></thead><tbody>' + (historyRows || '<tr><td colspan="4">Aucune tentative enregistr\u00e9e.</td></tr>') + '</tbody></table><h2>Badges et certificat</h2><ul>' + badgeRows + '</ul><p><strong>Certificat interne :</strong> ' + (achievements.certificate.earned ? 'accord\u00e9' : 'non accord\u00e9') + ' \u2014 ' + achievements.certificate.text + '</p><div class="sign"><strong>Signature :</strong> ' + (profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire') + '<br><strong>Date :</strong> ' + formatDateTime(Date.now()) + '</div></body></html>';
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport p\u00e9dagogique</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1,h2{margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}ul{line-height:1.6}.sign{margin-top:20px;padding-top:12px;border-top:1px solid #cbd5e1}</style></head><body><h1>Rapport p\u00e9dagogique du laboratoire</h1><p><strong>\u00c9tudiant :</strong> ' + (profile.studentName || 'Non renseign\u00e9') + '<br><strong>Bin\u00f4me :</strong> ' + (profile.partnerName || 'Non renseign\u00e9') + '<br><strong>Groupe :</strong> ' + (profile.groupName || 'Non renseign\u00e9') + '<br><strong>Signataire :</strong> ' + (profile.certificateSigner || 'Non renseign\u00e9') + '</p><p>Export enseignant des visites, quiz et validations internes.</p><h2>Tableau de bord multi-pages</h2><table><thead><tr><th>Module</th><th>Visites</th><th>Quiz valid\u00e9s</th><th>Moyenne</th></tr></thead><tbody>' + rows + '</tbody></table><h2>Historique d\u00e9taill\u00e9 des tentatives</h2><table><thead><tr><th>Page</th><th>Tentative</th><th>Date</th><th>R\u00e9sultat</th></tr></thead><tbody>' + (historyRows || '<tr><td colspan="4">Aucune tentative enregistr\u00e9e.</td></tr>') + '</tbody></table><h2>Badges et certificat</h2><ul>' + badgeRows + '</ul><p><strong>Certificat interne :</strong> ' + (achievements.certificate.earned ? 'accord\u00e9' : 'non accord\u00e9') + ' \u2014 ' + achievements.certificate.text + '</p><div class="sign"><strong>Signature :</strong> ' + (profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire') + '<br><strong>Date :</strong> ' + formatDateTime(Date.now()) + '</div></body></html>';
+  }
+
+  function buildTpReportHtml(pageKey, guide) {
+    const profile = readProfile();
+    const notebook = getNotebookPage(pageKey);
+    const teacherMode = getTeacherMode();
+    const pageMeta = notebook.pageMeta || {};
+    const firstTp = getEngineeringLab(guide, 0, pageKey);
+    const headers = (firstTp.measures || ['Champ 1', 'Champ 2', 'Champ 3', 'Champ 4', 'Champ 5']).slice(0, 5);
+    while (headers.length < 5) {
+      headers.push('Champ ' + (headers.length + 1));
+    }
+    const rows = (notebook.measureRows || []).map(function (values) {
+      return '<tr>' + values.map(function (value) {
+        return '<td>' + (value || '') + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    const tpBlocks = (guide.manipulations || []).map(function (_, index) {
+      const tp = getEngineeringLab(guide, index, pageKey);
+      const correctionModel = buildTpCorrectionModel(tp);
+      const autoScore = computeTpAutoScore(pageKey, guide, index);
+      const report = (notebook.labReports || {})[index] || {};
+      const rubricScores = report.rubricScores || {};
+      const rubricTotal = (tp.rubric || []).reduce(function (sum, item, rubricIndex) {
+        return sum + (rubricScores[rubricIndex] || 0);
+      }, 0);
+      const rubricMax = (tp.rubric || []).reduce(function (sum, item) { return sum + (item.max || 0); }, 0);
+      return '<section><h2>' + tp.title + '</h2>' +
+        '<h3>Consigne</h3><p>' + tp.consigne + '</p>' +
+        '<h3>Protocole</h3><ul>' + (tp.protocole || []).map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' +
+        '<h3>Ordres de grandeur / valeurs attendues</h3><ul>' + (tp.quantitativeHints || []).concat(tp.expectedValues || []).map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' +
+        '<h3>Exploitation rédigée</h3><p>' + ((report.analysis || 'Non renseignée.').replace(/\n/g, '<br>')) + '</p>' +
+        '<h3>Conclusion rédigée</h3><p>' + ((report.conclusion || 'Non renseignée.').replace(/\n/g, '<br>')) + '</p>' +
+        '<h3>Score automatique indicatif</h3><p>' + autoScore.score + ' / ' + autoScore.max + '</p><ul>' + autoScore.details.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' +
+        '<h3>Auto-évaluation</h3><p>' + rubricTotal + ' / ' + rubricMax + ' points</p><ul>' + (tp.rubric || []).map(function (item, rubricIndex) {
+          return '<li>' + item.label + ' : ' + (rubricScores[rubricIndex] || 0) + ' / ' + (item.max || 0) + '</li>';
+        }).join('') + '</ul>' +
+        (teacherMode
+          ? ('<h3>Correction type enseignant</h3><ul>' + (correctionModel.measures || []).concat(correctionModel.exploitation || []).map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul><p><strong>Conclusion type :</strong> ' + (correctionModel.conclusion || '') + '</p>')
+          : '') +
+        '</section>';
+    }).join('');
+
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Compte-rendu TP</title><style>body{font-family:"Times New Roman",serif;padding:30px;color:#111827;background:#fff}h1,h2,h3{margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #475569;padding:8px;text-align:left;vertical-align:top}ul{line-height:1.6}.meta{margin:18px 0 24px;padding:16px;border:2px solid #334155}.meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 18px}.report-head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px double #334155;padding-bottom:14px;margin-bottom:18px}.report-logo{width:78px;height:78px;border:2px solid #0f172a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700}.report-brand strong{display:block;font-size:20px}.report-brand span{display:block;margin-top:4px;font-size:13px}.stamp{display:inline-flex;align-items:center;justify-content:center;min-width:140px;padding:12px 16px;border:2px dashed #991b1b;border-radius:999px;color:#991b1b;font-weight:700;transform:rotate(-8deg);margin-top:12px}.section{page-break-inside:avoid;margin-top:18px}</style></head><body><div class="report-head"><div class="report-logo">LT</div><div class="report-brand"><strong>' + (profile.establishmentName || 'École d’ingénieurs — Département Télécommunications') + '</strong><span>Compte-rendu académique de TP — Télécommunications et traitement du signal</span></div><div><strong>N° ' + (pageMeta.tpNumber || ('TP-' + String(pageKey || '01').toUpperCase())) + '</strong></div></div><h1>Compte-rendu TP</h1><div class="meta"><div class="meta-grid"><div><strong>Page :</strong> ' + guide.title + '</div><div><strong>Date :</strong> ' + (pageMeta.reportDate || formatDateTime(Date.now())) + '</div><div><strong>Étudiant :</strong> ' + (profile.studentName || 'Non renseigné') + '</div><div><strong>Binôme :</strong> ' + (profile.partnerName || 'Non renseigné') + '</div><div><strong>Groupe :</strong> ' + (profile.groupName || 'Non renseigné') + '</div><div><strong>Enseignant correcteur :</strong> ' + (pageMeta.teacherCorrector || profile.certificateSigner || 'Non renseigné') + '</div><div><strong>Note finale :</strong> ' + (pageMeta.finalGrade || computePageTpFinalGrade(pageKey, guide).score) + ' / 20</div><div><strong>Matériel simulé :</strong> ' + (pageMeta.equipment || guide.title) + '</div><div><strong>Objectif :</strong> ' + (pageMeta.objective || guide.subtitle || '') + '</div><div><strong>Résultats :</strong> ' + (pageMeta.results || 'Non renseignés') + '</div><div><strong>Conclusion :</strong> ' + (pageMeta.summaryConclusion || 'Non renseignée') + '</div><div><strong>Visa enseignant :</strong> ' + (pageMeta.teacherVisa || profile.certificateSigner || 'Non renseigné') + '</div></div><div class="stamp">' + (pageMeta.teacherVisa || 'Visa enseignant') + '</div></div><div class="section">' + tpBlocks + '</div><div class="section"><h2>Tableau de mesures</h2><table><thead><tr><th>' + headers.join('</th><th>') + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="5">Aucune mesure saisie.</td></tr>') + '</tbody></table></div></body></html>';
+  }
+
+  function exportTpReport(pageKey, guide) {
+    downloadTextFile((pageKey || 'tp') + '-compte-rendu.html', buildTpReportHtml(pageKey, guide), 'text/html;charset=utf-8');
+  }
+
+  function exportTpPdfReport(pageKey, guide) {
+    const popup = global.open('', '_blank');
+    if (!popup) {
+      return;
+    }
+    popup.document.open();
+    popup.document.write(buildTpReportHtml(pageKey, guide));
+    popup.document.close();
+    popup.focus();
+    popup.print();
   }
 
   function exportCsvReport() {
@@ -1807,11 +1463,12 @@
     return row;
   }
 
-  function getEngineeringLab(guide, index) {
+  function getEngineeringLab(guide, index, pageKey) {
     const manipulation = (guide.manipulations || [])[index] || {};
+    const pageDefaults = (LAB_TP_PAGE_DEFAULTS[pageKey] || [])[index] || {};
     const questions = guide.questions || [];
     const expectedAnswers = guide.expectedAnswers || [];
-    const measures = manipulation.measures || guide.measurementHints || [];
+    const measures = manipulation.measures || pageDefaults.measures || guide.measurementHints || [];
     return {
       title: manipulation.title || ('TP guidé ' + (index + 1)),
       consigne: manipulation.consigne || manipulation.objective || 'Conduisez la manipulation puis justifiez vos résultats avec un raisonnement d’ingénierie.',
@@ -1822,15 +1479,139 @@
         'Comparez les résultats obtenus entre cas nominal et cas dégradé.',
         'Justifiez les écarts au regard du phénomène physique ou numérique étudié.'
       ],
-      quantitativeHints: manipulation.quantitativeHints || measures.map(function (item) {
+      quantitativeHints: manipulation.quantitativeHints || pageDefaults.quantitativeHints || measures.map(function (item) {
         return 'Relever et commenter : ' + item + '.';
       }),
-      validationCriteria: manipulation.validationCriteria || [
+      validationCriteria: manipulation.validationCriteria || pageDefaults.validationCriteria || [
         'Les mesures doivent être cohérentes avec le scénario choisi et les unités doivent être explicites.',
         'L’exploitation doit comparer au moins deux cas ou deux réglages.',
         'La conclusion finale doit relier les résultats observés au phénomène télécom étudié.'
       ],
+      prefilledRows: manipulation.prefilledRows || pageDefaults.prefilledRows || [],
+      expectedValues: manipulation.expectedValues || pageDefaults.expectedValues || [],
+      rubric: manipulation.rubric || pageDefaults.rubric || [],
+      autoScoreThresholds: manipulation.autoScoreThresholds || pageDefaults.autoScoreThresholds || {
+        measureRows: Math.max(1, (pageDefaults.prefilledRows || []).length || 2),
+        measureFillRatio: 0.6,
+        analysisChars: 140,
+        conclusionChars: 90
+      },
       conclusion: manipulation.expectedConclusion || expectedAnswers[index] || expectedAnswers[0] || 'La conclusion attendue doit relier les mesures réalisées au comportement physique du système.'
+    };
+  }
+
+  function buildTpCorrectionModel(tp) {
+    return {
+      measures: tp.expectedValues || [],
+      exploitation: tp.exploitation || [],
+      conclusion: tp.conclusion || ''
+    };
+  }
+
+  function computeTpAutoScore(pageKey, guide, index) {
+    const tp = getEngineeringLab(guide, index, pageKey);
+    const notebook = getNotebookPage(pageKey);
+    const report = (notebook.labReports || {})[index] || {};
+    const thresholds = tp.autoScoreThresholds || {};
+    const rows = notebook.measureRows || [];
+    const targetRows = Math.max(1, thresholds.measureRows || 2);
+    const filledRows = rows.filter(function (values) {
+      return (values || []).some(function (value) { return !!value; });
+    });
+    const totalCells = Math.max(targetRows * 5, 5);
+    const filledCells = filledRows.reduce(function (sum, values) {
+      return sum + (values || []).filter(function (value) { return !!value; }).length;
+    }, 0);
+    const measureRatio = filledCells / totalCells;
+    const analysisLength = (report.analysis || '').trim().length;
+    const conclusionLength = (report.conclusion || '').trim().length;
+    let score = 0;
+    const details = [];
+
+    if (measureRatio >= 1) {
+      score += 3;
+      details.push('Mesures complètes : 3/3');
+    } else if (measureRatio >= (thresholds.measureFillRatio || 0.6)) {
+      score += 2;
+      details.push('Mesures exploitables : 2/3');
+    } else if (filledCells > 0) {
+      score += 1;
+      details.push('Mesures partielles : 1/3');
+    } else {
+      details.push('Mesures absentes : 0/3');
+    }
+
+    if (analysisLength >= (thresholds.analysisChars || 140) * 1.6) {
+      score += 3;
+      details.push('Exploitation détaillée : 3/3');
+    } else if (analysisLength >= (thresholds.analysisChars || 140)) {
+      score += 2;
+      details.push('Exploitation correcte : 2/3');
+    } else if (analysisLength >= 50) {
+      score += 1;
+      details.push('Exploitation brève : 1/3');
+    } else {
+      details.push('Exploitation insuffisante : 0/3');
+    }
+
+    if (conclusionLength >= (thresholds.conclusionChars || 90) * 1.5) {
+      score += 2;
+      details.push('Conclusion solide : 2/2');
+    } else if (conclusionLength >= (thresholds.conclusionChars || 90)) {
+      score += 1;
+      details.push('Conclusion présente : 1/2');
+    } else {
+      details.push('Conclusion insuffisante : 0/2');
+    }
+
+    if ((notebook.manipDone || {})[index]) {
+      score += 1;
+      details.push('Manipulation validée : 1/1');
+    } else {
+      details.push('Manipulation non validée : 0/1');
+    }
+
+    const rubricScores = report.rubricScores || {};
+    const rubricPoints = Object.keys(rubricScores).reduce(function (sum, key) {
+      return sum + (rubricScores[key] || 0);
+    }, 0);
+    if (rubricPoints > 0) {
+      score += 1;
+      details.push('Auto-évaluation renseignée : 1/1');
+    } else {
+      details.push('Auto-évaluation absente : 0/1');
+    }
+
+    return {
+      score: score,
+      max: 10,
+      details: details
+    };
+  }
+
+  function computePageTpFinalGrade(pageKey, guide) {
+    const manipulations = guide.manipulations || [];
+    if (!manipulations.length) {
+      return { score: 0, max: 20 };
+    }
+    const notebook = getNotebookPage(pageKey);
+    let total = 0;
+    manipulations.forEach(function (_, index) {
+      const autoScore = computeTpAutoScore(pageKey, guide, index);
+      const tp = getEngineeringLab(guide, index, pageKey);
+      const report = (notebook.labReports || {})[index] || {};
+      const rubricScores = report.rubricScores || {};
+      const rubricMax = (tp.rubric || []).reduce(function (sum, item) { return sum + (item.max || 0); }, 0);
+      const rubricValue = (tp.rubric || []).reduce(function (sum, item, idx) {
+        return sum + (rubricScores[idx] || 0);
+      }, 0);
+      const autoOn20 = autoScore.max ? (autoScore.score / autoScore.max) * 20 : 0;
+      const rubricOn20 = rubricMax ? (rubricValue / rubricMax) * 20 : autoOn20;
+      total += (autoOn20 + rubricOn20) / 2;
+    });
+    return {
+      score: Math.round((total / manipulations.length) * 10) / 10,
+      max: 20
     };
   }
 
@@ -1855,12 +1636,15 @@
     const eyebrow = document.createElement('div');
     eyebrow.className = 'lab-learning-sheet__eyebrow';
     eyebrow.textContent = 'Fiche p\u00e9dagogique';
+
     const title = document.createElement('h2');
     title.className = 'lab-learning-sheet__title';
     title.textContent = guide.title;
+
     const subtitle = document.createElement('p');
     subtitle.className = 'lab-learning-sheet__subtitle';
     subtitle.textContent = guide.subtitle;
+
     headText.appendChild(eyebrow);
     headText.appendChild(title);
     headText.appendChild(subtitle);
@@ -1881,13 +1665,80 @@
     const questionsTitle = document.createElement('h3');
     questionsTitle.textContent = 'Questions d\u2019analyse';
     questionsCard.appendChild(questionsTitle);
-    questionsCard.appendChild(createItemsList('ol', guide.questions, 'lab-learning-sheet__questions'));
+    questionsCard.appendChild(createItemsList('ol', guide.questions, 'lab-guide-panel__list'));
 
     grid.appendChild(objectivesCard);
     grid.appendChild(questionsCard);
     sheet.appendChild(head);
     sheet.appendChild(grid);
     host.appendChild(sheet);
+  }
+
+  function renderPedagogyQuickBar(pageKey) {
+    if (document.querySelector('.lab-pedagogy-bar')) {
+      return;
+    }
+
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return;
+    }
+
+    const bar = document.createElement('section');
+    bar.className = 'lab-pedagogy-bar';
+    bar.setAttribute('aria-label', 'Accès rapide aux ressources pédagogiques');
+
+    const title = document.createElement('div');
+    title.className = 'lab-pedagogy-bar__title';
+    title.textContent = 'Accès rapide pédagogique';
+    const actions = document.createElement('div');
+    actions.className = 'lab-pedagogy-bar__actions';
+
+    function createButton(text, onClick, primary) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'lab-guide-btn' + (primary ? ' lab-guide-btn--primary' : '');
+      button.textContent = text;
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    actions.appendChild(createButton('TP', function () {
+      const target = document.querySelector('.lab-notebook-sheet');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, true));
+    actions.appendChild(createButton('Exercices', function () {
+      const target = document.querySelector('.lab-exercise-sheet');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }));
+    actions.appendChild(createButton('Quiz', function () {
+      const target = document.querySelector('.lab-quiz-sheet');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }));
+    actions.appendChild(createButton('Mode enseignant', function () {
+      setTeacherMode(!getTeacherMode());
+    }));
+    actions.appendChild(createButton('Assistant pédagogique', function () {
+      const fab = document.querySelector('.lab-guide-fab');
+      if (fab) {
+        fab.click();
+      } else {
+        const target = document.querySelector('.lab-learning-sheet');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }));
+
+    bar.appendChild(title);
+    bar.appendChild(actions);
+    host.appendChild(bar);
   }
 
   function renderExerciseSheet(guide, pageKey) {
@@ -1989,12 +1840,127 @@
     section.appendChild(title);
     section.appendChild(subtitle);
 
+    const profile = readProfile();
+    const notebookState = getNotebookPage(pageKey);
+    const pageMeta = notebookState.pageMeta || {};
+    const suggestedGrade = computePageTpFinalGrade(pageKey, guide);
+    const cover = document.createElement('div');
+    cover.className = 'lab-tp-cover';
+    const coverHeader = document.createElement('div');
+    coverHeader.className = 'lab-tp-cover__header';
+    const coverLogo = document.createElement('div');
+    coverLogo.className = 'lab-tp-cover__logo';
+    coverLogo.textContent = 'LT';
+    const coverBrand = document.createElement('div');
+    coverBrand.className = 'lab-tp-cover__brand';
+    const coverEstablishment = document.createElement('strong');
+    coverEstablishment.textContent = profile.establishmentName || 'École d’ingénieurs — Département Télécommunications';
+    const coverProgram = document.createElement('span');
+    coverProgram.textContent = 'Compte-rendu de TP — Télécommunications et traitement du signal';
+    coverBrand.appendChild(coverEstablishment);
+    coverBrand.appendChild(coverProgram);
+    coverHeader.appendChild(coverLogo);
+    coverHeader.appendChild(coverBrand);
+    const coverTitle = document.createElement('h3');
+    coverTitle.textContent = 'Cartouche de compte-rendu';
+    const coverGrid = document.createElement('div');
+    coverGrid.className = 'lab-tp-cover__grid';
+
+    function createCoverField(labelText, value, placeholder, isTextarea) {
+      const field = document.createElement('div');
+      field.className = 'lab-form-field';
+      const label = document.createElement('label');
+      label.textContent = labelText;
+      const input = document.createElement(isTextarea ? 'textarea' : 'input');
+      if (!isTextarea) {
+        input.type = 'text';
+      } else {
+        input.rows = 3;
+      }
+      input.value = value || '';
+      input.placeholder = placeholder || '';
+      field.appendChild(label);
+      field.appendChild(input);
+      return { field: field, input: input };
+    }
+
+    const establishmentField = createCoverField('Établissement', profile.establishmentName, 'École d’ingénieurs — Département Télécommunications', false);
+    const tpNumberCover = createCoverField('Numéro de TP', pageMeta.tpNumber || ('TP-' + String(pageKey || '01').toUpperCase()), 'Ex. TP-03', false);
+    const studentCover = createCoverField('Nom', profile.studentName, 'Nom de l’étudiant', false);
+    const partnerCover = createCoverField('Binôme', profile.partnerName, 'Nom du binôme', false);
+    const groupCover = createCoverField('Groupe', profile.groupName, 'Ex. GI-2A', false);
+    const dateCover = createCoverField('Date', pageMeta.reportDate || new Date().toLocaleDateString('fr-FR'), '', false);
+    const teacherCorrectorCover = createCoverField('Enseignant correcteur', pageMeta.teacherCorrector || profile.certificateSigner || '', 'Nom de l’enseignant correcteur', false);
+    const objectiveCover = createCoverField('Objectif', pageMeta.objective || guide.subtitle || '', 'Objectif du TP', true);
+    const equipmentCover = createCoverField('Matériel simulé', pageMeta.equipment || guide.title, 'Simulateur / chaîne étudiée', true);
+    const resultsCover = createCoverField('Résultats', pageMeta.results || '', 'Synthèse courte des résultats obtenus', true);
+    const conclusionCover = createCoverField('Conclusion', pageMeta.summaryConclusion || '', 'Conclusion synthétique du TP', true);
+    const gradeCover = createCoverField('Note finale (/20)', pageMeta.finalGrade || suggestedGrade.score, 'Note finale', false);
+    const visaCover = createCoverField('Visa / signature enseignant', pageMeta.teacherVisa || profile.certificateSigner || '', 'Visa enseignant', false);
+    const suggestBtn = document.createElement('button');
+    suggestBtn.type = 'button';
+    suggestBtn.className = 'lab-guide-btn';
+    suggestBtn.textContent = 'Appliquer la note suggérée';
+    const suggestedLabel = document.createElement('div');
+    suggestedLabel.className = 'lab-guide-note';
+    suggestedLabel.textContent = 'Note suggérée actuelle : ' + suggestedGrade.score + ' / ' + suggestedGrade.max;
+
+    const visualStamp = document.createElement('div');
+    visualStamp.className = 'lab-tp-cover__stamp';
+    [establishmentField.field, tpNumberCover.field, studentCover.field, partnerCover.field, groupCover.field, dateCover.field, teacherCorrectorCover.field, objectiveCover.field, equipmentCover.field, resultsCover.field, conclusionCover.field, gradeCover.field, visaCover.field].forEach(function (field) {
+      coverGrid.appendChild(field);
+    });
+    cover.appendChild(coverHeader);
+    cover.appendChild(coverTitle);
+    cover.appendChild(coverGrid);
+    cover.appendChild(suggestedLabel);
+    cover.appendChild(suggestBtn);
+    cover.appendChild(visualStamp);
+    section.appendChild(cover);
+
+    function persistCoverMeta() {
+      updateNotebookPage(pageKey, function (pageState) {
+        pageState.pageMeta = pageState.pageMeta || {};
+        pageState.pageMeta.tpNumber = tpNumberCover.input.value.trim();
+        pageState.pageMeta.reportDate = dateCover.input.value.trim();
+        pageState.pageMeta.teacherCorrector = teacherCorrectorCover.input.value.trim();
+        pageState.pageMeta.objective = objectiveCover.input.value.trim();
+        pageState.pageMeta.equipment = equipmentCover.input.value.trim();
+        pageState.pageMeta.results = resultsCover.input.value.trim();
+        pageState.pageMeta.summaryConclusion = conclusionCover.input.value.trim();
+        pageState.pageMeta.finalGrade = gradeCover.input.value.trim();
+        pageState.pageMeta.teacherVisa = visaCover.input.value.trim();
+      });
+      const profileValue = readProfile();
+      profileValue.establishmentName = establishmentField.input.value.trim() || 'École d’ingénieurs — Département Télécommunications';
+      profileValue.studentName = studentCover.input.value.trim();
+      profileValue.partnerName = partnerCover.input.value.trim();
+      profileValue.groupName = groupCover.input.value.trim();
+      profileValue.certificateSigner = teacherCorrectorCover.input.value.trim() || 'Responsable pédagogique du laboratoire';
+      saveProfile(profileValue);
+      coverEstablishment.textContent = profileValue.establishmentName;
+      visualStamp.textContent = visaCover.input.value.trim() ? ('Visa : ' + visaCover.input.value.trim()) : 'Visa enseignant';
+    }
+
+    [establishmentField.input, tpNumberCover.input, studentCover.input, partnerCover.input, groupCover.input, dateCover.input, teacherCorrectorCover.input, objectiveCover.input, equipmentCover.input, resultsCover.input, conclusionCover.input, gradeCover.input, visaCover.input].forEach(function (input) {
+      input.addEventListener('change', persistCoverMeta);
+    });
+    suggestBtn.addEventListener('click', function () {
+      const nextGrade = computePageTpFinalGrade(pageKey, guide);
+      gradeCover.input.value = nextGrade.score;
+      suggestedLabel.textContent = 'Note suggérée actuelle : ' + nextGrade.score + ' / ' + nextGrade.max;
+      persistCoverMeta();
+    });
+    visualStamp.textContent = visaCover.input.value.trim() ? ('Visa : ' + visaCover.input.value.trim()) : 'Visa enseignant';
+
     if (guide.manipulations && guide.manipulations.length) {
       const grid = document.createElement('div');
       grid.className = 'lab-learning-sheet__grid';
       const notebook = getNotebookPage(pageKey);
+      const tpRefreshers = [];
       guide.manipulations.forEach(function (item, index) {
-        const tp = getEngineeringLab(guide, index);
+        const tp = getEngineeringLab(guide, index, pageKey);
+        const correctionModel = buildTpCorrectionModel(tp);
         const card = document.createElement('article');
         card.className = 'lab-learning-sheet__card lab-tp-card';
         const cardTitle = document.createElement('h3');
@@ -2017,9 +1983,18 @@
         const quantitativeTitle = document.createElement('div');
         quantitativeTitle.className = 'lab-tp-card__section-title';
         quantitativeTitle.textContent = 'Ordres de grandeur attendus';
+        const expectedValuesTitle = document.createElement('div');
+        expectedValuesTitle.className = 'lab-tp-card__section-title';
+        expectedValuesTitle.textContent = 'Valeurs attendues';
         const validationTitle = document.createElement('div');
         validationTitle.className = 'lab-tp-card__section-title';
         validationTitle.textContent = 'Critères de validation';
+        const rubricTitle = document.createElement('div');
+        rubricTitle.className = 'lab-tp-card__section-title';
+        rubricTitle.textContent = 'Barème et auto-évaluation';
+        const autoScoreTitle = document.createElement('div');
+        autoScoreTitle.className = 'lab-tp-card__section-title';
+        autoScoreTitle.textContent = 'Score automatique indicatif';
         const conclusionTitle = document.createElement('div');
         conclusionTitle.className = 'lab-tp-card__section-title';
         conclusionTitle.textContent = 'Conclusion attendue';
@@ -2049,6 +2024,73 @@
             pageState.labReports[index].conclusion = conclusionBox.value;
           });
         });
+        const rubricBox = document.createElement('div');
+        rubricBox.className = 'lab-rubric';
+        const autoScoreBox = document.createElement('div');
+        autoScoreBox.className = 'lab-rubric';
+        const autoScoreValue = document.createElement('div');
+        autoScoreValue.className = 'lab-rubric__total';
+        const autoScoreList = document.createElement('ul');
+        autoScoreList.className = 'lab-guide-panel__list';
+        autoScoreBox.appendChild(autoScoreValue);
+        autoScoreBox.appendChild(autoScoreList);
+        const teacherCorrection = document.createElement('div');
+        teacherCorrection.className = 'lab-teacher-answer';
+        const teacherCorrectionTitle = document.createElement('h3');
+        teacherCorrectionTitle.textContent = 'Correction type du compte-rendu';
+        teacherCorrection.appendChild(teacherCorrectionTitle);
+        teacherCorrection.appendChild(createItemsList('ul', correctionModel.measures || [], 'lab-guide-panel__list'));
+        teacherCorrection.appendChild(createItemsList('ul', correctionModel.exploitation || [], 'lab-guide-panel__list'));
+        const correctionConclusion = document.createElement('p');
+        correctionConclusion.className = 'lab-notebook-sheet__objective';
+        correctionConclusion.textContent = correctionModel.conclusion || '';
+        teacherCorrection.appendChild(correctionConclusion);
+        const rubricTotal = document.createElement('div');
+        rubricTotal.className = 'lab-rubric__total';
+        const rubricScores = reportState.rubricScores || {};
+        function renderRubricTotal(total, max) {
+          rubricTotal.textContent = 'Auto-évaluation : ' + total + ' / ' + max + ' points';
+        }
+        if (tp.rubric && tp.rubric.length) {
+          let maxScore = 0;
+          tp.rubric.forEach(function (criterion, criterionIndex) {
+            maxScore += criterion.max || 0;
+            const row = document.createElement('div');
+            row.className = 'lab-rubric__row';
+            const label = document.createElement('div');
+            label.className = 'lab-rubric__label';
+            label.textContent = criterion.label + ' (' + (criterion.max || 0) + ' pts max)';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.min = '0';
+            input.max = String(criterion.max || 0);
+            input.step = '1';
+            input.value = typeof rubricScores[criterionIndex] === 'number' ? String(rubricScores[criterionIndex]) : '';
+            input.addEventListener('input', function () {
+              const value = Math.max(0, Math.min(criterion.max || 0, parseInt(input.value || '0', 10) || 0));
+              updateNotebookPage(pageKey, function (pageState) {
+                pageState.labReports = pageState.labReports || {};
+                pageState.labReports[index] = pageState.labReports[index] || {};
+                pageState.labReports[index].rubricScores = pageState.labReports[index].rubricScores || {};
+                pageState.labReports[index].rubricScores[criterionIndex] = value;
+              });
+              const total = tp.rubric.reduce(function (sum, item, idx) {
+                const saved = idx === criterionIndex ? value : ((reportState.rubricScores || {})[idx] || 0);
+                return sum + saved;
+              }, 0);
+              reportState.rubricScores = reportState.rubricScores || {};
+              reportState.rubricScores[criterionIndex] = value;
+              renderRubricTotal(total, maxScore);
+            });
+            row.appendChild(label);
+            row.appendChild(input);
+            rubricBox.appendChild(row);
+          });
+          renderRubricTotal(tp.rubric.reduce(function (sum, item, idx) {
+            return sum + ((rubricScores[idx] || 0));
+          }, 0), maxScore);
+          rubricBox.appendChild(rubricTotal);
+        }
         const doneBtn = document.createElement('button');
         doneBtn.type = 'button';
         doneBtn.className = 'lab-guide-btn';
@@ -2073,21 +2115,50 @@
         card.appendChild(createItemsList('ul', tp.measures || [], 'lab-learning-sheet__list'));
         card.appendChild(quantitativeTitle);
         card.appendChild(createItemsList('ul', tp.quantitativeHints || [], 'lab-learning-sheet__list'));
+        card.appendChild(expectedValuesTitle);
+        card.appendChild(createItemsList('ul', tp.expectedValues || [], 'lab-learning-sheet__list'));
         card.appendChild(exploitationTitle);
-        card.appendChild(createItemsList('ul', tp.exploitation || [], 'lab-learning-sheet__list'));
+        card.appendChild(createItemsList('ul', tp.exploitation || [], 'lab-guide-panel__list'));
         card.appendChild(exploitationBox);
         card.appendChild(validationTitle);
-        card.appendChild(createItemsList('ul', tp.validationCriteria || [], 'lab-learning-sheet__list'));
+        card.appendChild(createItemsList('ul', tp.validationCriteria || [], 'lab-guide-panel__list'));
+        if (tp.rubric && tp.rubric.length) {
+          card.appendChild(rubricTitle);
+          card.appendChild(rubricBox);
+        }
+        card.appendChild(autoScoreTitle);
+        card.appendChild(autoScoreBox);
         card.appendChild(conclusionTitle);
         const expected = document.createElement('p');
         expected.className = 'lab-notebook-sheet__objective';
         expected.textContent = tp.conclusion;
         card.appendChild(expected);
         card.appendChild(conclusionBox);
+        card.appendChild(teacherCorrection);
         card.appendChild(doneBtn);
+
+        function refreshTpCard() {
+          const autoScore = computeTpAutoScore(pageKey, guide, index);
+          autoScoreValue.textContent = 'Score automatique estimé : ' + autoScore.score + ' / ' + autoScore.max;
+          autoScoreList.innerHTML = '';
+          autoScore.details.forEach(function (line) {
+            const li = document.createElement('li');
+            li.textContent = line;
+            autoScoreList.appendChild(li);
+          });
+          teacherCorrection.hidden = !getTeacherMode();
+        }
+
+        tpRefreshers.push(refreshTpCard);
+        refreshTpCard();
         grid.appendChild(card);
       });
       section.appendChild(grid);
+      global.addEventListener('lab-progress-updated', function () {
+        tpRefreshers.forEach(function (refresh) {
+          refresh();
+        });
+      });
     }
 
     const logCard = document.createElement('div');
@@ -2105,11 +2176,21 @@
     addRowBtn.type = 'button';
     addRowBtn.className = 'lab-guide-btn lab-guide-btn--primary';
     addRowBtn.textContent = 'Ajouter une ligne';
+    const exportTpBtn = document.createElement('button');
+    exportTpBtn.type = 'button';
+    exportTpBtn.className = 'lab-guide-btn';
+    exportTpBtn.textContent = 'Exporter HTML TP';
+    const exportTpPdfBtn = document.createElement('button');
+    exportTpPdfBtn.type = 'button';
+    exportTpPdfBtn.className = 'lab-guide-btn';
+    exportTpPdfBtn.textContent = 'Exporter PDF TP';
     const clearRowsBtn = document.createElement('button');
     clearRowsBtn.type = 'button';
     clearRowsBtn.className = 'lab-guide-btn';
     clearRowsBtn.textContent = 'Effacer les relevés';
     rowActions.appendChild(addRowBtn);
+    rowActions.appendChild(exportTpBtn);
+    rowActions.appendChild(exportTpPdfBtn);
     rowActions.appendChild(clearRowsBtn);
 
     function snapshotRows() {
@@ -2137,8 +2218,12 @@
     }
 
     const storedRows = getNotebookPage(pageKey).measureRows || [];
+    const defaultRows = getEngineeringLab(guide, 0, pageKey).prefilledRows || [];
     if (storedRows.length) {
       storedRows.forEach(appendRow);
+    } else if (defaultRows.length) {
+      defaultRows.forEach(appendRow);
+      persistRows();
     } else {
       appendRow([]);
     }
@@ -2148,10 +2233,21 @@
     });
     clearRowsBtn.addEventListener('click', function () {
       rowsBox.innerHTML = '';
-      appendRow([]);
-      updateNotebookPage(pageKey, function (pageState) {
-        pageState.measureRows = [];
-      });
+      if (defaultRows.length) {
+        defaultRows.forEach(appendRow);
+        persistRows();
+      } else {
+        appendRow([]);
+        persistRows();
+      }
+    });
+
+    exportTpBtn.addEventListener('click', function () {
+      exportTpReport(pageKey, guide);
+    });
+
+    exportTpPdfBtn.addEventListener('click', function () {
+      exportTpPdfReport(pageKey, guide);
     });
 
     logCard.appendChild(logTitle);
@@ -2342,12 +2438,14 @@
       return;
     }
 
-    renderLearningSheet(guide);
-    renderExerciseSheet(guide, pageId || section || 'home');
-    renderQuizSheet(guide, pageId || section || 'home');
-    renderNotebookSheet(guide, pageId || section || 'home');
-    renderAchievementSheet();
-    renderGuideDrawer(guide, pageId || section || 'home');
+    const pageKey = pageId || section || 'home';
+    safeExecute(function () { renderLearningSheet(guide); });
+    safeExecute(function () { renderPedagogyQuickBar(pageKey); });
+    safeExecute(function () { renderExerciseSheet(guide, pageKey); });
+    safeExecute(function () { renderQuizSheet(guide, pageKey); });
+    safeExecute(function () { renderNotebookSheet(guide, pageKey); });
+    safeExecute(function () { renderAchievementSheet(); });
+    safeExecute(function () { renderGuideDrawer(guide, pageKey); });
   }
 
   function renderGuideDrawer(guide, pageKey) {
@@ -2483,15 +2581,42 @@
     const teacherAnswersBox = document.createElement('div');
     const profileForm = document.createElement('div');
     profileForm.className = 'lab-form-stack';
+    const establishmentField = document.createElement('div');
+    establishmentField.className = 'lab-form-field';
+    const establishmentLabel = document.createElement('label');
+    establishmentLabel.textContent = 'Établissement';
+    const establishmentInput = document.createElement('input');
+    establishmentInput.type = 'text';
+    establishmentInput.placeholder = 'École d’ingénieurs — Département Télécommunications';
+    establishmentField.appendChild(establishmentLabel);
+    establishmentField.appendChild(establishmentInput);
     const studentField = document.createElement('div');
     studentField.className = 'lab-form-field';
     const studentLabel = document.createElement('label');
-    studentLabel.textContent = 'Nom de l\u2019\u00e9tudiant';
+    studentLabel.textContent = 'Nom de l’étudiant';
     const studentInput = document.createElement('input');
     studentInput.type = 'text';
-    studentInput.placeholder = 'Ex. A\u00efssatou Diallo';
+    studentInput.placeholder = 'Ex. Aïssatou Diallo';
     studentField.appendChild(studentLabel);
     studentField.appendChild(studentInput);
+    const partnerField = document.createElement('div');
+    partnerField.className = 'lab-form-field';
+    const partnerLabel = document.createElement('label');
+    partnerLabel.textContent = 'Binôme';
+    const partnerInput = document.createElement('input');
+    partnerInput.type = 'text';
+    partnerInput.placeholder = 'Ex. Mamadou Traoré';
+    partnerField.appendChild(partnerLabel);
+    partnerField.appendChild(partnerInput);
+    const groupField = document.createElement('div');
+    groupField.className = 'lab-form-field';
+    const groupLabel = document.createElement('label');
+    groupLabel.textContent = 'Groupe';
+    const groupInput = document.createElement('input');
+    groupInput.type = 'text';
+    groupInput.placeholder = 'Ex. GI-2A';
+    groupField.appendChild(groupLabel);
+    groupField.appendChild(groupInput);
     const signerField = document.createElement('div');
     signerField.className = 'lab-form-field';
     const signerLabel = document.createElement('label');
@@ -2501,7 +2626,10 @@
     signerInput.placeholder = 'Responsable p\u00e9dagogique du laboratoire';
     signerField.appendChild(signerLabel);
     signerField.appendChild(signerInput);
+    profileForm.appendChild(establishmentField);
     profileForm.appendChild(studentField);
+    profileForm.appendChild(partnerField);
+    profileForm.appendChild(groupField);
     profileForm.appendChild(signerField);
     panels.teacher.appendChild(teacherToggle);
     panels.teacher.appendChild(profileForm);
@@ -2592,8 +2720,11 @@
     function renderTeacherPanel() {
       const teacherMode = getTeacherMode();
       const profile = readProfile();
-      teacherToggle.textContent = teacherMode ? 'D\u00e9sactiver le mode enseignant' : 'Activer le mode enseignant';
+      teacherToggle.textContent = teacherMode ? 'Désactiver le mode enseignant' : 'Activer le mode enseignant';
+      establishmentInput.value = profile.establishmentName || '';
       studentInput.value = profile.studentName || '';
+      partnerInput.value = profile.partnerName || '';
+      groupInput.value = profile.groupName || '';
       signerInput.value = profile.certificateSigner || '';
       teacherAnswersBox.innerHTML = '';
       teacherDashboard.innerHTML = '';
@@ -2702,7 +2833,7 @@
       const allResults = readQuizResults();
       const result = allResults[pageKey];
       if (result && typeof result.score === 'number') {
-        quizSummary.innerHTML = 'Dernier score sur cette page : <strong>' + result.score + ' / ' + result.total + '</strong>.';
+        quizSummary.innerHTML = 'Dernier score enregistr\u00e9 : <strong>' + result.score + ' / ' + result.total + '</strong>.';
       } else {
         quizSummary.textContent = 'Aucun score enregistr\u00e9 pour cette page. Le quiz interactif est disponible en bas du module.';
       }
@@ -2751,11 +2882,29 @@
       renderTeacherPanel();
     });
 
+    establishmentInput.addEventListener('change', function () {
+      const profile = readProfile();
+      profile.establishmentName = establishmentInput.value.trim() || 'École d’ingénieurs — Département Télécommunications';
+      saveProfile(profile);
+    });
+
     studentInput.addEventListener('change', function () {
       const profile = readProfile();
       profile.studentName = studentInput.value.trim();
       saveProfile(profile);
       renderAchievementSheet();
+    });
+
+    partnerInput.addEventListener('change', function () {
+      const profile = readProfile();
+      profile.partnerName = partnerInput.value.trim();
+      saveProfile(profile);
+    });
+
+    groupInput.addEventListener('change', function () {
+      const profile = readProfile();
+      profile.groupName = groupInput.value.trim();
+      saveProfile(profile);
     });
 
     signerInput.addEventListener('change', function () {
