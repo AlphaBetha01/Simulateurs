@@ -1,0 +1,311 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Virtuel de T&eacute;l&eacute;communication</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/index.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">&larr; Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de T&eacute;l&eacute;communication</strong>
+      <span>Portail principal des simulateurs p&eacute;dagogiques</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <h1>Laboratoire Virtuel de T&eacute;l&eacute;communication</h1>
+    <p class="subtitle">
+      Point d&rsquo;entr&eacute;e unique pour explorer les simulateurs du projet. Les pages sont regroup&eacute;es par th&egrave;mes p&eacute;dagogiques : analogique,
+      num&eacute;risation, modulations num&eacute;riques, transmission sur canal, puis multiplexage t&eacute;l&eacute;phonique et hi&eacute;rarchies r&eacute;seau.
+    </p>
+    <div class="badge-row">
+      <span class="badge">HTML autonome</span>
+      <span class="badge">SVG / Canvas</span>
+      <span class="badge">Animations temps r&eacute;el</span>
+      <span class="badge">Web Audio API</span>
+    </div>
+  </header>
+
+  <div class="top-grid">
+    <section class="panel">
+      <h2>Parcours recommand&eacute;</h2>
+      <ul>
+        <li><strong>&Eacute;tape 1</strong> : <code>Emetteur.html</code> &rarr; <code>Amplificateur.html</code> &rarr; <code>R&eacute;cepteur.html</code></li>
+        <li><strong>&Eacute;tape 2</strong> : <code>CAN.html</code> pour passer de l&rsquo;analogique au num&eacute;rique</li>
+        <li><strong>&Eacute;tape 3</strong> : <code>Simulateur 2.html</code> en mode symbole unique ou s&eacute;quence pour les constellations</li>
+        <li><strong>&Eacute;tape 4</strong> : <code>Transmission.html</code> puis <code>Transmission Num et Traite Sgnal.html</code></li>
+        <li><strong>&Eacute;tape 5</strong> : <code>Simulateur_E12.html</code>, <code>Simulateur_MUX.html</code>, puis <code>MUX.html</code></li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Rep&egrave;res de navigation</h2>
+      <ul>
+        <li>Chaque carte ci-dessous ouvre directement un module class&eacute; par th&egrave;me</li>
+        <li>Les pages internes proposent une navigation transversale entre modules</li>
+        <li>Le parcours va de la cha&icirc;ne analogique vers la transmission num&eacute;rique et le multiplexage</li>
+        <li>Le portail d&rsquo;accueil reste le point d&rsquo;entr&eacute;e unique du laboratoire</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="discovery-panel">
+    <div class="discovery-panel__head">
+      <div>
+        <h2>Recherche rapide</h2>
+        <p>Filtrer les simulateurs par mot-cl&eacute;, niveau ou th&egrave;me.</p>
+      </div>
+      <div id="resultCount" class="discovery-panel__count">12 simulateurs visibles</div>
+    </div>
+
+    <div class="discovery-toolbar">
+      <label class="discovery-field discovery-field--search">
+        <span>Recherche</span>
+        <input id="searchInput" type="search" placeholder="Ex. modulation, BER, PCM, E1..." />
+      </label>
+
+      <label class="discovery-field">
+        <span>Niveau</span>
+        <select id="levelFilter">
+          <option value="all">Tous</option>
+          <option value="beginner">D&eacute;butant</option>
+          <option value="intermediate">Interm&eacute;diaire</option>
+          <option value="advanced">Avanc&eacute;</option>
+        </select>
+      </label>
+
+      <label class="discovery-field">
+        <span>Th&egrave;me</span>
+        <select id="themeFilter">
+          <option value="all">Tous les th&egrave;mes</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section id="recentSection" class="section recent-section" hidden>
+    <div class="section-head">
+      <h2>Reprendre une page r&eacute;cente</h2>
+      <button id="clearRecentBtn" class="btn" type="button">Effacer l&rsquo;historique</button>
+    </div>
+    <div id="recentCards" class="cards"></div>
+  </section>
+
+  <div class="sections">
+    <section class="section">
+      <div class="section-head">
+        <h2>1. Cha&icirc;ne analogique</h2>
+        <p>&Eacute;mission, amplification et r&eacute;ception analogique</p>
+      </div>
+      <div class="cards">
+        <article class="card" data-theme="analogique" data-level="beginner">
+          <h3>&Eacute;metteur AM / FM</h3>
+          <div class="meta">
+            <span class="tag beginner">D&eacute;butant</span>
+            <span class="tag">Modulation</span>
+          </div>
+          <p>Visualise le signal d&rsquo;information, la porteuse et le signal modul&eacute; avec bascule entre <code>AM</code> et <code>FM</code>.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/Emetteur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="analogique" data-level="beginner">
+          <h3>Amplificateur / R&eacute;p&eacute;teur</h3>
+          <div class="meta">
+            <span class="tag beginner">D&eacute;butant</span>
+            <span class="tag">Puissance</span>
+          </div>
+          <p>Montre l&rsquo;effet du gain, de la saturation et de l&rsquo;&eacute;cr&ecirc;tage sur un signal sinuso&iuml;dal.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/Amplificateur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="analogique" data-level="beginner">
+          <h3>R&eacute;cepteur / D&eacute;modulation</h3>
+          <div class="meta">
+            <span class="tag beginner">D&eacute;butant</span>
+            <span class="tag">Filtrage</span>
+          </div>
+          <p>Illustre le bruit, le redressement et le filtrage passe-bas pour reconstruire le message.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/R&eacute;cepteur.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>2. Num&eacute;risation et PCM</h2>
+        <p>&Eacute;chantillonnage, quantification, codage et trames E1</p>
+      </div>
+      <div class="cards">
+        <article class="card" data-theme="numerisation" data-level="beginner">
+          <h3>Convertisseur CAN</h3>
+          <div class="meta">
+            <span class="tag beginner">D&eacute;butant</span>
+            <span class="tag">CAN</span>
+          </div>
+          <p>Montre l&rsquo;effet de la fr&eacute;quence d&rsquo;&eacute;chantillonnage et du nombre de bits sur la conversion analogique-num&eacute;rique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/numerisation/CAN.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="numerisation" data-level="intermediate">
+          <h3>Structure de la multitrame E1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm&eacute;diaire</span>
+            <span class="tag">PCM / E1</span>
+          </div>
+          <p>Inspecte <code>FAS</code>, <code>NFAS</code>, <code>VMT</code>, <code>CAS</code> et les voies utiles dans une repr&eacute;sentation 16 &times; 32.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/Simulateur_E12.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>3. Modulations num&eacute;riques</h2>
+        <p>Analyse symbole par symbole et performances de constellation</p>
+      </div>
+      <div class="cards">
+        <article class="card" data-theme="modulations" data-level="intermediate">
+          <h3>Analyse d&rsquo;un symbole</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm&eacute;diaire</span>
+            <span class="tag">ASK / PSK / QAM / FSK</span>
+          </div>
+          <p>Mode unifi&eacute; de <code>Simulateur 2.html</code> configur&eacute; pour un seul symbole, avec calcul <code>I/Q</code>, amplitude, phase et &eacute;quation du signal.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Simulateur 2.html?mode=symbol&amp;num=1">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="modulations" data-level="intermediate">
+          <h3>S&eacute;quence de symboles</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm&eacute;diaire</span>
+            <span class="tag">Constellation</span>
+          </div>
+          <p>Version enrichie avec plusieurs symboles, trajectoire <code>I/Q</code> et onde temporelle multi-symboles.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Simulateur 2.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="modulations" data-level="advanced">
+          <h3>Tableau de bord des modulations</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc&eacute;</span>
+            <span class="tag">BER / Eb/N0</span>
+          </div>
+          <p>Compare l&rsquo;ordre de modulation, le <code>roll-off</code>, l&rsquo;<code>Eb/N0</code>, l&rsquo;efficacit&eacute; spectrale et le TEB th&eacute;orique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Tableau de Bord Modulations Num&eacute;riques.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>4. Transmission sur canal</h2>
+        <p>Cha&icirc;ne compl&egrave;te, bruit, gigue, filtrage et mesures DSP</p>
+      </div>
+      <div class="cards">
+        <article class="card" data-theme="transmission" data-level="intermediate">
+          <h3>Transmission p&eacute;dagogique compl&egrave;te</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm&eacute;diaire</span>
+            <span class="tag">TX / RX</span>
+          </div>
+          <p>Cha&icirc;ne <code>&eacute;metteur &rarr; canal &rarr; r&eacute;cepteur</code> avec BER, capacit&eacute; type Shannon, jitter, FEC et diagramme de l&rsquo;&oelig;il.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/transmission/Transmission.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="transmission" data-level="advanced">
+          <h3>Traitement du signal avanc&eacute;</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc&eacute;</span>
+            <span class="tag">DSP / AWGN</span>
+          </div>
+          <p>Version expert avec constellation bruit&eacute;e, spectre, diagramme de l&rsquo;&oelig;il, signaux <code>I/Q</code>, <code>SER</code> et filtre <code>RRC</code>.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/transmission/Transmission Num et Traite Sgnal.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>5. Multiplexage et r&eacute;seaux t&eacute;l&eacute;phoniques</h2>
+        <p>Trames E1/T1, PCM temps r&eacute;el, PDH, SDH et SONET</p>
+      </div>
+      <div class="cards">
+        <article class="card" data-theme="multiplexage" data-level="intermediate">
+          <h3>Comparatif E1 / T1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm&eacute;diaire</span>
+            <span class="tag">TDM</span>
+          </div>
+          <p>Compare la structure des trames Europe / US, la signalisation et le <code>robbed bit signaling</code>.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/Simulateur_MUX.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="multiplexage" data-level="advanced">
+          <h3>PCM + TDM avec audio</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc&eacute;</span>
+            <span class="tag">PCM temps r&eacute;el</span>
+          </div>
+          <p>Mode cibl&eacute; du laboratoire principal <code>MUX.html</code>, orient&eacute; sur l&rsquo;oscillateur, l&rsquo;octet PCM live et son insertion dans la voie 1 d&rsquo;une trame E1/T1.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/MUX.html?mode=pcm">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card" data-theme="multiplexage" data-level="advanced">
+          <h3>Laboratoire r&eacute;seau complet</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc&eacute;</span>
+            <span class="tag">PDH / SDH / SONET</span>
+          </div>
+          <p>Page la plus compl&egrave;te du projet : PCM, trames, scanner, hi&eacute;rarchies <code>E1/T1</code>, multiplexage <code>PDH</code> et transport optique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/MUX.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div id="noResults" class="empty-state" hidden>
+    Aucun simulateur ne correspond aux filtres actuels. Ajuster la recherche ou r&eacute;initialiser les filtres.
+  </div>
+
+  <div class="footer-note">
+    Cette page sert de fa&ccedil;ade d&rsquo;entr&eacute;e unique vers l&rsquo;ensemble des simulateurs du laboratoire.
+  </div>
+</div>
+
+<script charset="utf-8" src="assets/js/lab-common.js"></script>
+<script charset="utf-8" src="assets/js/index.js"></script>
+</body>
+</html>

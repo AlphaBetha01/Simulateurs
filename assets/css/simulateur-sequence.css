@@ -1,0 +1,256 @@
+﻿:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --border: #334155;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+  --ref: #64748b;
+  --err: #ef4444;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 20px;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 20px;
+}
+
+h1 {
+  grid-column: 1 / -1;
+  margin: 0 0 10px 0;
+  font-size: 22px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  justify-content: space-between;
+}
+
+select,
+input[type="range"] {
+  width: 100%;
+  padding: 10px;
+  background: #020617;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+select:focus {
+  border-color: var(--accent);
+}
+
+.symbols-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sym-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sym-label {
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.sym-input {
+  width: 60px;
+  padding: 8px;
+  background: #020617;
+  color: var(--text);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  font-size: 14px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.sym-input:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.sym-input.invalid {
+  border-color: var(--err) !important;
+  color: var(--err) !important;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.metrics {
+  background: #020617;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  min-height: 250px;
+  flex-grow: 1;
+}
+
+.seq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 280px;
+  padding-right: 5px;
+}
+
+.seq-item {
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 4px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 13px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.seq-bin {
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.seq-data {
+  color: var(--muted);
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.seq-data span {
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.equation-box {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px dashed var(--accent);
+  padding: 10px;
+  border-radius: 4px;
+  text-align: center;
+  font-family: monospace;
+  font-size: 14px;
+  color: #e0f2fe;
+  margin-top: auto;
+}
+
+.metrics-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(2, 6, 23, 0.95);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 20px;
+  color: var(--err);
+  font-weight: bold;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.view-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 15px;
+  position: relative;
+}
+
+.view-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+canvas {
+  background: #000;
+  border-radius: 4px;
+  width: 100%;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+}
+
+#constCanvas {
+  aspect-ratio: 1;
+  max-width: 400px;
+  margin: 0 auto;
+  display: block;
+}
+
+#timeCanvas {
+  height: 260px;
+}
+
+.legend {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  justify-content: center;
+  margin-top: 8px;
+  color: var(--muted);
+}

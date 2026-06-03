@@ -1,0 +1,110 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur Expert : Mesures et Séquence Télécom</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/simulateur-sequence.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Modulations numériques • séquences et trajectoires I/Q</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <h1 id="pageTitle">Laboratoire : Oscilloscope & Analyseur Vectoriel (Unités de Mesure)</h1>
+  
+  <div class="panel">
+    <div class="control-group">
+      <label>1. Famille de Modulation</label>
+      <select id="modType">
+        <option value="ASK">ASK (Amplitude Shift Keying)</option>
+        <option value="PSK" selected>PSK (Phase Shift Keying)</option>
+        <option value="QAM">QAM (Quadrature Amplitude Mod.)</option>
+        <option value="FSK">FSK (Frequency Shift Keying)</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label>2. Valence de l'Alphabet (M)</label>
+      <select id="modOrder"></select>
+    </div>
+
+    <div class="control-group">
+      <label id="numSymTitle"><span>3. Longueur de la séquence</span> <span id="numSymLabel" style="color:var(--accent); font-weight:bold;">4</span></label>
+      <input type="range" id="numSymRange" min="1" max="10" value="4">
+    </div>
+
+    <div class="control-group">
+      <label>4. Saisie des symboles (<span id="bitsPerSymLabel"></span> bits/symbole)</label>
+      <div class="symbols-container" id="symbolsContainer"></div>
+    </div>
+
+    <div class="metrics">
+      <div id="errorOverlay" class="metrics-overlay">
+        Saisie incomplète ou non-binaire.<br>
+        <span style="color:var(--muted); font-weight:normal; margin-top:5px; font-size:12px;">Veuillez remplir correctement tous les champs avec des 0 et des 1.</span>
+      </div>
+
+      <label>Décodage Exact de la Séquence</label>
+      <div class="seq-list" id="seqList"></div>
+      
+      <div class="equation-box" id="eqBox">
+        s(t) = I_k \cos(2\pi f_c t) - Q_k \sin(2\pi f_c t)
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Scénarios de modulation">
+    <button class="lab-preset-btn" type="button" data-mod-preset="bpsk">BPSK binaire</button>
+    <button class="lab-preset-btn" type="button" data-mod-preset="qpsk">QPSK Gray</button>
+    <button class="lab-preset-btn" type="button" data-mod-preset="qam16">16-QAM</button>
+    <button class="lab-preset-btn" type="button" data-mod-preset="fsk">4-FSK</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures modulation">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Efficacité brute</div>
+      <div id="modBitsPerSymbol" class="lab-kpi-value">2 bits/symb</div>
+      <div class="lab-kpi-note">Capacité symbolique brute liée à la valence M.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Variation d'enveloppe</div>
+      <div id="modEnvelope" class="lab-kpi-value">Constante</div>
+      <div id="modEnvelopeNote" class="lab-kpi-note">Paramètre important pour les amplificateurs de puissance RF.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Distance pédagogique</div>
+      <div id="modReadingHint" class="lab-kpi-value">Phase</div>
+      <div id="modReadingNote" class="lab-kpi-note">Indique la grandeur principale à observer sur la constellation.</div>
+    </article>
+  </div>
+
+  <div class="stage">
+    <!-- Constellation -->
+    <div class="view-card" style="display: flex; flex-direction: column;">
+      <div class="view-title">Constellation I/Q (Amplitude Normalisée)</div>
+      <canvas id="constCanvas" width="400" height="400"></canvas>
+      <div class="legend" id="constLegend">Les flèches et les couleurs indiquent l'ordre de transition.</div>
+    </div>
+
+    <!-- Onde Temporelle -->
+    <div class="view-card">
+      <div class="view-title">Onde Temporelle s(t) (Amplitude vs Temps Symbole Ts)</div>
+      <canvas id="timeCanvas" width="800" height="260"></canvas>
+      <div class="legend">La couleur de l'onde correspond à la couleur du symbole binaire saisi.</div>
+    </div>
+  </div>
+</div>
+
+<script charset="utf-8" src="../../assets/js/lab-common.js"></script>
+<script charset="utf-8" src="../../assets/js/simulateur-sequence.js"></script>
+</body>
+</html>
