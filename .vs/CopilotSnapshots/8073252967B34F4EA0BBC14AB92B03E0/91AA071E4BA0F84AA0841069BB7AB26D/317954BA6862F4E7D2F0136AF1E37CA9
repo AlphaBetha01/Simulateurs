@@ -1,0 +1,87 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Avancé : Normes E1 (Europe) vs T1 (US/Japon)</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/simulateur-mux.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Multiplexage téléphonique • comparaison E1 et T1</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Ingénierie de la Trame : Normes MIC E1 vs T1</h1>
+  <div class="subtitle">Analyse comparative des hiérarchies numériques plésiochrones (PDH) d'Europe et d'Amérique du Nord.</div>
+
+  <div class="top-bar">
+    <div class="standard-selector">
+      Sélecteur de Norme :
+      <select id="stdSelect">
+        <option value="E1">Norme E1 (Europe/Intl) - 2.048 Mbps</option>
+        <option value="T1">Norme T1 (US/Japon) - 1.544 Mbps</option>
+      </select>
+    </div>
+    
+    <div class="controls">
+      <div class="speed-ctrl">Vitesse: <input type="range" id="speedRange" min="1" max="50" value="25"></div>
+      <button id="btnPlay">▶ Lancer Simulation</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    
+    <div class="grid-container">
+      <div class="grid-matrix" id="grid">
+        </div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Analyseur de Trame</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">En attente</div>
+      <div class="info-detail" id="insp-desc">
+        Survolez la matrice pour décoder la fonction mathématique de chaque octet/bit.
+      </div>
+      <div class="info-binary" id="insp-bin" style="display: none;"></div>
+      
+      <div id="insp-footer" style="margin-top: auto; padding-top:15px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: var(--muted); line-height: 1.5;">
+        </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-section">
+    <div class="legend" id="legendBox">
+      </div>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-val" id="statRate">2.048 Mbps</div>
+        <div class="stat-label">Débit Ligne</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statChannels">30 Voies</div>
+        <div class="stat-label">Capacité Utile</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statBits">4096</div>
+        <div class="stat-label">Bits / Multitrame</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/js/lab-common.js"></script>
+<script src="assets/js/simulateur-mux.js"></script>
+</body>
+</html>

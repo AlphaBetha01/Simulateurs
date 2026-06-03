@@ -1,0 +1,502 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Expert : PCM, Trames & Hiérarchies Internationales</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    --fas: #10b981; --nfas: #f59e0b; --vmt: #8b5cf6; --cas: #3b82f6; 
+    --fbit: #ef4444; --robbed: #d946ef; 
+    --voice: #e2e8f0; --voice-hover: #cbd5e1; --active-scan: #facc15; --audio-ch: #0ea5e9;
+    --mux-bg: #1e293b; --mux-fg: #f8fafc;
+  }
+
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 1450px; margin: 20px auto; padding: 24px; background: var(--card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+  h1 { margin: 0 0 5px; font-size: 26px; color: #0f172a; }
+  .subtitle { color: var(--muted); margin-bottom: 25px; font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
+
+  /* Layout principal */
+  .stage { display: grid; grid-template-columns: 320px 2fr 320px; gap: 20px; align-items: start;}
+
+  /* Panneaux */
+  .panel { background: #f1f5f9; padding: 18px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px;}
+  .panel h3 { margin: 0; font-size: 15px; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px;}
+  .panel-desc { font-size: 12px; color: #475569; margin-bottom: 5px; background: white; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1; line-height: 1.4;}
+  
+  select, input[type="range"] { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; font-weight: bold; width: 100%; box-sizing: border-box; cursor: pointer; }
+  button { background: #0f172a; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; font-size: 13px;}
+  button:hover { background: #334155; }
+  button.active { background: #ef4444; }
+  button.btn-audio { background: var(--audio-ch); }
+  button.btn-audio:hover { background: #0284c7; }
+
+  /* Oscilloscope */
+  .oscilloscope-container { background: #0f172a; border-radius: 8px; padding: 10px; position: relative; margin-top: 5px;}
+  canvas { width: 100%; height: 100px; background: #020617; border-radius: 4px; border: 1px solid #334155;}
+  .live-bin-display { text-align: center; color: #10b981; font-family: monospace; font-size: 18px; font-weight: bold; margin-top: 10px; letter-spacing: 2px;}
+
+  /* Grille PDH */
+  .grid-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+  .grid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+  .grid-matrix { display: grid; gap: 2px; }
+  .col-header, .row-header { font-size: 10px; font-weight: bold; color: var(--muted); display: flex; align-items: center; justify-content: center; text-align: center;}
+  .row-header { justify-content: flex-end; padding-right: 8px; }
+  .cell { height: 22px; border-radius: 3px; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: monospace; color: rgba(0,0,0,0.6); }
+  .cell:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+  
+  .c-fas { background: var(--fas); color: white; font-weight:bold;}
+  .c-nfas { background: var(--nfas); color: white; font-weight:bold;}
+  .c-vmt { background: var(--vmt); color: white; font-weight:bold;}
+  .c-cas { background: var(--cas); color: white; font-weight:bold;}
+  .c-fbit { background: var(--fbit); color: white; font-weight:bold; }
+  .c-robbed { background: repeating-linear-gradient(45deg, var(--robbed), var(--robbed) 5px, #c026d3 5px, #c026d3 10px); color: white; font-weight:bold;}
+  .c-voice { background: var(--voice); }
+  .c-audio { background: var(--audio-ch); color: white; font-weight: bold; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);}
+  .cell.scanning { background: var(--active-scan) !important; transform: scale(1.2); box-shadow: 0 0 10px var(--active-scan); z-index: 5; color: black; font-weight:bold;}
+
+  /* Panneau Inspecteur */
+  .info-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .info-title { font-size: 16px; font-weight: 800; color: #0f172a; margin:0; }
+  .info-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; width: fit-content;}
+  .info-binary { font-family: monospace; background: #1e293b; color: #38bdf8; padding: 15px; border-radius: 6px; font-size: 20px; text-align: center; letter-spacing: 4px; font-weight: bold;}
+  
+  /* --- Hiérarchie Multiplexage --- */
+  .mux-section { margin-top: 30px; border-top: 2px solid var(--border); padding-top: 20px; }
+  .mux-title { font-size: 20px; color: #0f172a; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;}
+  .mux-std-badge { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 1px;}
+  .mux-container { display: flex; gap: 20px; align-items: stretch; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid var(--border);}
+  
+  .mux-controls { width: 250px; display: flex; flex-direction: column; gap: 10px;}
+  .mux-btn { background: white; border: 2px solid #cbd5e1; color: #334155; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: left; transition: 0.2s;}
+  .mux-btn:hover { border-color: #94a3b8; }
+  .mux-btn.active { border-color: #0ea5e9; background: #f0f9ff; color: #0ea5e9; box-shadow: 0 2px 8px rgba(14,165,233,0.2);}
+  
+  .mux-diagram { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 15px; padding: 20px; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;}
+  .mux-inputs { display: flex; flex-direction: column; gap: 5px; max-height: 200px; flex-wrap: wrap; justify-content: center;}
+  .mux-input-box { background: #e2e8f0; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; color: #334155; text-align: center; border: 1px solid #cbd5e1;}
+  .mux-device { background: var(--mux-bg); color: var(--mux-fg); padding: 20px; border-radius: 8px; text-align: center; font-weight: 900; position: relative; width: 120px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 2;}
+  .mux-device::before { content: '►'; position: absolute; left: -15px; top: 50%; transform: translateY(-50%); color: var(--mux-bg); font-size: 20px;}
+  .mux-device::after { content: '►'; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); color: var(--mux-bg); font-size: 20px;}
+  .mux-output { background: #10b981; color: white; padding: 15px 20px; border-radius: 6px; font-weight: bold; font-size: 16px; text-align: center; box-shadow: 0 4px 10px rgba(16,185,129,0.3);}
+  
+  .mux-details { margin-top: 20px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px; font-size: 14px; color: #451a03;}
+  .mux-math { font-family: monospace; font-size: 15px; font-weight: bold; color: #b45309; background: #fef3c7; padding: 5px 10px; border-radius: 4px; display: inline-block; margin-top: 5px;}
+
+  /* --- Section Théorie (Restaurée et Améliorée) --- */
+  .theory-section { margin-top: 30px; border-top: 2px solid var(--border); padding-top: 20px; }
+  .theory-section h2 { font-size: 20px; color: #0f172a; margin-bottom: 20px;}
+  .theory-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .theory-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
+  .theory-card h4 { margin: 0 0 10px 0; color: #0ea5e9; font-size: 16px; display: flex; align-items: center; gap: 8px;}
+  .theory-card p { font-size: 13.5px; color: #475569; margin: 0 0 10px 0; text-align: justify;}
+  .theory-card ul { margin: 0; padding-left: 20px; font-size: 13.5px; color: #475569;}
+  .theory-card li { margin-bottom: 5px; }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Laboratoire Intégral : De la Voix à la Fibre Optique</h1>
+  <div class="subtitle">Ce simulateur modélise la chaîne complète : 1. Numérisation (PCM) ➔ 2. Multiplexage Temporel (TDM) ➔ 3. Hiérarchie PDH/SDH.</div>
+
+  <div class="stage">
+    
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <div class="panel">
+        <h3>1. Standard de Multiplexage</h3>
+        <div class="panel-desc">
+          Le réseau téléphonique diffère selon les continents. Choisissez la norme pour adapter l'architecture de la trame et les règles de signalisation.
+        </div>
+        <select id="stdSelect">
+          <option value="E1">Europe/Intl (Norme E1) - 2.048 Mbps</option>
+          <option value="T1">US/Japon (Norme T1) - 1.544 Mbps</option>
+        </select>
+        <button id="btnPlay">▶ Lancer le Scanner (Émission)</button>
+        <div style="font-size: 11px; color: var(--muted); text-align: center; margin-top: 5px;">
+          Ralenti visuel : <span id="speedVal">150</span> ms / intervalle
+        </div>
+        <input type="range" id="speedRange" min="10" max="500" value="150" step="10">
+      </div>
+
+      <div class="panel" style="border-color: var(--audio-ch); background: #f0f9ff;">
+        <h3 style="color: var(--audio-ch); border-color: #bae6fd;">2. Convertisseur PCM (Voie 1)</h3>
+        <div class="panel-desc">
+          Générez une onde analogique. L'oscilloscope effectue la conversion (échantillonnage + quantification) et génère l'octet binaire en temps réel.
+        </div>
+        <button id="btnAudio" class="btn-audio">Activer le Son (Oscillateur)</button>
+        <select id="freqSelect" disabled>
+          <option value="150">Basse Fréq. (150 Hz)</option>
+          <option value="440" selected>Médium (440 Hz)</option>
+          <option value="880">Haute Fréq. (880 Hz)</option>
+        </select>
+        <div class="oscilloscope-container">
+          <canvas id="oscCanvas"></canvas>
+          <div class="live-bin-display" id="liveAudioBin">-- AUDIO OFF --</div>
+        </div>
+        <div style="font-size: 11px; color: #475569; text-align: center; font-style: italic;">
+          Ce flux est injecté exclusivement dans la <strong style="color: var(--audio-ch);">Voie 1</strong>. Les autres cases sont remplies par les appels aléatoires d'autres utilisateurs.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-container">
+      <div class="grid-header">
+        <strong style="color: #0f172a; font-size: 14px;" id="gridTitle">Niveau 1 : Trame Spatiale E1</strong>
+        <span style="font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">1 Case = 8 bits (1 octet)</span>
+      </div>
+      <div class="grid-matrix" id="grid"></div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Analyseur de Trame</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">Survolez la grille</div>
+      <div class="panel-desc" style="background: white; border: none; padding: 0; margin-bottom: 0;">
+        Connectez l'inspecteur à une cellule pour décoder sa <strong>logique mathématique</strong>.
+      </div>
+      <div class="info-detail" id="insp-desc">En attente...</div>
+      <div class="info-binary" id="insp-bin">--------</div>
+    </div>
+  </div>
+
+  <div class="mux-section">
+    <div class="mux-title">
+      3. Hiérarchie du Multiplexage : Transporter des milliers d'appels
+      <span class="mux-std-badge" id="muxBadge">Réseau PDH Européen</span>
+    </div>
+    <div class="panel-desc" style="margin-bottom: 15px; border: none; background: transparent; padding: 0;">
+      Une trame primaire (E1 ou T1) ne transporte qu'une poignée d'appels. Pour connecter des villes, le réseau regroupe ces flux dans des liens de capacité supérieure. Explorez les étages ci-dessous :
+    </div>
+
+    <div class="mux-container">
+      <div class="mux-controls">
+        <button class="mux-btn active" id="btnMuxL2" onclick="setMuxLevel('L2')">Niveau 2</button>
+        <button class="mux-btn" id="btnMuxL3" onclick="setMuxLevel('L3')">Niveau 3</button>
+        <button class="mux-btn" id="btnMuxL4" onclick="setMuxLevel('L4')">Niveau 4</button>
+        <button class="mux-btn" id="btnMuxOPT" onclick="setMuxLevel('OPT')" style="border-color:#10b981; color:#059669;">Réseau Optique</button>
+      </div>
+
+      <div style="flex-grow: 1;">
+        <div class="mux-diagram">
+          <div class="mux-inputs" id="muxInputs">
+            </div>
+          
+          <div class="mux-device" id="muxDevice">MUX</div>
+          
+          <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+            <div class="mux-output" id="muxOutput">--</div>
+            <div style="font-size: 12px; font-weight: bold; color: var(--muted);" id="muxCapacity">--</div>
+          </div>
+        </div>
+
+        <div class="mux-details" id="muxDetails">
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theory-section">
+    <h2>Guide Théorique : Comprendre la Logique Réseau</h2>
+    <div class="theory-grid">
+      
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">1️⃣</span> Échantillonnage (La Source PCM)</h4>
+        <p>Le convertisseur PCM simule la numérisation de la voix, basée sur le théorème de Shannon-Nyquist :</p>
+        <ul>
+          <li><strong>Le filtre :</strong> La voix téléphonique utile est limitée entre 300 et 3400 Hz (Arrondi à 4000 Hz).</li>
+          <li><strong>L'échantillonnage :</strong> On mesure l'onde 8000 fois par seconde (le double de 4000 Hz).</li>
+          <li><strong>La quantification :</strong> Chaque mesure est codée sur 8 bits (1 octet).</li>
+        </ul>
+        <p><em>Logique mathématique :</em> Un seul appel génère donc 8000 octets/seconde, ce qui donne le débit universel de <strong>64 kbps par voie</strong>.</p>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">2️⃣</span> Multiplexage Temporel (TDM)</h4>
+        <p>Tirer un câble par conversation est physiquement et financièrement impossible. Le Multiplexage Temporel (TDM) permet de partager un seul câble entre plusieurs utilisateurs.</p>
+        <ul>
+          <li><strong>Principe :</strong> Le réseau alloue un "Intervalle de Temps" (IT) ou "Slot" à chaque utilisateur. Le scanner lit la matrice à tour de rôle très rapidement (125 µs par trame).</li>
+          <li><strong>Isolation :</strong> L'utilisateur de la Voie 1 (notre canal audio) ne remarquera jamais les 29 autres appels qui voyagent sur le même fil, car ils sont séparés par le temps.</li>
+        </ul>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">3️⃣</span> La Signalisation : Europe vs USA</h4>
+        <p>Le réseau a besoin de savoir quand un téléphone sonne, décroche ou raccroche. C'est le rôle de la <strong>Signalisation</strong>.</p>
+        <ul>
+          <li><strong>L'élégance Européenne (E1) :</strong> L'Europe dédie des canaux entiers (IT0 pour la synchro, IT16 pour la signalisation CAS). La voix est pure, sans interférence (Clear Channel).</li>
+          <li><strong>L'économie Américaine (T1) :</strong> Les USA n'ont pas de canal dédié. Toutes les 6 trames, le réseau <strong>vole le 8ème bit</strong> de la voix de l'utilisateur pour transmettre la signalisation (Robbed Bit Signaling). La voix se dégrade infimement à ces instants (passe de 64 à 56 kbps).</li>
+        </ul>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">4️⃣</span> PDH vs SDH (Les Hiérarchies)</h4>
+        <p>Pour regrouper des milliers d'appels, les équipements multiplexent les trames primaires entre elles. C'est l'étage 3 du simulateur.</p>
+        <ul>
+          <li><strong>Plésiochrone (PDH) :</strong> Les horloges des équipements sont imparfaites. Lors de la fusion, le MUX doit insérer des bits vides (Bourrage/Justification) pour compenser les retards. $4 \times E1$ ne donne pas $4 \times 2.048$, mais $8.448$ Mbps à cause de cet "Overhead".</li>
+          <li><strong>Synchrone (SDH / SONET) :</strong> Les horloges mondiales sont synchronisées au laser atomique. Il n'y a plus de bourrage aléatoire. Des pointeurs permettent d'extraire un seul appel de 64 kbps directement d'une fibre à 155 Mbps !</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // --- DONNEES DE LA HIERARCHIE (E1 vs T1) ---
+  const hierarchyData = {
+    E1: {
+      badge: "Réseau PDH Européen",
+      btn: { L2: "Trame E2 (PDH)", L3: "Trame E3 (PDH)", L4: "Trame E4 (PDH)", OPT: "SDH Fibre (STM-1)" },
+      L2: {
+        inCount: 4, inText: "Flux E1 (2.048 Mbps)", dev: "MUX E2", out: "8.448 Mbps", cap: "120 Appels",
+        math: "4 x 2.048 = 8.192 Mbps | Sortie brute = 8.448 Mbps",
+        desc: "<strong>Le Plésiochrone Européen :</strong> Les 4 flux E1 ont des horloges indépendantes. Le MUX E2 ajoute des <strong>bits de justification (bourrage)</strong> pour rattraper les décalages d'horloge. D'où le surplus de bande passante (Overhead)."
+      },
+      L3: {
+        inCount: 4, inText: "Flux E2 (8.448 Mbps)", dev: "MUX E3", out: "34.368 Mbps", cap: "480 Appels",
+        math: "4 x 8.448 = 33.792 Mbps | Sortie = 34.368 Mbps",
+        desc: "On multiplexe 4 flux E2. Le surplus sert à la synchronisation de niveau 3 et aux nouveaux bits de justification."
+      },
+      L4: {
+        inCount: 4, inText: "Flux E3 (34 Mbps)", dev: "MUX E4", out: "139.264 Mbps", cap: "1920 Appels",
+        math: "4 x 34.368 = 137.472 Mbps | Sortie = 139.264 Mbps",
+        desc: "Dernier niveau standard du PDH européen. Historiquement utilisé pour relier les grandes villes via des faisceaux hertziens ou câbles coaxiaux."
+      },
+      OPT: {
+        inCount: 1, inText: "Conteneur C-4 (E4)", dev: "MUX SDH", out: "155.520 Mbps", cap: "Fibre Optique",
+        math: "STM-1 : 9 rangées x 270 colonnes x 8 bits x 8000 Hz",
+        desc: "<strong>La Révolution Synchrone (SDH) :</strong> Tout le réseau mondial bat à la même seconde (horloge atomique). Il n'y a plus de bourrage aléatoire. La trame STM-1 utilise des <strong>pointeurs (SOH/POH)</strong>. On peut extraire 1 appel parmi 1920 sans rien démultiplexer !"
+      }
+    },
+    T1: {
+      badge: "Réseau T-Carrier Américain",
+      btn: { L2: "Trame T2 / DS2", L3: "Trame T3 / DS3", L4: "Trame T4 / DS4", OPT: "SONET Fibre (STS-1)" },
+      L2: {
+        inCount: 4, inText: "Flux T1 (1.544 Mbps)", dev: "MUX T2", out: "6.312 Mbps", cap: "96 Appels",
+        math: "4 x 1.544 = 6.176 Mbps | Sortie brute = 6.312 Mbps",
+        desc: "<strong>Le Plésiochrone Américain :</strong> Tout comme en Europe, les horloges sont plésiochrones. Le MUX T2 regroupe 4 trames T1 et ajoute ses propres bits de cadrage et de justification."
+      },
+      L3: {
+        inCount: 7, inText: "T2 (6.3 Mbps)", dev: "MUX T3", out: "44.736 Mbps", cap: "672 Appels",
+        math: "7 x 6.312 = 44.184 Mbps | Sortie = 44.736 Mbps",
+        desc: "<strong>Attention au multiplicateur !</strong> Aux USA, on regroupe <strong>7 flux T2</strong> pour former un T3 (aussi appelé DS3). C'est un standard massivement utilisé aux États-Unis pour l'accès Internet des grandes entreprises."
+      },
+      L4: {
+        inCount: 6, inText: "T3 (44.7 Mbps)", dev: "MUX T4", out: "274.176 Mbps", cap: "4032 Appels",
+        math: "6 x 44.736 = 268.416 Mbps | Sortie = 274.176 Mbps",
+        desc: "Dernier niveau PDH aux USA. On regroupe 6 flux T3. Capable de transporter plus de 4000 conversations simultanées."
+      },
+      OPT: {
+        inCount: 1, inText: "Conteneur STS-1 Payload", dev: "SONET", out: "51.840 Mbps", cap: "Fibre Optique",
+        math: "STS-1 : 9 rangées x 90 colonnes x 8 bits x 8000 Hz",
+        desc: "<strong>La Révolution SONET :</strong> L'équivalent américain de la SDH. La trame de base optique est le STS-1. Tout est parfaitement synchrone, on peut y glisser exactement un flux DS3 entier et le retrouver grâce aux pointeurs."
+      }
+    }
+  };
+
+  let currentMuxLevel = 'L2';
+
+  function updateMuxUI() {
+    const d = hierarchyData[currentStd];
+    document.getElementById('muxBadge').textContent = d.badge;
+    document.getElementById('btnMuxL2').textContent = d.btn.L2;
+    document.getElementById('btnMuxL3').textContent = d.btn.L3;
+    document.getElementById('btnMuxL4').textContent = d.btn.L4;
+    document.getElementById('btnMuxOPT').textContent = d.btn.OPT;
+    setMuxLevel(currentMuxLevel); 
+  }
+
+  function setMuxLevel(level) {
+    currentMuxLevel = level;
+    document.querySelectorAll('.mux-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('btnMux' + level).classList.add('active');
+
+    const data = hierarchyData[currentStd][level];
+    
+    const inputsDiv = document.getElementById('muxInputs');
+    inputsDiv.innerHTML = '';
+    for(let i=0; i<data.inCount; i++) {
+      let b = document.createElement('div');
+      b.className = 'mux-input-box';
+      if(level==='OPT') b.style.background = "#d1fae5";
+      b.textContent = data.inText;
+      inputsDiv.appendChild(b);
+    }
+
+    document.getElementById('muxDevice').textContent = data.dev;
+    const outBox = document.getElementById('muxOutput');
+    outBox.textContent = data.out;
+    if(level==='OPT') outBox.style.background = "#059669"; else outBox.style.background = "#10b981";
+    
+    document.getElementById('muxCapacity').textContent = data.cap;
+    document.getElementById('muxDetails').innerHTML = `${data.desc}<br><div class="mux-math">${data.math}</div>`;
+  }
+
+
+  // --- MOTEUR AUDIO ET TRAME ---
+  const grid = document.getElementById('grid');
+  const stdSelect = document.getElementById('stdSelect');
+  const btnPlay = document.getElementById('btnPlay');
+  const speedRange = document.getElementById('speedRange');
+  const speedVal = document.getElementById('speedVal');
+  const inspTitle = document.getElementById('insp-title');
+  const inspBadge = document.getElementById('insp-badge');
+  const inspDesc = document.getElementById('insp-desc');
+  const inspBin = document.getElementById('insp-bin');
+  const btnAudio = document.getElementById('btnAudio');
+  const freqSelect = document.getElementById('freqSelect');
+  const liveAudioBin = document.getElementById('liveAudioBin');
+  const canvas = document.getElementById('oscCanvas');
+  const canvasCtx = canvas.getContext('2d');
+  
+  let cells = []; let isScanning = false; let scanIndex = 0; let scanInterval;
+  let currentStd = 'E1'; let activeInspectedCell = null;
+  let audioCtx, oscillator, analyser, dataArray;
+  let isAudioActive = false; let currentLiveBinary = "00000000";
+
+  function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth - 20; canvas.height = 100; }
+  window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+  speedRange.addEventListener('input', () => { speedVal.textContent = speedRange.value; });
+
+  btnAudio.addEventListener('click', () => {
+    if (!isAudioActive) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioCtx.createOscillator(); analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
+      oscillator.type = 'sine'; oscillator.frequency.value = parseInt(freqSelect.value);
+      oscillator.connect(analyser); analyser.connect(audioCtx.destination); oscillator.start();
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      isAudioActive = true; btnAudio.textContent = "Désactiver le Son"; btnAudio.style.background = "#ef4444"; freqSelect.disabled = false;
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      drawOscilloscope();
+    } else {
+      oscillator.stop(); audioCtx.close(); isAudioActive = false;
+      btnAudio.textContent = "Activer le Son (Oscillateur)"; btnAudio.style.background = "var(--audio-ch)"; freqSelect.disabled = true;
+      liveAudioBin.textContent = "-- AUDIO OFF --"; currentLiveBinary = "00000000";
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height); updateInspector(activeInspectedCell); 
+    }
+  });
+
+  freqSelect.addEventListener('change', () => { if(isAudioActive) oscillator.frequency.value = parseInt(freqSelect.value); });
+
+  function drawOscilloscope() {
+    if (!isAudioActive) return;
+    requestAnimationFrame(drawOscilloscope);
+    analyser.getByteTimeDomainData(dataArray);
+    canvasCtx.fillStyle = '#020617'; canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    canvasCtx.lineWidth = 2; canvasCtx.strokeStyle = '#0ea5e9'; canvasCtx.beginPath();
+    let sliceWidth = canvas.width * 1.0 / analyser.frequencyBinCount; let x = 0;
+    for(let i = 0; i < analyser.frequencyBinCount; i++) {
+      let v = dataArray[i] / 128.0; let y = v * (canvas.height / 2);
+      if(i === 0) canvasCtx.moveTo(x, y); else canvasCtx.lineTo(x, y); x += sliceWidth;
+    }
+    canvasCtx.stroke();
+    canvasCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)'; canvasCtx.beginPath(); canvasCtx.moveTo(canvas.width/2, 0); canvasCtx.lineTo(canvas.width/2, canvas.height); canvasCtx.stroke();
+    let centerSample = dataArray[Math.floor(analyser.frequencyBinCount / 2)];
+    currentLiveBinary = centerSample.toString(2).padStart(8, '0');
+    liveAudioBin.textContent = `${currentLiveBinary.substring(0,4)} ${currentLiveBinary.substring(4,8)}`;
+    
+    if (activeInspectedCell && activeInspectedCell.dataset.type === 'audio') {
+        if (currentStd === 'T1' && (activeInspectedCell.dataset.trame == 6 || activeInspectedCell.dataset.trame == 12)) {
+            let robbedBin = currentLiveBinary.substring(0,7);
+            inspBin.innerHTML = `${robbedBin.split('').join(' ')} <span style="color:#ef4444">S</span>`;
+        } else { inspBin.innerHTML = currentLiveBinary.split('').join(' '); }
+    }
+  }
+
+  function updateUIForStandard() { 
+    currentStd = stdSelect.value; 
+    document.getElementById('gridTitle').textContent = currentStd === 'E1' ? "Niveau 1 : Trame Spatiale E1" : "Niveau 1 : Trame Spatiale T1";
+    stopScanner(); 
+    buildGrid(); 
+    updateMuxUI(); 
+  }
+
+  function buildGrid() {
+    grid.innerHTML = ''; cells = [];
+    if (currentStd === 'E1') {
+      grid.style.gridTemplateColumns = '30px repeat(32, 1fr)'; grid.appendChild(document.createElement('div'));
+      for (let c = 0; c < 32; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = c; 
+        if(c === 1) col.style.color = "var(--audio-ch)"; grid.appendChild(col);
+      }
+      for (let r = 0; r < 16; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        for (let c = 0; c < 32; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell'; let type = 'voice';
+          if (c === 0) type = (r % 2 === 0) ? 'fas' : 'nfas'; else if (c === 16) type = (r === 0) ? 'vmt' : 'cas'; else if (c === 1) type = 'audio'; 
+          cell.classList.add(`c-${type}`); cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell)); grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    } else if (currentStd === 'T1') {
+      grid.style.gridTemplateColumns = '30px 12px repeat(24, 1fr)'; grid.appendChild(document.createElement('div'));
+      let fbHead = document.createElement('div'); fbHead.className = 'col-header'; fbHead.textContent = 'F'; grid.appendChild(fbHead);
+      for (let c = 1; c <= 24; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = `C${c}`; 
+        if(c === 1) col.style.color = "var(--audio-ch)"; grid.appendChild(col);
+      }
+      for (let r = 1; r <= 12; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        let fcell = document.createElement('div'); fcell.className = 'cell c-fbit'; fcell.dataset.trame = r; fcell.dataset.it = 'F'; fcell.dataset.type = 'fbit';
+        fcell.addEventListener('mouseenter', () => updateInspector(fcell)); grid.appendChild(fcell); cells.push(fcell);
+        for (let c = 1; c <= 24; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell'; let type = 'voice';
+          if (c === 1) type = 'audio'; else if (r === 6 || r === 12) type = 'robbed';
+          cell.classList.add(`c-${type}`); cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell)); grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    }
+    updateInspector(cells[0]);
+  }
+
+  function updateInspector(cell) {
+    if(!cell || (isScanning && cell !== cells[scanIndex])) return; 
+    activeInspectedCell = cell; 
+    const trame = cell.dataset.trame; const it = cell.dataset.it; const type = cell.dataset.type;
+    inspTitle.textContent = currentStd === 'E1' ? `Trame ${trame} - Intervalle (IT) ${it}` : `Trame ${trame} - ${it === 'F' ? 'F-Bit' : 'Canal ' + it}`;
+    let randVoice = () => { let b=""; for(let i=0; i<8; i++) b+=Math.random()>0.5?"1":"0"; return b;};
+
+    switch (type) {
+      case 'fas': inspBadge.textContent = "FAS (Synchro Trame)"; inspBadge.style.background = "var(--fas)"; inspDesc.innerHTML = `<strong>Logique :</strong> L'équipement distant lit ce motif fixe pour "verrouiller" son horloge et s'aligner sur la trame.`; inspBin.innerHTML = "x 0 0 1 1 0 1 1"; break;
+      case 'nfas': inspBadge.textContent = "NFAS (Alarmes)"; inspBadge.style.background = "var(--nfas)"; inspDesc.innerHTML = `<strong>Logique :</strong> Transmission des alarmes distantes (A). Le bit 2 est forcé à 1 pour éviter de simuler le FAS.`; inspBin.innerHTML = "x 1 A S S S S S"; break;
+      case 'vmt': inspBadge.textContent = "VMT (Multitrame)"; inspBadge.style.background = "var(--vmt)"; inspDesc.innerHTML = `<strong>Logique :</strong> Indique le début du cycle de 16 trames, indispensable pour décoder la signalisation CAS plus loin.`; inspBin.innerHTML = "0 0 0 0 x y x x"; break;
+      case 'cas': inspBadge.textContent = "CAS (Signalisation)"; inspBadge.style.background = "var(--cas)"; const k = parseInt(trame, 10); inspDesc.innerHTML = `<strong>Logique :</strong> Canal sémaphore. Il donne l'état de la <b>Voie ${k}</b> et de la <b>Voie ${k+15}</b> (ex: téléphone qui sonne).`; inspBin.innerHTML = "a b c d  a b c d"; break;
+      case 'fbit': inspBadge.textContent = "F-Bit (Synchro T1)"; inspBadge.style.background = "var(--fbit)"; inspDesc.innerHTML = `<strong>Logique :</strong> 1 seul bit de synchronisation en tête de trame. Son motif (Terminal Framing) aide à la synchro globale.`; inspBin.innerHTML = Math.random() > 0.5 ? "1" : "0"; break;
+      case 'robbed': inspBadge.textContent = "Robbed Bit"; inspBadge.style.background = "var(--robbed)"; inspDesc.innerHTML = `<strong>Logique :</strong> Le réseau vole ce bit à la voix pour indiquer le statut du téléphone. La qualité audio passe temporairement à 7 bits.`; inspBin.innerHTML = `${randVoice().substring(0,7).split('').join(' ')} <span style="color:#ef4444">S</span>`; break;
+      case 'voice': inspBadge.textContent = "Données Utilisateur"; inspBadge.style.background = "var(--muted)"; inspDesc.innerHTML = `<strong>Logique :</strong> Canal libre (Clear Channel) garantissant 64 kbps nets à l'utilisateur.`; inspBin.innerHTML = randVoice().split('').join(' '); break;
+      case 'audio':
+        inspBadge.textContent = "Voie Audio Injectée (Live)"; inspBadge.style.background = "var(--audio-ch)";
+        if(isAudioActive) {
+          inspDesc.innerHTML = `<strong>Logique :</strong> Binaire de l'onde sonore générée par l'oscilloscope à l'instant T.`;
+          if (currentStd === 'T1' && (trame == 6 || trame == 12)) {
+             let robbedBin = currentLiveBinary.substring(0,7); inspBin.innerHTML = `${robbedBin.split('').join(' ')} <span style="color:#ef4444" title="Bit de Signalisation volé">S</span>`;
+          } else { inspBin.innerHTML = currentLiveBinary.split('').join(' '); }
+        } else { inspDesc.innerHTML = `Activez l'oscillateur pour injecter un véritable flux numérisé dans ce canal.`; inspBin.innerHTML = "0 0 0 0  0 0 0 0"; }
+        break;
+    }
+  }
+
+  btnPlay.addEventListener('click', () => { isScanning ? stopScanner() : startScanner(); });
+  function startScanner() { isScanning = true; btnPlay.innerHTML = "⏸ Arrêter Scanner"; btnPlay.classList.add('active'); scanIndex = 0; runScannerLoop(); }
+  function stopScanner() { isScanning = false; btnPlay.innerHTML = "▶ Lancer Scanner"; btnPlay.classList.remove('active'); clearTimeout(scanInterval); cells.forEach(c => c.classList.remove('scanning')); }
+  function runScannerLoop() {
+    if(!isScanning) return;
+    if (scanIndex > 0) cells[scanIndex - 1].classList.remove('scanning'); else if (scanIndex === 0 && cells.length > 0) cells[cells.length - 1].classList.remove('scanning');
+    cells[scanIndex].classList.add('scanning'); updateInspector(cells[scanIndex]);
+    scanIndex++; if (scanIndex >= cells.length) scanIndex = 0;
+    scanInterval = setTimeout(runScannerLoop, parseInt(speedRange.value));
+  }
+
+  stdSelect.addEventListener('change', updateUIForStandard);
+  updateUIForStandard(); // Init au lancement
+
+</script>
+</body>
+</html>

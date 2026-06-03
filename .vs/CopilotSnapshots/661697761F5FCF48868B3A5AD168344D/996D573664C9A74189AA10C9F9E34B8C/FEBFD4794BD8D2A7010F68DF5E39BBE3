@@ -1,0 +1,267 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Virtuel de T�l�communication</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/index.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">? Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de T�l�communication</strong>
+      <span>Portail principal des simulateurs p�dagogiques</span>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Laboratoire Virtuel de T�l�communication</h1>
+    <p class="subtitle">
+      Point d�entr�e unique pour explorer les simulateurs du projet. Les pages ont �t� regroup�es par th�mes p�dagogiques : analogique,
+      num�risation, modulations num�riques, transmission sur canal, puis multiplexage t�l�phonique et hi�rarchies r�seau.
+    </p>
+    <div class="badge-row">
+      <span class="badge">HTML autonome</span>
+      <span class="badge">SVG / Canvas</span>
+      <span class="badge">Animations temps r�el</span>
+      <span class="badge">Web Audio API</span>
+    </div>
+  </header>
+
+  <div class="top-grid">
+    <section class="panel">
+      <h2>Parcours recommand�</h2>
+      <ul>
+        <li><strong>�tape 1</strong> : `Emetteur.html` ? `Amplificateur.html` ? `R�cepteur.html`</li>
+        <li><strong>�tape 2</strong> : `CAN.html` pour passer de l�analogique au num�rique</li>
+        <li><strong>�tape 3</strong> : `Simulateur 2.html` en mode symbole unique ou s�quence pour les constellations</li>
+        <li><strong>�tape 4</strong> : `Transmission.html` puis `Transmission Num et Traite Sgnal.html`</li>
+        <li><strong>�tape 5</strong> : `Simulateur_E12.html`, `Simulateur_MUX.html`, puis `MUX.html`</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Refactorisation recommand�e</h2>
+      <ul>
+        <li>Conserver `MUX.html` comme page r�seau principale</li>
+        <li>Archiver `Simulateur_MUX11.html`</li>
+        <li>Fusionner � terme `Simulateur.html` et `Simulateur 2.html`</li>
+        <li>Conserver `Transmission.html` et `Transmission Num et Traite Sgnal.html` comme niveaux distincts</li>
+      </ul>
+      <div class="actions" style="margin-top:12px;">
+        <a class="btn" href="PLAN_REFACTORISATION.md">Voir le plan</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="sections">
+    <section class="section">
+      <div class="section-head">
+        <h2>1. Cha�ne analogique</h2>
+        <p>�mission, amplification et r�ception analogique</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>�metteur AM / FM</h3>
+          <div class="meta">
+            <span class="tag beginner">D�butant</span>
+            <span class="tag">Modulation</span>
+          </div>
+          <p>Visualise le signal d�information, la porteuse et le signal modul� avec bascule entre `AM` et `FM`.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/Emetteur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Amplificateur / R�p�teur</h3>
+          <div class="meta">
+            <span class="tag beginner">D�butant</span>
+            <span class="tag">Puissance</span>
+          </div>
+          <p>Montre l�effet du gain, de la saturation et de l��cr�tage sur un signal sinuso�dal.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/Amplificateur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>R�cepteur / D�modulation</h3>
+          <div class="meta">
+            <span class="tag beginner">D�butant</span>
+            <span class="tag">Filtrage</span>
+          </div>
+          <p>Illustre le bruit, le redressement et le filtrage passe-bas pour reconstruire le message.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/analogique/R�cepteur.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>2. Num�risation et PCM</h2>
+        <p>�chantillonnage, quantification, codage et trames E1</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Convertisseur CAN</h3>
+          <div class="meta">
+            <span class="tag beginner">D�butant</span>
+            <span class="tag">CAN</span>
+          </div>
+          <p>Montre l�effet de la fr�quence d��chantillonnage et du nombre de bits sur la conversion analogique-num�rique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/numerisation/CAN.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Structure de la multitrame E1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm�diaire</span>
+            <span class="tag">PCM / E1</span>
+          </div>
+          <p>Inspecte `FAS`, `NFAS`, `VMT`, `CAS` et les voies utiles dans une repr�sentation 16 � 32.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/Simulateur_E12.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>3. Modulations num�riques</h2>
+        <p>Analyse symbole par symbole et performances de constellation</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Analyse d�un symbole</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm�diaire</span>
+            <span class="tag">ASK / PSK / QAM / FSK</span>
+          </div>
+          <p>Mode unifi� de `Simulateur 2.html` configur� pour un seul symbole, avec calcul `I/Q`, amplitude, phase et �quation du signal.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Simulateur 2.html?mode=symbol&num=1">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>S�quence de symboles</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm�diaire</span>
+            <span class="tag">Constellation</span>
+          </div>
+          <p>Version enrichie avec plusieurs symboles, trajectoire <code>I/Q</code> et onde temporelle multi-symboles.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Simulateur 2.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Tableau de bord des modulations</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc�</span>
+            <span class="tag">BER / Eb/N0</span>
+          </div>
+          <p>Compare l�ordre de modulation, le `roll-off`, l�`Eb/N0`, l�efficacit� spectrale et le TEB th�orique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/modulations/Tableau de Bord Modulations Num�riques.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>4. Transmission sur canal</h2>
+        <p>Cha�ne compl�te, bruit, gigue, filtrage et mesures DSP</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Transmission p�dagogique compl�te</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm�diaire</span>
+            <span class="tag">TX / RX</span>
+          </div>
+          <p>Cha�ne `�metteur ? canal ? r�cepteur` avec BER, capacit� type Shannon, jitter, FEC et diagramme de l��il.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/transmission/Transmission.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Traitement du signal avanc�</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc�</span>
+            <span class="tag">DSP / AWGN</span>
+          </div>
+          <p>Version expert avec constellation bruit�e, spectre, diagramme de l��il, signaux `I/Q`, `SER` et filtre `RRC`.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/transmission/Transmission Num et Traite Sgnal.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>5. Multiplexage et r�seaux t�l�phoniques</h2>
+        <p>Trames E1/T1, PCM temps r�el, PDH, SDH et SONET</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Comparatif E1 / T1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Interm�diaire</span>
+            <span class="tag">TDM</span>
+          </div>
+          <p>Compare la structure des trames Europe / US, la signalisation et le `robbed bit signaling`. L�ancienne variante `Simulateur_MUX11.html` a �t� archiv�e.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/Simulateur_MUX.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>PCM + TDM avec audio</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc�</span>
+            <span class="tag">PCM temps r�el</span>
+          </div>
+          <p>Mode cibl� du laboratoire principal `MUX.html`, orient� sur l�oscillateur, l�octet PCM live et son insertion dans la voie 1 d�une trame E1/T1.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/MUX.html?mode=pcm">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Laboratoire r�seau complet</h3>
+          <div class="meta">
+            <span class="tag advanced">Avanc�</span>
+            <span class="tag">PDH / SDH / SONET</span>
+          </div>
+          <p>Page la plus compl�te du projet : PCM, trames, scanner, hi�rarchies `E1/T1`, multiplexage `PDH` et transport optique.</p>
+          <div class="actions">
+            <a class="btn primary" href="pages/multiplexage/MUX.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer-note">
+    Aucun fichier existant n�a �t� d�plac�. Cette page sert de fa�ade d�entr�e unique. La rationalisation recommand�e est d�crite dans `PLAN_REFACTORISATION.md`.
+  </div>
+</div>
+<script src="assets/js/lab-common.js"></script>
+<script src="assets/js/index.js"></script>
+</body>
+</html>

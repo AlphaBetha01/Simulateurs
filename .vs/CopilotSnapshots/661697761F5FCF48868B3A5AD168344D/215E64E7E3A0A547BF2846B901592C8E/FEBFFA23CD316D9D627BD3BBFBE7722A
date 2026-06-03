@@ -1,0 +1,2 @@
+﻿LabCommon.initHeader({ bodySection: 'compat-pcm' });
+    LabCommon.setupRedirectPage('MUX.html?mode=pcm');

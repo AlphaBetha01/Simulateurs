@@ -1,0 +1,1091 @@
+﻿(function (global) {
+(function (global) {
+  const RECENT_PAGES_KEY = 'labRecentPagesV1';
+  const LAB_PROGRESS_KEY = 'labProgressV1';
+  const LAB_QUIZ_RESULTS_KEY = 'labQuizResultsV1';
+  const LAB_TEACHER_MODE_KEY = 'labTeacherModeV1';
+  const LAB_STRUCTURE = {
+    analogique: {
+      title: 'Chaîne analogique',
+      pages: [
+        { id: 'analogique-emetteur', label: 'Émetteur AM / FM', href: 'pages/analogique/Emetteur.html' },
+        { id: 'analogique-amplificateur', label: 'Amplificateur', href: 'pages/analogique/Amplificateur.html' },
+        { id: 'analogique-recepteur', label: 'Récepteur', href: 'pages/analogique/Récepteur.html' }
+      ],
+      bridges: [
+        { label: 'Basculer vers le CAN', href: 'pages/numerisation/CAN.html' },
+        { label: 'Voir la transmission complète', href: 'pages/transmission/Transmission.html' }
+      ]
+    },
+    numerisation: {
+      title: 'Numérisation et PCM',
+      pages: [
+        { id: 'numerisation-can', label: 'Convertisseur CAN', href: 'pages/numerisation/CAN.html' },
+        { id: 'multiplexage-e1', label: 'Multitrame E1', href: 'pages/multiplexage/Simulateur_E12.html' }
+      ],
+      bridges: [
+        { label: 'Poursuivre vers les modulations', href: 'pages/modulations/Simulateur 2.html' },
+        { label: 'Comparer E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' }
+      ]
+    },
+    modulations: {
+      title: 'Modulations numériques',
+      pages: [
+        { id: 'modulations-symbol', label: 'Analyse d’un symbole', href: 'pages/modulations/Simulateur 2.html?mode=symbol&num=1' },
+        { id: 'modulations-sequence', label: 'Séquence de symboles', href: 'pages/modulations/Simulateur 2.html' },
+        { id: 'modulations-dashboard', label: 'Tableau de bord BER', href: 'pages/modulations/Tableau de Bord Modulations Numériques.html' }
+      ],
+      bridges: [
+        { label: 'Tester la chaîne de transmission', href: 'pages/transmission/Transmission.html' },
+        { label: 'Revenir au CAN', href: 'pages/numerisation/CAN.html' }
+      ]
+    },
+    transmission: {
+      title: 'Transmission sur canal',
+      pages: [
+        { id: 'transmission-base', label: 'Transmission pédagogique', href: 'pages/transmission/Transmission.html' },
+        { id: 'transmission-dsp', label: 'Traitement du signal avancé', href: 'pages/transmission/Transmission Num et Traite Sgnal.html' }
+      ],
+      bridges: [
+        { label: 'Comparer les modulations', href: 'pages/modulations/Tableau de Bord Modulations Numériques.html' },
+        { label: 'Passer au multiplexage', href: 'pages/multiplexage/MUX.html' }
+      ]
+    },
+    multiplexage: {
+      title: 'Multiplexage et réseaux',
+      pages: [
+        { id: 'multiplexage-e1', label: 'Multitrame E1', href: 'pages/multiplexage/Simulateur_E12.html' },
+        { id: 'multiplexage-compare', label: 'Comparatif E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' },
+        { id: 'multiplexage-pcm', label: 'PCM + TDM avec audio', href: 'pages/multiplexage/MUX.html?mode=pcm' },
+        { id: 'multiplexage-complet', label: 'Laboratoire réseau complet', href: 'pages/multiplexage/MUX.html' }
+      ],
+      bridges: [
+        { label: 'Repartir de la chaîne analogique', href: 'pages/analogique/Emetteur.html' },
+        { label: 'Voir la transmission numérique', href: 'pages/transmission/Transmission.html' }
+      ]
+    }
+  };
+
+  const LAB_EVAL_DEFAULTS = {
+    home: {
+      expectedAnswers: [
+        'Un parcours complet suit généralement : analogique → CAN → modulations → transmission → multiplexage.',
+        'La page CAN sert de transition clé entre signal analogique et représentation numérique.',
+        'Les notions de capacité, d’overhead et de hiérarchie deviennent centrales dans les modules de transmission et de multiplexage.'
+      ],
+      quiz: [
+        {
+          question: 'Quelle page joue le rôle de passerelle entre monde analogique et monde numérique ? ',
+          options: ['Amplificateur', 'CAN', 'MUX'],
+          answer: 1,
+          explanation: 'Le convertisseur CAN introduit l’échantillonnage, la quantification et le codage binaire.'
+        },
+        {
+          question: 'Quel ordre est le plus cohérent pour une découverte progressive ? ',
+          options: ['Multiplexage → analogique → CAN', 'Analogique → CAN → modulations → transmission', 'Transmission → analogique → PCM'],
+          answer: 1,
+          explanation: 'On part d’abord du signal physique avant de monter vers la modulation puis le réseau.'
+        }
+      ]
+    },
+    analogique: {
+      expectedAnswers: [
+        'La chaîne analogique transporte l’information via une grandeur continue : amplitude, fréquence ou enveloppe selon le bloc étudié.',
+        'Un fonctionnement non linéaire apparaît quand le montage atteint ses limites physiques, par exemple la saturation.',
+        'Le bon raisonnement consiste à comparer entrée, traitement et sortie pour expliquer la fidélité finale.'
+      ],
+      quiz: [
+        {
+          question: 'Dans une modulation AM, où se lit principalement l’information utile ? ',
+          options: ['Dans l’enveloppe', 'Dans la tension d’alimentation', 'Dans la seule phase'],
+          answer: 0,
+          explanation: 'L’amplitude instantanée de la porteuse suit le signal message, donc l’enveloppe contient l’information.'
+        },
+        {
+          question: 'Quel phénomène indique qu’un amplificateur sort de son régime linéaire ? ',
+          options: ['L’écrêtage', 'La numérisation', 'Le multiplexage'],
+          answer: 0,
+          explanation: 'L’écrêtage apparaît lorsque la sortie ne peut plus suivre le gain demandé à cause des limites d’alimentation.'
+        }
+      ]
+    },
+    numerisation: {
+      expectedAnswers: [
+        'Le critère fondamental d’échantillonnage est Fe ≥ 2fmax pour éviter l’aliasing.',
+        'L’augmentation du nombre de bits réduit l’erreur de quantification et améliore le SQNR.',
+        'L’aliasing est un défaut temporel alors que la quantification est un défaut d’amplitude.'
+      ],
+      quiz: [
+        {
+          question: 'Quel paramètre combat directement l’aliasing ? ',
+          options: ['La fréquence d’échantillonnage', 'Le nombre de bits', 'La couleur du signal'],
+          answer: 0,
+          explanation: 'L’aliasing disparaît en relevant Fe au-delà de la borne de Nyquist.'
+        },
+        {
+          question: 'Que fait principalement l’augmentation du nombre de bits ? ',
+          options: ['Elle réduit l’erreur de quantification', 'Elle double la fréquence du signal', 'Elle supprime automatiquement le bruit de canal'],
+          answer: 0,
+          explanation: 'Davantage de niveaux quantifiés signifie un pas plus fin et donc une erreur d’amplitude plus faible.'
+        }
+      ]
+    },
+    modulations: {
+      expectedAnswers: [
+        'Une modulation plus dense augmente l’efficacité spectrale mais réduit la distance minimale entre symboles.',
+        'En PSK, l’information se lit surtout sur la phase ; en QAM, elle combine amplitude et phase.',
+        'Le plan I/Q permet une lecture géométrique directe de la décision symbole.'
+      ],
+      quiz: [
+        {
+          question: 'Pourquoi 64-QAM demande-t-elle un meilleur SNR que QPSK ? ',
+          options: ['Parce que ses points sont plus rapprochés', 'Parce qu’elle utilise moins de bits', 'Parce qu’elle ne transmet pas sur I/Q'],
+          answer: 0,
+          explanation: 'La densité de constellation augmente et la moindre perturbation peut changer la décision symbole.'
+        },
+        {
+          question: 'Quelle grandeur porte surtout l’information en PSK ? ',
+          options: ['La phase', 'La puissance d’alimentation', 'La largeur du câble'],
+          answer: 0,
+          explanation: 'La PSK code les symboles par des angles différents dans le plan I/Q.'
+        }
+      ]
+    },
+    transmission: {
+      expectedAnswers: [
+        'Le SNR, la marge de capacité et l’ouverture de l’œil sont des indicateurs prioritaires de robustesse de lien.',
+        'La gigue agit principalement sur le moment d’échantillonnage et de décision.',
+        'Le FEC n’améliore pas le canal physique lui-même mais augmente la robustesse globale du système.'
+      ],
+      quiz: [
+        {
+          question: 'Quel indicateur relie directement débit demandé et capacité du canal ? ',
+          options: ['La marge de capacité', 'La couleur du tracé', 'Le nombre de panneaux'],
+          answer: 0,
+          explanation: 'La marge de capacité exprime l’écart entre le débit utile et la limite que peut supporter le canal.'
+        },
+        {
+          question: 'Quel effet est typiquement lié au jitter ? ',
+          options: ['Une fermeture horizontale de l’œil', 'Une hausse du nombre de bits par symbole', 'Une conversion PCM'],
+          answer: 0,
+          explanation: 'Le jitter perturbe surtout le calage temporel des décisions.'
+        }
+      ]
+    },
+    multiplexage: {
+      expectedAnswers: [
+        'Le multiplexage temporel partage une même ressource physique en séparant les utilisateurs par intervalles de temps.',
+        'E1 sépare voix et signalisation alors que le T1 classique utilise historiquement du robbed bit signaling.',
+        'Les hiérarchies PDH puis SDH/SONET servent à agréger des flux primaires vers des capacités réseau bien plus élevées.'
+      ],
+      quiz: [
+        {
+          question: 'Quelle affirmation décrit le mieux l’E1 classique ? ',
+          options: ['Signalisation séparée de la voix', 'Vol périodique du bit de poids faible', 'Aucune structure de trame'],
+          answer: 0,
+          explanation: 'L’E1 réserve des intervalles dédiés à la structure et à la signalisation, laissant les voies utiles intactes.'
+        },
+        {
+          question: 'À quoi sert une hiérarchie PDH/SDH ? ',
+          options: ['À agréger plusieurs flux primaires', 'À créer une modulation FM', 'À filtrer le bruit analogique'],
+          answer: 0,
+          explanation: 'Ces hiérarchies regroupent les tributaires de faible débit dans des liaisons de plus grande capacité.'
+        }
+      ]
+    }
+  };
+
+  const LAB_GUIDE_DEFAULTS = {
+    analogique: {
+      title: 'Chaîne analogique',
+      subtitle: 'Observez la transformation progressive du message, de la modulation jusqu’à la restitution.',
+      help: [
+        'Commencez par identifier la grandeur qui porte l’information : amplitude, fréquence ou enveloppe.',
+        'Reliez toujours une déformation visuelle à un effet physique : bruit, saturation, filtrage ou déphasage.',
+        'Comparez le signal d’entrée, le signal traité et le signal restitué pour raisonner en chaîne complète.'
+      ],
+      objectives: [
+        'Identifier le rôle de chaque bloc analogique de la chaîne radio.',
+        'Relier un réglage de curseur à une déformation temporelle observable.',
+        'Expliquer les limites physiques d’un traitement analogique.'
+      ],
+      questions: [
+        'Quel paramètre modifie directement la fidélité du message ?',
+        'Quelle grandeur reste stable et laquelle porte l’information ?',
+        'À partir de quel réglage le traitement devient-il non linéaire ?'
+      ],
+      tpSteps: [
+        { title: 'Observer la référence', text: 'Lancez la page dans un état nominal et repérez le signal de référence avant traitement.', target: '.controls' },
+        { title: 'Faire varier un seul paramètre', text: 'Modifiez un seul curseur à la fois pour attribuer clairement chaque effet à sa cause.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la fidélité', text: 'Comparez le signal final au signal de départ et qualifiez la qualité de transmission.', target: '.stage' }
+      ]
+    },
+    numerisation: {
+      title: 'Numérisation',
+      subtitle: 'Passez du monde continu au monde discret en distinguant échantillonnage, quantification et codage.',
+      help: [
+        'Surveillez toujours le rapport entre fréquence du signal et fréquence d’échantillonnage.',
+        'Le nombre de bits agit sur le bruit de quantification, pas sur l’aliasing.',
+        'Interprétez les indicateurs comme des outils de dimensionnement de convertisseur.'
+      ],
+      objectives: [
+        'Vérifier le critère de Nyquist-Shannon.',
+        'Estimer l’effet du nombre de bits sur la qualité numérique.',
+        'Lire un codage binaire associé à un niveau quantifié.'
+      ],
+      questions: [
+        'Quand observe-t-on un repliement spectral ?',
+        'Comment évolue le SQNR quand la résolution augmente ?',
+        'Pourquoi deux convertisseurs avec la même Fe peuvent-ils donner des résultats différents ?'
+      ],
+      tpSteps: [
+        { title: 'Créer un aliasing', text: 'Réglez un cas de sous-échantillonnage puis notez la fréquence apparente du signal replié.', target: '.lab-preset-bar' },
+        { title: 'Revenir à Nyquist', text: 'Placez-vous juste au seuil de Nyquist et observez la faible marge disponible.', target: '.lab-kpi-grid' },
+        { title: 'Augmenter la résolution', text: 'Gardez Fe fixe puis augmentez le nombre de bits pour isoler l’effet de la quantification.', target: '.stage' }
+      ]
+    },
+    modulations: {
+      title: 'Modulations numériques',
+      subtitle: 'Lisez la constellation comme une carte de décision où se combinent phase, amplitude et robustesse au bruit.',
+      help: [
+        'En PSK, observez surtout l’angle ; en QAM, amplitude et angle sont tous deux porteurs d’information.',
+        'Plus la constellation est dense, plus la distance minimale entre symboles diminue.',
+        'Reliez la trajectoire I/Q à la forme temporelle générée.'
+      ],
+      objectives: [
+        'Identifier la grandeur informative dominante selon la famille de modulation.',
+        'Relier le nombre de bits par symbole à la densité de constellation.',
+        'Interpréter une séquence binaire comme une suite de points I/Q.'
+      ],
+      questions: [
+        'Quelle modulation offre la meilleure robustesse à puissance égale ?',
+        'Pourquoi 64-QAM exige-t-elle un meilleur SNR que QPSK ?',
+        'Comment la trajectoire I/Q reflète-t-elle la succession des symboles ?'
+      ],
+      tpSteps: [
+        { title: 'Choisir une famille', text: 'Sélectionnez une modulation et notez la grandeur physique qui porte l’information.', target: '.panel' },
+        { title: 'Comparer les constellations', text: 'Passez de BPSK à 16-QAM et observez la réduction de l’écart entre points.', target: '.lab-kpi-grid' },
+        { title: 'Lire la forme d’onde', text: 'Reliez chaque symbole affiché à son influence sur la trajectoire temporelle.', target: '.stage' }
+      ]
+    },
+    transmission: {
+      title: 'Transmission sur canal',
+      subtitle: 'Analysez la chaîne complète avec ses limitations physiques : bruit, atténuation, gigue et filtrage.',
+      help: [
+        'Commencez par le SNR et la marge de capacité avant d’interpréter BER ou SER.',
+        'La gigue agit sur le temps de décision alors que le bruit agit sur l’amplitude reçue.',
+        'Utilisez les préréglages comme scénarios de bilan de liaison.'
+      ],
+      objectives: [
+        'Évaluer la robustesse d’un lien numérique complet.',
+        'Relier une contrainte de canal à une dégradation de la décision.',
+        'Interpréter la capacité théorique au regard du débit demandé.'
+      ],
+      questions: [
+        'Quel paramètre referme le plus rapidement l’œil ?',
+        'Dans quels cas le FEC apporte-t-il une marge utile ?',
+        'Pourquoi une modulation dense est-elle plus sensible à distance égale ?'
+      ],
+      tpSteps: [
+        { title: 'Établir un cas nominal', text: 'Choisissez un canal propre puis relevez SNR, débit et état du lien.', target: '.lab-preset-bar' },
+        { title: 'Dégrader un paramètre', text: 'Augmentez distance, bruit ou jitter séparément pour identifier leur impact dominant.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la réception', text: 'Interprétez BER/SER et diagramme de l’œil pour justifier la qualité finale.', target: '.stage' }
+      ]
+    },
+    multiplexage: {
+      title: 'Multiplexage et hiérarchies',
+      subtitle: 'Passez de la voie élémentaire à l’architecture de transport en distinguant structure, signalisation et agrégation.',
+      help: [
+        'Repérez d’abord la ressource utile, puis l’overhead nécessaire à la synchronisation et à la supervision.',
+        'Comparez toujours voix utile, signalisation et débit ligne.',
+        'Interprétez la hiérarchie comme un empilement de tributaires et d’overhead réseau.'
+      ],
+      objectives: [
+        'Lire une trame E1 ou T1 au niveau de ses champs fonctionnels.',
+        'Expliquer la différence entre signalisation séparée et robbed bit signaling.',
+        'Relier un niveau PDH/SDH ou SONET à sa capacité d’agrégation.'
+      ],
+      questions: [
+        'Pourquoi E1 et T1 n’ont-ils pas la même efficacité utile ?',
+        'Quel est l’intérêt d’une hiérarchie synchrone face au PDH ?',
+        'Que transporte réellement l’overhead dans une trame réseau ?'
+      ],
+      tpSteps: [
+        { title: 'Identifier la structure', text: 'Commencez par distinguer les intervalles utiles des champs de cadrage et de signalisation.', target: '.lab-preset-bar' },
+        { title: 'Comparer deux normes', text: 'Passez d’une architecture E1 à T1 et relevez la différence de logique réseau.', target: '.lab-kpi-grid' },
+        { title: 'Monter en hiérarchie', text: 'Observez comment une trame primaire devient un tribut d’un niveau supérieur.', target: '#hierarchieSection' }
+      ]
+    }
+  };
+
+  const LAB_GUIDES = {
+    home: {
+      title: 'Portail du laboratoire virtuel',
+      subtitle: 'Utilisez l’accueil comme carte d’orientation pour construire un parcours progressif, du signal analogique jusqu’aux réseaux multiplexés.',
+      help: [
+        'Commencez par la chaîne analogique si vous souhaitez une progression pédagogique classique.',
+        'Passez ensuite par le CAN puis les modulations avant d’attaquer la transmission sur canal.',
+        'Terminez par le multiplexage pour replacer chaque flux dans une architecture réseau réelle.'
+      ],
+      objectives: [
+        'Identifier les grands blocs pédagogiques du laboratoire.',
+        'Choisir un parcours cohérent selon votre niveau.',
+        'Comprendre les passerelles entre couche physique, modulation et transport réseau.'
+      ],
+      questions: [
+        'Quel ordre de visite permet de comprendre toute la chaîne télécom ?',
+        'Quelle page relie le monde analogique au monde numérique ?',
+        'À quel moment la notion de capacité ou d’overhead devient-elle centrale ?'
+      ],
+      tpSteps: [
+        { title: 'Choisir un parcours', text: 'Repérez le module de départ selon votre objectif : analogique, numérisation, modulation, transmission ou multiplexage.', target: '.top-grid' },
+        { title: 'Filtrer les simulateurs', text: 'Utilisez la recherche rapide et les thèmes pour isoler un bloc précis du laboratoire.', target: '.discovery-panel' },
+        { title: 'Planifier la progression', text: 'Suivez le parcours recommandé pour passer du message analogique au transport réseau.', target: '.sections' }
+      ]
+    },
+    'analogique-emetteur': {
+      title: 'Émetteur AM / FM',
+      subtitle: 'Étudiez la formation du signal transmis en comparant modulation d’amplitude et modulation de fréquence.',
+      help: [
+        'En AM, l’enveloppe suit le message utile.',
+        'En FM, l’amplitude reste stable alors que la fréquence instantanée varie.',
+        'Comparez la bande occupée estimée selon la technique retenue.'
+      ],
+      objectives: [
+        'Différencier AM et FM à partir des formes d’onde.',
+        'Relier fréquence message et fréquence porteuse.',
+        'Estimer l’occupation spectrale d’une modulation analogique.'
+      ],
+      questions: [
+        'Pourquoi la FM est-elle plus robuste à l’amplitude parasite ?',
+        'À quoi correspond l’indice de modulation en AM ?',
+        'Pourquoi la bande occupée augmente-t-elle avec la déviation FM ?'
+      ],
+      tpSteps: [
+        { title: 'Observer l’information', text: 'Comparez le signal message et la porteuse avant modulation.', target: '.controls' },
+        { title: 'Basculer AM/FM', text: 'Activez alternativement AM puis FM et identifiez la grandeur modulée.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la bande', text: 'Reliez le réglage choisi à la bande occupée affichée.', target: '.stage' }
+      ]
+    },
+    'analogique-amplificateur': {
+      title: 'Amplificateur et saturation',
+      subtitle: 'Analysez le passage d’un régime linéaire à un régime saturé en observant gain et écrêtage.',
+      help: ['Le gain linéaire se lit aussi en dB.', 'L’écrêtage apparaît quand la sortie atteint la limite d’alimentation.', 'Une saturation augmente la distorsion harmonique.'],
+      objectives: ['Distinguer régime linéaire et saturation.', 'Lire un taux de saturation.', 'Relier Vcc à l’amplitude réellement disponible.'],
+      questions: ['Pourquoi le gain ne peut-il pas croître indéfiniment ?', 'Que devient la forme spectrale d’un sinus écrêté ?', 'Comment identifier visuellement une limite d’alimentation ?'],
+      tpSteps: [
+        { title: 'Zone linéaire', text: 'Réglez un gain modéré puis relevez la crête de sortie.', target: '.lab-preset-bar' },
+        { title: 'Approcher Vcc', text: 'Augmentez le gain jusqu’à voir apparaître la saturation.', target: '.lab-kpi-grid' },
+        { title: 'Comparer les puissances', text: 'Interprétez l’évolution des vu-mètres en entrée et en sortie.', target: '.stage' }
+      ]
+    },
+    'analogique-recepteur': {
+      title: 'Récepteur et démodulation d’enveloppe',
+      subtitle: 'Étudiez l’effet combiné du bruit reçu et du filtrage d’enveloppe sur la restitution du message.',
+      help: ['Le redressement extrait l’enveloppe positive.', 'Le filtre doit être assez rapide pour suivre le message mais assez lent pour lisser la HF.', 'Le SNR estimé aide à relier le bruit visuel à l’intelligibilité.'],
+      objectives: ['Comprendre la détection d’enveloppe.', 'Choisir un filtrage cohérent.', 'Évaluer la qualité du message restitué.'],
+      questions: ['Pourquoi un filtre trop lent étouffe-t-il le message ?', 'Pourquoi un filtre trop rapide laisse-t-il passer les parasites ?', 'Quel lien faites-vous entre SNR et qualité perçue ?'],
+      tpSteps: [
+        { title: 'Canal propre', text: 'Commencez par un cas peu bruité pour visualiser le fonctionnement idéal.', target: '.lab-preset-bar' },
+        { title: 'Faire varier le filtre', text: 'Modifiez seulement la constante de lissage pour isoler l’effet du condensateur.', target: '.lab-kpi-grid' },
+        { title: 'Qualifier la restitution', text: 'Concluez à partir du panneau final et de l’indicateur de qualité.', target: '.stage' }
+      ]
+    },
+    'numerisation-can': {
+      title: 'Convertisseur CAN',
+      subtitle: 'Mettez en évidence les contraintes fondamentales de tout convertisseur analogique-numérique.',
+      help: ['L’aliasing dépend d’abord de Fe.', 'Le bruit de quantification dépend d’abord de B.', 'Un bon diagnostic sépare erreur temporelle et erreur d’amplitude.'],
+      objectives: ['Vérifier Nyquist-Shannon.', 'Lire un pas de quantification.', 'Comparer plusieurs compromis convertisseur.'],
+      questions: ['Quel réglage supprime l’aliasing sans améliorer la résolution ?', 'Que signifie concrètement un SQNR plus élevé ?', 'Pourquoi le nombre de niveaux suit-il une loi en puissance de deux ?'],
+      tpSteps: [
+        { title: 'Créer un défaut d’échantillonnage', text: 'Utilisez le préréglage de sous-échantillonnage et décrivez le repliement observé.', target: '.lab-preset-bar' },
+        { title: 'Augmenter les bits', text: 'Gardez Fe constante puis augmentez B pour réduire l’écart de quantification.', target: '.lab-kpi-grid' },
+        { title: 'Lire le code binaire', text: 'Associez un niveau quantifié à sa représentation numérique.', target: '.stage' }
+      ]
+    },
+    'modulations-symbol': {
+      title: 'Analyse d’un symbole',
+      subtitle: 'Utilisez un symbole unique pour relier bits, point I/Q et équation temporelle.',
+      help: ['Un point I/Q est une représentation géométrique d’un symbole.', 'La phase se lit sur l’angle et l’amplitude sur la distance à l’origine.', 'En mode symbole unique, concentrez-vous sur l’interprétation et non sur la transition.'],
+      objectives: ['Relier un mot binaire à un seul symbole.', 'Lire amplitude, phase ou fréquence selon la modulation.', 'Interpréter l’équation s(t).'],
+      questions: ['Quel paramètre change entre deux symboles PSK ?', 'Pourquoi QAM combine-t-elle deux degrés de liberté ?', 'Que représente la distance à l’origine du plan I/Q ?'],
+      tpSteps: [
+        { title: 'Choisir un symbole', text: 'Saisissez un mot binaire valide et identifiez immédiatement sa position en constellation.', target: '.panel' },
+        { title: 'Lire les mesures', text: 'Notez la phase, l’amplitude ou Δf associée au symbole choisi.', target: '.lab-kpi-grid' },
+        { title: 'Interpréter l’onde', text: 'Reliez les valeurs affichées à la forme s(t) produite.', target: '.stage' }
+      ]
+    },
+    'modulations-sequence': {
+      title: 'Séquence de symboles',
+      subtitle: 'Analysez les transitions entre symboles et leur traduction sur la trajectoire I/Q.',
+      help: ['La trajectoire entre points dépend de l’ordre des symboles.', 'Une séquence permet d’étudier les transitions plus que la seule position.', 'Plus M augmente, plus l’espace décisionnel se resserre.'],
+      objectives: ['Lire une séquence complète de symboles.', 'Interpréter la trajectoire I/Q.', 'Comparer plusieurs familles de modulation.'],
+      questions: ['Pourquoi deux séquences avec les mêmes symboles peuvent-elles produire des trajectoires différentes ?', 'Quel intérêt pédagogique a une séquence multi-symboles ?', 'Quel compromis entre robustesse et efficacité observez-vous ?'],
+      tpSteps: [
+        { title: 'Composer une séquence', text: 'Saisissez plusieurs symboles corrects puis observez l’ordre de transition.', target: '.panel' },
+        { title: 'Comparer les familles', text: 'Passez de PSK à QAM ou FSK et identifiez la grandeur dominante.', target: '.lab-kpi-grid' },
+        { title: 'Lire la trajectoire', text: 'Expliquez comment la suite de symboles se reflète dans I/Q et dans s(t).', target: '.stage' }
+      ]
+    },
+    'modulations-dashboard': {
+      title: 'Tableau de bord des modulations',
+      subtitle: 'Comparez la performance théorique de plusieurs ordres de modulation sous contrainte de bruit et de bande.',
+      help: ['L’efficacité spectrale augmente avec M mais la robustesse diminue.', 'Eb/N0 et BER sont des outils de comparaison entre modulations.', 'Le roll-off agit sur la bande plus que sur le bruit lui-même.'],
+      objectives: ['Comparer plusieurs modulations sur des critères théoriques.', 'Relier Eb/N0, BER et efficacité spectrale.', 'Choisir une modulation selon le contexte de canal.'],
+      questions: ['Pourquoi une modulation dense est-elle attractive malgré sa sensibilité ?', 'Quel rôle joue le roll-off dans l’occupation spectrale ?', 'Dans quel cas préfèreriez-vous BPSK à 16-QAM ?'],
+      tpSteps: [
+        { title: 'Choisir deux modulations', text: 'Sélectionnez une modulation robuste puis une modulation dense à comparer.', target: '.controls, .panel, .wrap' },
+        { title: 'Comparer BER et efficacité', text: 'Relevez les indicateurs de performance théorique pour justifier votre choix.', target: '.lab-kpi-grid, .stats-board' },
+        { title: 'Conclure sur le compromis', text: 'Énoncez dans quel contexte réseau chaque modulation devient pertinente.', target: '.wrap' }
+      ]
+    },
+    'transmission-base': {
+      title: 'Transmission pédagogique complète',
+      subtitle: 'Faites un véritable bilan de liaison simplifié en suivant l’effet du canal sur la récupération binaire.',
+      help: ['Le lien se juge d’abord sur la marge de capacité et le SNR.', 'La gigue ferme l’œil sans forcément changer fortement l’amplitude moyenne.', 'Le seuil de décision décale la frontière logique au récepteur.'],
+      objectives: ['Évaluer la qualité d’une transmission numérique.', 'Relier BER à un scénario de canal.', 'Utiliser les préréglages comme cas d’ingénierie.'],
+      questions: ['Quel paramètre dégrade le plus vite le BER dans ce simulateur ?', 'Pourquoi la marge de capacité est-elle plus parlante qu’un seul débit brut ?', 'Comment justifier l’usage du Manchester ou du FEC ?'],
+      tpSteps: [
+        { title: 'Cas nominal', text: 'Commencez par une liaison propre puis relevez les indicateurs avant toute dégradation.', target: '.lab-preset-bar' },
+        { title: 'Stress du lien', text: 'Appliquez un scénario radio ou satellite et observez l’œil ainsi que BER.', target: '.lab-kpi-grid' },
+        { title: 'Corriger le lien', text: 'Activez FEC, filtre ou gain TX pour récupérer une marge acceptable.', target: '.stage' }
+      ]
+    },
+    'transmission-dsp': {
+      title: 'Traitement du signal avancé',
+      subtitle: 'Liez constellation, spectre et diagramme de l’œil dans une lecture complète du canal numérique.',
+      help: ['Le SER reflète la séparation réelle des nuages de symboles.', 'Le spectre dépend fortement du filtre de mise en forme et du roll-off.', 'Eb/N0 facilite la comparaison entre modulations d’ordres différents.'],
+      objectives: ['Relier spectre, I/Q et œil à un même scénario de canal.', 'Comparer BPSK, QPSK et QAM.', 'Interpréter l’effet du filtre RRC.'],
+      questions: ['Pourquoi le RRC réduit-il l’ISI ?', 'Comment expliquer une constellation plus floue mais un spectre plus contenu ?', 'Que révèle un œil qui se ferme horizontalement ou verticalement ?'],
+      tpSteps: [
+        { title: 'Scénario robuste', text: 'Démarrez en BPSK ou QPSK pour visualiser une constellation très séparée.', target: '.lab-preset-bar' },
+        { title: 'Densifier la modulation', text: 'Passez à 16-QAM ou 64-QAM et comparez l’écartement des points.', target: '.lab-kpi-grid' },
+        { title: 'Lire le canal', text: 'Confrontez SER, Eb/N0, spectre et œil pour conclure sur la qualité de transmission.', target: '.stage' }
+      ]
+    },
+    'multiplexage-e1': {
+      title: 'Multitrame E1',
+      subtitle: 'Décodez la logique interne d’une structure PCM 30/32 à l’échelle des intervalles de temps.',
+      help: ['IT0 cadra la trame, IT16 porte la signalisation de multitrame.', 'Une trame dure 125 µs et donc la cadence vaut 8000 trames/s.', 'La multitrame donne accès à la logique CAS sur 16 trames.'],
+      objectives: ['Identifier FAS, NFAS, VMT et CAS.', 'Expliquer le rôle de la multitrame.', 'Relier IT utile et débit voix de 64 kbit/s.'],
+      questions: ['Pourquoi la signalisation CAS s’étale-t-elle sur plusieurs trames ?', 'Quel est le rôle précis du VMT ?', 'Combien de voies utiles l’E1 laisse-t-il réellement disponibles ?'],
+      tpSteps: [
+        { title: 'Cadrer la trame', text: 'Commencez par IT0 et distinguez trame paire et impaire.', target: '.lab-preset-bar' },
+        { title: 'Observer la CAS', text: 'Passez sur IT16 pour comprendre l’organisation de la signalisation.', target: '.lab-kpi-grid' },
+        { title: 'Lire une voie utile', text: 'Comparez ensuite une case de voix utile avec les champs d’overhead.', target: '.stage' }
+      ]
+    },
+    'multiplexage-compare': {
+      title: 'Comparatif E1 / T1',
+      subtitle: 'Mettez en regard deux philosophies historiques du transport téléphonique numérique.',
+      help: ['E1 sépare mieux structure, signalisation et voies utiles.', 'T1 utilise un F-Bit et, historiquement, du robbed bit signaling.', 'Le bon réflexe est de comparer débit ligne, capacité utile et méthode de signalisation.'],
+      objectives: ['Comparer E1 et T1 sur le plan structurel.', 'Expliquer la notion de robbed bit signaling.', 'Mesurer l’impact de l’overhead et des choix de signalisation.'],
+      questions: ['Pourquoi l’E1 est-il souvent qualifié de clear channel ?', 'Quel compromis historique a poussé le T1 vers le robbed bit ?', 'Quelle architecture préférez-vous pour un transport de données modernes ?'],
+      tpSteps: [
+        { title: 'Étudier E1', text: 'Commencez par la structure E1 et relevez ses champs réservés.', target: '.lab-preset-bar' },
+        { title: 'Basculer en T1', text: 'Observez l’apparition du F-Bit et des trames robbed bit.', target: '.lab-kpi-grid' },
+        { title: 'Comparer la logique', text: 'Concluez sur la séparation ou l’intrusion de la signalisation dans la voix.', target: '.stage' }
+      ]
+    },
+    'multiplexage-pcm': {
+      title: 'PCM + TDM avec audio',
+      subtitle: 'Injectez un flux audio pédagogique dans une voie et suivez sa place dans la matrice TDM.',
+      help: ['La voie 1 sert de fil conducteur entre audio, octet PCM et case de trame.', 'L’oscilloscope montre une numérisation simplifiée mais cohérente avec un canal téléphonique.', 'Le scanner matérialise l’interlacement temporel des voies.'],
+      objectives: ['Relier audio analogique, octet PCM et position dans la trame.', 'Comprendre le multiplexage temporel voie par voie.', 'Suivre un tribut jusqu’à la hiérarchie supérieure.'],
+      questions: ['Pourquoi l’utilisateur ne perçoit-il pas les autres voies du multiplex ?', 'Comment un octet de voix devient-il un tribut réseau ?', 'Que change la norme choisie sur le traitement de la voie audio ?'],
+      tpSteps: [
+        { title: 'Activer l’audio', text: 'Injectez un signal sur la voie 1 et observez son octet live.', target: '#pcmSection' },
+        { title: 'Suivre la voie dans la trame', text: 'Repérez la case correspondante dans la matrice TDM.', target: '#trameSection' },
+        { title: 'Monter en hiérarchie', text: 'Observez comment le flux primaire s’insère dans un niveau de transport supérieur.', target: '#hierarchieSection' }
+      ]
+    },
+    'multiplexage-complet': {
+      title: 'Laboratoire réseau complet',
+      subtitle: 'Reliez la source PCM, la trame TDM et la hiérarchie PDH/SDH dans un seul parcours pédagogique.',
+      help: ['Le même laboratoire couvre source, trame et agrégation.', 'Utilisez les sauts rapides pour passer du niveau voie au niveau réseau.', 'Les indicateurs de capacité permettent de relier architecture et échelle de trafic.'],
+      objectives: ['Comprendre le continuum PCM → TDM → hiérarchie.', 'Comparer les architectures E1/PDH et T1/SONET.', 'Lire la capacité d’agrégation à plusieurs niveaux.'],
+      questions: ['À quel niveau apparaît la notion de tribut ?', 'Pourquoi le transport optique synchrone simplifie-t-il l’exploitation ?', 'Quel lien faites-vous entre voie à 64 kbit/s et capacité de niveau supérieur ?'],
+      tpSteps: [
+        { title: 'Commencer au PCM', text: 'Observez d’abord comment un octet est produit à partir d’une source audio.', target: '#pcmSection' },
+        { title: 'Lire la matrice', text: 'Repérez ensuite la place de cet octet dans la trame primaire.', target: '#trameSection' },
+        { title: 'Passer au réseau', text: 'Terminez sur la hiérarchie d’agrégation pour quantifier la capacité transportée.', target: '#hierarchieSection' }
+      ]
+    }
+  };
+
+  function getParams() {
+    return new URLSearchParams(global.location.search);
+  }
+
+  function initHeader(options) {
+    const opts = options || {};
+    const homeLink = document.querySelector('.lab-global-header__home');
+    const brandSubtitle = document.querySelector('.lab-global-header__brand span');
+    const basePath = opts.navBasePath || inferBasePath(homeLink);
+
+    if (homeLink && !homeLink.getAttribute('title')) {
+      homeLink.setAttribute('title', 'Retour à l’accueil du laboratoire');
+      homeLink.setAttribute('aria-label', 'Retour à l’accueil du laboratoire');
+    }
+
+    if (brandSubtitle && opts.brandSubtitle) {
+      brandSubtitle.textContent = opts.brandSubtitle;
+    }
+
+    if (opts.bodySection) {
+      document.body.dataset.labSection = opts.bodySection;
+    }
+
+    if (opts.pageId) {
+      document.body.dataset.labPage = opts.pageId;
+    }
+
+    renderModuleNav(basePath);
+    renderContextNav(basePath, document.body.dataset.labSection || '', document.body.dataset.labPage || '');
+    renderLearningSupport(document.body.dataset.labSection || '', document.body.dataset.labPage || '');
+
+    if (opts.trackVisit !== false) {
+      trackRecentPage({
+        title: document.title,
+        href: global.location.href,
+        section: document.body.dataset.labSection || '',
+        pageId: document.body.dataset.labPage || '',
+        subtitle: brandSubtitle ? brandSubtitle.textContent : ''
+      });
+    }
+  }
+
+  function getGuideDefinition(section, pageId) {
+    const direct = LAB_GUIDES[pageId] || LAB_GUIDES[section];
+    if (direct) {
+      return direct;
+    }
+
+    return LAB_GUIDE_DEFAULTS[getActiveModule(section)] || LAB_GUIDES.home;
+  }
+
+  function createItemsList(tagName, items, className) {
+    const list = document.createElement(tagName);
+    list.className = className;
+    (items || []).forEach(function (item) {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    return list;
+  }
+
+  function renderLearningSheet(guide) {
+    if (document.querySelector('.lab-learning-sheet')) {
+      return;
+    }
+
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return;
+    }
+
+    const sheet = document.createElement('section');
+    sheet.className = 'lab-learning-sheet';
+    sheet.setAttribute('aria-label', 'Objectifs pédagogiques et questions d’analyse');
+
+    const head = document.createElement('div');
+    head.className = 'lab-learning-sheet__head';
+
+    const headText = document.createElement('div');
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'lab-learning-sheet__eyebrow';
+    eyebrow.textContent = 'Fiche pédagogique';
+    const title = document.createElement('h2');
+    title.className = 'lab-learning-sheet__title';
+    title.textContent = guide.title;
+    const subtitle = document.createElement('p');
+    subtitle.className = 'lab-learning-sheet__subtitle';
+    subtitle.textContent = guide.subtitle;
+    headText.appendChild(eyebrow);
+    headText.appendChild(title);
+    headText.appendChild(subtitle);
+    head.appendChild(headText);
+
+    const grid = document.createElement('div');
+    grid.className = 'lab-learning-sheet__grid';
+
+    const objectivesCard = document.createElement('article');
+    objectivesCard.className = 'lab-learning-sheet__card';
+    const objectivesTitle = document.createElement('h3');
+    objectivesTitle.textContent = 'Objectifs pédagogiques';
+    objectivesCard.appendChild(objectivesTitle);
+    objectivesCard.appendChild(createItemsList('ul', guide.objectives, 'lab-learning-sheet__list'));
+
+    const questionsCard = document.createElement('article');
+    questionsCard.className = 'lab-learning-sheet__card';
+    const questionsTitle = document.createElement('h3');
+    questionsTitle.textContent = 'Questions d’analyse';
+    questionsCard.appendChild(questionsTitle);
+    questionsCard.appendChild(createItemsList('ol', guide.questions, 'lab-learning-sheet__questions'));
+
+    grid.appendChild(objectivesCard);
+    grid.appendChild(questionsCard);
+    sheet.appendChild(head);
+    sheet.appendChild(grid);
+    host.appendChild(sheet);
+  }
+
+  function renderLearningSupport(section, pageId) {
+    if (document.querySelector('.lab-guide-fab')) {
+      return;
+    }
+
+    const guide = getGuideDefinition(section, pageId);
+    if (!guide) {
+      return;
+    }
+
+    renderLearningSheet(guide);
+    renderGuideDrawer(guide, pageId || section || 'home');
+  }
+
+  function renderGuideDrawer(guide, pageKey) {
+    const drawer = document.createElement('aside');
+    drawer.className = 'lab-guide-drawer';
+    drawer.setAttribute('aria-label', 'Aide contextuelle du laboratoire');
+
+    const fab = document.createElement('button');
+    fab.className = 'lab-guide-fab';
+    fab.type = 'button';
+    fab.textContent = 'Aide • TP guidé';
+
+    const head = document.createElement('div');
+    head.className = 'lab-guide-drawer__head';
+    const headText = document.createElement('div');
+    const title = document.createElement('h2');
+    title.textContent = 'Assistant pédagogique';
+    const subtitle = document.createElement('p');
+    subtitle.textContent = guide.subtitle;
+    headText.appendChild(title);
+    headText.appendChild(subtitle);
+    const close = document.createElement('button');
+    close.className = 'lab-guide-drawer__close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Fermer l’aide');
+    close.textContent = '×';
+    head.appendChild(headText);
+    head.appendChild(close);
+
+    const tabs = document.createElement('div');
+    tabs.className = 'lab-guide-drawer__tabs';
+    const body = document.createElement('div');
+    body.className = 'lab-guide-drawer__body';
+
+    const panels = {};
+    ['help', 'tp', 'objectives'].forEach(function (name) {
+      const button = document.createElement('button');
+      button.className = 'lab-guide-drawer__tab' + (name === 'help' ? ' active' : '');
+      button.type = 'button';
+      button.textContent = name === 'help' ? 'Aide' : (name === 'tp' ? 'TP guidé' : 'Objectifs');
+      button.dataset.panel = name;
+      tabs.appendChild(button);
+
+      const panel = document.createElement('section');
+      panel.className = 'lab-guide-panel' + (name === 'help' ? ' active' : '');
+      panel.dataset.panel = name;
+      panels[name] = panel;
+      body.appendChild(panel);
+    });
+
+    panels.help.appendChild(createItemsList('ul', guide.help, 'lab-guide-panel__list'));
+    panels.objectives.appendChild(createItemsList('ul', guide.objectives, 'lab-guide-panel__list'));
+    panels.objectives.appendChild(createItemsList('ol', guide.questions, 'lab-guide-panel__list'));
+
+    const steps = guide.tpSteps || [];
+    const stepKey = 'labGuideStep:' + pageKey;
+    let currentStep = 0;
+    try {
+      const stored = parseInt(global.localStorage.getItem(stepKey) || '0', 10);
+      currentStep = Math.max(0, Math.min(steps.length - 1, stored || 0));
+    } catch (error) {
+    }
+
+    const stepBox = document.createElement('div');
+    stepBox.className = 'lab-guide-step';
+    const stepMeta = document.createElement('div');
+    stepMeta.className = 'lab-guide-step__meta';
+    const stepTitle = document.createElement('h3');
+    stepTitle.className = 'lab-guide-step__title';
+    const stepText = document.createElement('div');
+    stepText.className = 'lab-guide-step__text';
+    const stepActions = document.createElement('div');
+    stepActions.className = 'lab-guide-step__actions';
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'lab-guide-btn';
+    prevBtn.type = 'button';
+    prevBtn.textContent = 'Étape précédente';
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'lab-guide-btn lab-guide-btn--primary';
+    nextBtn.type = 'button';
+    nextBtn.textContent = 'Étape suivante';
+    const targetBtn = document.createElement('button');
+    targetBtn.className = 'lab-guide-btn';
+    targetBtn.type = 'button';
+    targetBtn.textContent = 'Aller à la zone';
+    const progress = document.createElement('div');
+    progress.className = 'lab-guide-progress';
+    stepActions.appendChild(prevBtn);
+    stepActions.appendChild(nextBtn);
+    stepActions.appendChild(targetBtn);
+    stepBox.appendChild(stepMeta);
+    stepBox.appendChild(stepTitle);
+    stepBox.appendChild(stepText);
+    stepBox.appendChild(stepActions);
+    stepBox.appendChild(progress);
+    panels.tp.appendChild(stepBox);
+
+    function persistStep() {
+      try {
+        global.localStorage.setItem(stepKey, String(currentStep));
+      } catch (error) {
+      }
+    }
+
+    function scrollToSelector(selector) {
+      if (!selector) {
+        return;
+      }
+      const target = document.querySelector(selector);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function renderStep() {
+      if (!steps.length) {
+        stepMeta.textContent = 'TP guidé indisponible';
+        stepTitle.textContent = 'Aucune étape définie';
+        stepText.textContent = 'Cette page ne propose pas encore de scénario guidé.';
+        progress.textContent = '';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        targetBtn.disabled = true;
+        return;
+      }
+
+      const step = steps[currentStep];
+      stepMeta.textContent = 'Étape ' + (currentStep + 1) + ' / ' + steps.length;
+      stepTitle.textContent = step.title;
+      stepText.textContent = step.text;
+      progress.textContent = 'Mode TP guidé actif : avancez séquentiellement puis validez votre interprétation physique.';
+      prevBtn.disabled = currentStep === 0;
+      nextBtn.disabled = currentStep === steps.length - 1;
+      targetBtn.disabled = !step.target;
+      persistStep();
+    }
+
+    prevBtn.addEventListener('click', function () {
+      if (currentStep > 0) {
+        currentStep -= 1;
+        renderStep();
+      }
+    });
+
+    nextBtn.addEventListener('click', function () {
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        renderStep();
+      }
+    });
+
+    targetBtn.addEventListener('click', function () {
+      if (steps[currentStep] && steps[currentStep].target) {
+        scrollToSelector(steps[currentStep].target);
+      }
+    });
+
+    tabs.addEventListener('click', function (event) {
+      const button = event.target.closest('.lab-guide-drawer__tab');
+      if (!button) {
+        return;
+      }
+
+      const panelName = button.dataset.panel;
+      Array.from(tabs.querySelectorAll('.lab-guide-drawer__tab')).forEach(function (tab) {
+        tab.classList.toggle('active', tab === button);
+      });
+      Array.from(body.querySelectorAll('.lab-guide-panel')).forEach(function (panel) {
+        panel.classList.toggle('active', panel.dataset.panel === panelName);
+      });
+    });
+
+    function setOpen(isOpen) {
+      drawer.classList.toggle('is-open', isOpen);
+    }
+
+    fab.addEventListener('click', function () {
+      setOpen(!drawer.classList.contains('is-open'));
+    });
+
+    close.addEventListener('click', function () {
+      setOpen(false);
+    });
+
+    renderStep();
+    drawer.appendChild(head);
+    drawer.appendChild(tabs);
+    drawer.appendChild(body);
+    document.body.appendChild(drawer);
+    document.body.appendChild(fab);
+  }
+
+  function inferBasePath(homeLink) {
+    if (!homeLink) {
+      return '';
+    }
+
+    const href = homeLink.getAttribute('href') || '';
+    return href.replace(/index\.html$/i, '');
+  }
+
+  function getActiveModule(section) {
+    if (!section) return 'home';
+    if (section.indexOf('analogique') === 0) return 'analogique';
+    if (section.indexOf('numerisation') === 0) return 'numerisation';
+    if (section.indexOf('modulations') === 0 || section.indexOf('compat-symbol') === 0) return 'modulations';
+    if (section.indexOf('transmission') === 0) return 'transmission';
+    if (section.indexOf('multiplexage') === 0 || section.indexOf('compat-pcm') === 0) return 'multiplexage';
+    return 'home';
+  }
+
+  function withBasePath(basePath, href) {
+    return encodeURI((basePath || '') + href);
+  }
+
+  function createLinkItem(className, item, basePath, activeId) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = className + (item.id && item.id === activeId ? ' active' : '');
+    a.href = withBasePath(basePath, item.href);
+    a.textContent = item.label;
+    li.appendChild(a);
+    return li;
+  }
+
+  function appendLinkList(container, title, items, className, basePath, activeId) {
+    if (!items || !items.length) {
+      return;
+    }
+
+    const card = document.createElement('section');
+    card.className = 'lab-context-nav__card';
+
+    const heading = document.createElement('h2');
+    heading.className = 'lab-context-nav__title';
+    heading.textContent = title;
+    card.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'lab-context-nav__list';
+    items.forEach(function (item) {
+      list.appendChild(createLinkItem(className, item, basePath, activeId));
+    });
+
+    card.appendChild(list);
+    container.appendChild(card);
+  }
+
+  function renderModuleNav(basePath) {
+    if (document.querySelector('.lab-module-nav')) {
+      return;
+    }
+
+    const prefix = basePath || '';
+    const bodySection = document.body.dataset.labSection || '';
+    const active = getActiveModule(bodySection);
+    const navItems = [
+      { key: 'home', label: 'Accueil', href: prefix + 'index.html' },
+      { key: 'analogique', label: 'Analogique', href: prefix + 'pages/analogique/Emetteur.html' },
+      { key: 'numerisation', label: 'Numérisation', href: prefix + 'pages/numerisation/CAN.html' },
+      { key: 'modulations', label: 'Modulations', href: prefix + 'pages/modulations/Simulateur 2.html' },
+      { key: 'transmission', label: 'Transmission', href: prefix + 'pages/transmission/Transmission.html' },
+      { key: 'multiplexage', label: 'Multiplexage', href: prefix + 'pages/multiplexage/MUX.html' }
+    ];
+
+    const nav = document.createElement('nav');
+    nav.className = 'lab-module-nav';
+    nav.setAttribute('aria-label', 'Navigation transversale du laboratoire');
+
+    const list = document.createElement('ul');
+    list.className = 'lab-module-nav__list';
+
+    navItems.forEach(function (item) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.className = 'lab-module-nav__link' + (item.key === active ? ' active' : '');
+      a.href = encodeURI(item.href);
+      a.textContent = item.label;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+
+    nav.appendChild(list);
+
+    const header = document.querySelector('.lab-global-header');
+    if (header && header.parentNode) {
+      header.parentNode.insertBefore(nav, header.nextSibling);
+    }
+  }
+
+  function readRecentPages() {
+    try {
+      const raw = global.localStorage.getItem(RECENT_PAGES_KEY);
+      const items = raw ? JSON.parse(raw) : [];
+      return Array.isArray(items) ? items : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeRecentPages(items) {
+    try {
+      global.localStorage.setItem(RECENT_PAGES_KEY, JSON.stringify(items));
+    } catch (error) {
+    }
+  }
+
+  function trackRecentPage(entry) {
+    if (!entry || !entry.href || !entry.title) {
+      return;
+    }
+
+    const items = readRecentPages().filter(function (item) {
+      return item && item.href !== entry.href;
+    });
+
+    items.unshift({
+      title: entry.title,
+      href: entry.href,
+      section: entry.section || '',
+      pageId: entry.pageId || '',
+      subtitle: entry.subtitle || '',
+      visitedAt: Date.now()
+    });
+
+    writeRecentPages(items.slice(0, 8));
+  }
+
+  function getRecentPages(limit) {
+    const max = typeof limit === 'number' ? limit : 8;
+    return readRecentPages().slice(0, max);
+  }
+
+  function clearRecentPages() {
+    try {
+      global.localStorage.removeItem(RECENT_PAGES_KEY);
+    } catch (error) {
+    }
+  }
+
+  function renderContextNav(basePath, section, pageId) {
+    if (document.querySelector('.lab-context-nav')) {
+      return;
+    }
+
+    const activeModule = getActiveModule(section);
+    const moduleDef = LAB_STRUCTURE[activeModule];
+    if (!moduleDef) {
+      return;
+    }
+
+    const pageIndex = moduleDef.pages.findIndex(function (page) {
+      return page.id === pageId;
+    });
+    const stepItems = [];
+
+    if (pageIndex > 0) {
+      stepItems.push(moduleDef.pages[pageIndex - 1]);
+    }
+    if (pageIndex >= 0 && pageIndex < moduleDef.pages.length - 1) {
+      stepItems.push(moduleDef.pages[pageIndex + 1]);
+    }
+    if (!stepItems.length && moduleDef.pages.length) {
+      stepItems.push(moduleDef.pages[0]);
+    }
+
+    const wrapper = document.createElement('section');
+    wrapper.className = 'lab-context-nav';
+    wrapper.setAttribute('aria-label', 'Navigation de parcours du module');
+
+    const inner = document.createElement('div');
+    inner.className = 'lab-context-nav__grid';
+
+    const intro = document.createElement('section');
+    intro.className = 'lab-context-nav__card lab-context-nav__card--intro';
+
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'lab-context-nav__eyebrow';
+    eyebrow.textContent = 'Parcours du laboratoire';
+
+    const title = document.createElement('h2');
+    title.className = 'lab-context-nav__title';
+    title.textContent = moduleDef.title;
+
+    const text = document.createElement('p');
+    text.className = 'lab-context-nav__text';
+    text.textContent = 'Navigation locale du module actif et passerelles rapides vers les autres briques pédagogiques.';
+
+    intro.appendChild(eyebrow);
+    intro.appendChild(title);
+    intro.appendChild(text);
+    inner.appendChild(intro);
+
+    appendLinkList(inner, 'Dans ce module', moduleDef.pages, 'lab-context-nav__link', basePath, pageId);
+    appendLinkList(inner, 'Étapes voisines', stepItems, 'lab-context-nav__link lab-context-nav__link--step', basePath, '');
+    appendLinkList(inner, 'Passerelles labo', moduleDef.bridges, 'lab-context-nav__link lab-context-nav__link--bridge', basePath, '');
+
+    wrapper.appendChild(inner);
+
+    const moduleNav = document.querySelector('.lab-module-nav');
+    if (moduleNav && moduleNav.parentNode) {
+      moduleNav.parentNode.insertBefore(wrapper, moduleNav.nextSibling);
+    }
+  }
+
+  function redirectTo(url) {
+    global.location.replace(url);
+  }
+
+  function setupRedirectPage(targetUrl) {
+    redirectTo(targetUrl);
+  }
+
+  function applyMode(modeHandlers) {
+    const params = getParams();
+    const mode = params.get('mode');
+
+    if (mode && modeHandlers && typeof modeHandlers[mode] === 'function') {
+      modeHandlers[mode](params);
+    }
+
+    return { mode: mode, params: params };
+  }
+
+  function scrollToSection(id, delay) {
+    const wait = typeof delay === 'number' ? delay : 0;
+    global.setTimeout(function () {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, wait);
+  }
+
+  global.LabCommon = {
+    getParams: getParams,
+    initHeader: initHeader,
+    redirectTo: redirectTo,
+    setupRedirectPage: setupRedirectPage,
+    applyMode: applyMode,
+    scrollToSection: scrollToSection,
+    renderModuleNav: renderModuleNav,
+    getRecentPages: getRecentPages,
+    clearRecentPages: clearRecentPages
+  };
+})(window);

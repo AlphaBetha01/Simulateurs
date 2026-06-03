@@ -1,0 +1,107 @@
+﻿# Plan de refactorisation du laboratoire virtuel
+
+## Objectif
+Conserver les fonctionnalités du projet tout en réduisant les doublons et en rendant l’ensemble plus lisible.
+
+## 1. Fichiers à conserver comme base principale
+
+### Fondamentaux analogiques
+- `Emetteur.html`
+- `Amplificateur.html`
+- `Récepteur.html`
+
+### Numérisation
+- `CAN.html`
+- `Simulateur_E12.html`
+
+### Modulations numériques
+- `Simulateur 2.html`
+- `Tableau de Bord Modulations Numériques.html`
+
+### Transmission
+- `Transmission.html`
+- `Transmission Num et Traite Sgnal.html`
+
+### Réseau téléphonique / multiplexage
+- `MUX.html`
+
+## 2. Fichiers à fusionner ou absorber
+
+### `Simulateur.html` → à fusionner dans `Simulateur 2.html`
+Motif : même domaine fonctionnel. `Simulateur 2.html` est une version plus riche.
+
+Statut : fusion légère engagée. `Simulateur.html` redirige désormais vers `Simulateur 2.html?mode=symbol&num=1`.
+
+### `Simulateur_MUX_DMUX.html` → à intégrer progressivement dans `MUX.html`
+Motif : recouvrement élevé sur PCM, trames et inspection. `MUX.html` est la meilleure base finale.
+
+## 3. Fichiers à archiver
+
+### `Simulateur_MUX11.html`
+Motif : doublon très probable de `Simulateur_MUX.html`.
+
+Statut : déplacé dans `archive/Simulateur_MUX11.html`.
+
+## 4. Renommages recommandés
+
+Ces renommages sont conseillés mais non appliqués automatiquement ici.
+
+- `Emetteur.html` → `emetteur_am_fm.html`
+- `Récepteur.html` → `recepteur_demodulation.html`
+- `Amplificateur.html` → `amplificateur_repetiteur.html`
+- `CAN.html` → `convertisseur_can.html`
+- `Simulateur.html` → `modulation_symbole.html`
+- `Simulateur 2.html` → `modulation_sequence.html`
+- `Tableau de Bord Modulations Numériques.html` → `modulations_tableau_bord.html`
+- `Transmission.html` → `transmission_pedagogique.html`
+- `Transmission Num et Traite Sgnal.html` → `transmission_dsp_avancee.html`
+- `Simulateur_E12.html` → `multitrame_e1.html`
+- `Simulateur_MUX.html` → `comparatif_e1_t1.html`
+- `Simulateur_MUX_DMUX.html` → `pcm_tdm_audio.html`
+- `MUX.html` → `reseau_mux_complet.html`
+
+## 5. Organisation cible en modules
+
+```text
+/pages
+  /analogique
+  /numerisation
+  /modulations
+  /transmission
+  /multiplexage
+```
+
+## 6. Ordre pédagogique conseillé
+1. `Emetteur.html`
+2. `Amplificateur.html`
+3. `Récepteur.html`
+4. `CAN.html`
+5. `Simulateur.html` ou `Simulateur 2.html`
+6. `Transmission.html`
+7. `Transmission Num et Traite Sgnal.html`
+8. `Simulateur_E12.html`
+9. `Simulateur_MUX.html`
+10. `MUX.html`
+
+## 7. Étapes techniques recommandées
+
+### Étape A — immédiate
+- utiliser `index.html` comme page d’accueil
+- ne déplacer aucun fichier
+- terminée : `Simulateur_MUX11.html` archivé
+
+### Étape B — rationalisation
+- fusionner `Simulateur.html` et `Simulateur 2.html`
+- mutualiser les styles communs si souhaité
+- harmoniser les titres et noms de fichiers
+
+### Étape C — finalisation
+- regrouper les pages dans des dossiers métiers
+- corriger tous les liens internes
+- ajouter une navigation commune sur toutes les pages
+
+## 8. Architecture cible minimale
+
+- `index.html` : accueil principal
+- un simulateur principal par thème
+- les variantes ou anciennes versions déplacées dans un dossier `archive/`

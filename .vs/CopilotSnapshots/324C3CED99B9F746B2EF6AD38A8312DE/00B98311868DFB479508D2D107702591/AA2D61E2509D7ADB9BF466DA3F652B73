@@ -1,0 +1,97 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation Pédagogique : Émetteur et Modulation</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/emetteur.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Chaîne analogique • émission et modulation</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : L'Émetteur (Modulation AM / FM)</h1>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>1. Fréq. du Signal (Message) <span class="val"><span id="fInfoVal">2</span> Hz</span></label>
+      <input id="fInfo" type="range" min="0.5" max="5" step="0.1" value="2">
+    </div>
+    <div class="control-group">
+      <label>2. Fréq. de la Porteuse (Véhicule) <span class="val" style="color:var(--wave-carrier)"><span id="fPortVal">30</span> Hz</span></label>
+      <input id="fPort" type="range" min="10" max="60" step="1" value="30">
+    </div>
+    <div class="control-group">
+      <label>3. Type de Modulation</label>
+      <div class="radio-group">
+        <label class="radio-label"><input type="radio" name="modType" value="AM" checked> AM (Amplitude)</label>
+        <label class="radio-label"><input type="radio" name="modType" value="FM"> FM (Fréquence)</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Préréglages modulation analogique">
+    <button class="lab-preset-btn" type="button" data-tx-preset="am-base">AM bande étroite</button>
+    <button class="lab-preset-btn" type="button" data-tx-preset="am-fast">AM message rapide</button>
+    <button class="lab-preset-btn" type="button" data-tx-preset="fm-wide">FM déviation large</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures modulation analogique">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Type et lecture</div>
+      <div id="txModeValue" class="lab-kpi-value">AM</div>
+      <div id="txModeNote" class="lab-kpi-note">En AM, l’information est visible sur l’enveloppe du signal transmis.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Indice / déviation</div>
+      <div id="txIndexValue" class="lab-kpi-value">m = 0.80</div>
+      <div id="txIndexNote" class="lab-kpi-note">Indice de modulation utile pour estimer la fidélité et le risque de surmodulation.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Occupation spectrale</div>
+      <div id="txBandwidthValue" class="lab-kpi-value">4.0 Hz</div>
+      <div id="txBandwidthNote" class="lab-kpi-note">Approximation pédagogique : 2fm en AM, règle de Carson en FM.</div>
+    </article>
+  </div>
+
+  <div class="stage">
+    <!-- Panneau 1 : Le message -->
+    <div class="panel">
+      <div class="title">1. Signal d'Information (Basse Fréquence) <span>La voix, les données...</span></div>
+      <svg id="svgInfo" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 2 : La porteuse -->
+    <div class="panel">
+      <div class="title">2. Onde Porteuse (Haute Fréquence) <span>Générateur local de l'émetteur</span></div>
+      <svg id="svgCarrier" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 3 : Le signal modulé -->
+    <div class="panel highlight">
+      <div class="title" style="color: var(--accent)">3. Signal Modulé transmis à l'antenne <span>Prêt à voyager !</span></div>
+      <!-- Icône d'antenne pour le côté didactique -->
+      <svg class="antenna" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 8a18 18 0 0 1 16 0M7 12a10 10 0 0 1 10 0M10 16a2 2 0 0 1 4 0M12 20v-4"></path>
+      </svg>
+      <svg id="svgMod" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <footer>Contrairement à un câble, l'air nécessite des hautes fréquences pour transporter un signal efficacement. La modulation est la solution !</footer>
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/emetteur.js"></script>
+</body>
+</html>

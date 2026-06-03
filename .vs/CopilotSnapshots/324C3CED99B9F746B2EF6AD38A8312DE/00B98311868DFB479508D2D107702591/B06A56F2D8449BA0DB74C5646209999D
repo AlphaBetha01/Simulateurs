@@ -1,0 +1,88 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur de Communications Numériques (Chapitre 4)</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/modulations-dashboard.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Modulations numériques • performance, BER et efficacité spectrale</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <h1>Simulateur Expert : Transmissions sur Fréquence Porteuse</h1>
+  
+  <!-- CONTRÔLES -->
+  <div class="controls">
+    <div class="control-group">
+      <label>Type de Modulation</label>
+      <select id="modType">
+        <option value="ASK">ASK (Amplitude Shift Keying)</option>
+        <option value="PSK">PSK (Phase Shift Keying)</option>
+        <option value="QAM" selected>QAM (Quadrature Amplitude Mod.)</option>
+        <option value="FSK">FSK (Frequency Shift Keying)</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label>Valence (M) - Alphabet</label>
+      <select id="modOrder"></select>
+    </div>
+
+    <div class="control-group">
+      <label>Facteur de retombée (Roll-off α) <span id="valAlpha" class="val-display">0.3</span></label>
+      <input type="range" id="alpha" min="0" max="1" step="0.1" value="0.3">
+    </div>
+
+    <div class="control-group">
+      <label>Rapport Signal/Bruit (Eb/N0) <span id="valSNR" class="val-display">15 dB</span></label>
+      <input type="range" id="snr" min="0" max="30" step="1" value="15">
+    </div>
+
+    <div class="stats">
+      <div class="stat-row"><span>Bits par symbole (n) :</span> <span id="statN" style="color:#a855f7">4 bits</span></div>
+      <div class="stat-row"><span>Efficacité Spectrale :</span> <span id="statEff" style="color:var(--rx)">3.08 b/s/Hz</span></div>
+      <div class="stat-row" style="margin-top:10px; border-top:1px solid #334155; padding-top:8px;">
+        <span>TEB Théorique :</span> <span id="statTEB" style="color:var(--err); font-size:16px;">1.2e-4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- VISUALISATIONS -->
+  <div class="stage">
+    
+    <!-- Constellation -->
+    <div class="view-card">
+      <div class="view-title">1. Diagramme de Constellation (Espace I/Q)</div>
+      <canvas id="constCanvas"></canvas>
+      <div id="fskWarning">La modulation FSK utilise des fréquences orthogonales. Une constellation 2D classique (plan I/Q) n'est pas mathématiquement appropriée pour représenter M signaux.</div>
+    </div>
+
+    <!-- Courbe TEB -->
+    <div class="view-card">
+      <div class="view-title">2. Performance (TEB vs Eb/N0)</div>
+      <canvas id="berCanvas"></canvas>
+    </div>
+
+    <!-- Signal Temporel -->
+    <div class="view-card canvas-wide">
+      <div class="view-title">3. Signal Modulé en fonction du temps</div>
+      <canvas id="timeCanvas"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/modulations-dashboard.js"></script>
+</body>
+</html>

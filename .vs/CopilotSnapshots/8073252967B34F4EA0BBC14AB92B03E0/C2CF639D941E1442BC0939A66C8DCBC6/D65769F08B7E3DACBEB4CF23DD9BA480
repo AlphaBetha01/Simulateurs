@@ -1,0 +1,220 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation Pédagogique : Le Récepteur</title>
+<style>
+  :root {
+    --bg: #f6f8fb; --card: #ffffff; --accent: #10b981; 
+    --wave-raw: #94a3b8; --wave-rect: #ff9b6b; --wave-clean: #10b981;
+    --text-main: #1e293b; --text-muted: #64748b;
+  }
+  body { font-family: 'Segoe UI', system-ui, Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text-main); }
+  .wrap { max-width: 1000px; margin: 20px auto; padding: 24px; background: var(--card); border-radius: 12px; box-shadow: 0 8px 30px rgba(15,30,60,0.06); }
+  h1 { margin: 0 0 16px; font-size: 22px; color: #0f172a; }
+  
+  .controls { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; }
+  .control-group { flex: 1; min-width: 200px; }
+  label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
+  span.val { color: var(--accent); font-weight: bold; }
+  input[type=range] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+
+  .stage { display: flex; flex-direction: column; gap: 16px; }
+  .panel { padding: 16px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; position: relative; }
+  .panel.highlight { border-color: #a7f3d0; background: #f0fdf4; box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.05); }
+  .title { font-weight: 700; font-size: 12px; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between;}
+  
+  svg { width: 100%; height: 120px; display: block; overflow: visible; }
+  
+  /* Icônes pédagogiques */
+  .icon-abs { position: absolute; left: 16px; top: 40px; font-weight: bold; color: var(--wave-rect); font-size: 24px; opacity: 0.2; }
+  .speaker { position: absolute; right: 16px; top: 16px; width: 32px; height: 32px; opacity: 0.8; }
+
+  footer { font-size: 13px; color: var(--text-muted); margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div style="max-width:1450px;margin:16px auto 0;padding:0 24px;">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;background:#ffffff;border:1px solid #e2e8f0;color:#0f172a;box-shadow:0 4px 14px rgba(15,23,42,0.06);">← Accueil du laboratoire</a>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : Le Récepteur (Démodulation)</h1>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>1. Bruit capté (Parasites) <span class="val" style="color:var(--text-muted)"><span id="noiseVal">10</span>%</span></label>
+      <input id="noiseInput" type="range" min="0" max="40" step="1" value="10">
+    </div>
+    <div class="control-group">
+      <label>2. Lissage du Filtre (Condensateur) <span class="val"><span id="filterVal">Optimal</span></span></label>
+      <input id="filterInput" type="range" min="1" max="50" step="1" value="12">
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- Panneau 1 : Signal capté -->
+    <div class="panel">
+      <div class="title">1. Signal Capté (Antenne) <span>Haute Fréquence + Bruit</span></div>
+      <svg id="svgRaw" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 2 : Traitement interne -->
+    <div class="panel">
+      <div class="title">2. Traitement (Redressement & Filtrage Passe-Bas) <span>Extraction de l'enveloppe</span></div>
+      <div class="icon-abs">| x |</div>
+      <svg id="svgProcess" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 3 : Signal restitué -->
+    <div class="panel highlight">
+      <div class="title" style="color: var(--accent)">3. Signal Restitué (Basse Fréquence) <span>Envoyé au Haut-Parleur</span></div>
+      <svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="svgClean" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <footer>Le redresseur "coupe" le bas du signal. Le condensateur se charge et se décharge pour "lisser" les crêtes et retrouver le message.</footer>
+</div>
+
+<script>
+// Récupération des éléments
+const svgRaw = document.getElementById('svgRaw');
+const svgProcess = document.getElementById('svgProcess');
+const svgClean = document.getElementById('svgClean');
+
+const noiseInput = document.getElementById('noiseInput');
+const filterInput = document.getElementById('filterInput');
+
+const noiseVal = document.getElementById('noiseVal');
+const filterVal = document.getElementById('filterVal');
+
+const w = 800, h = 120;
+const yCenter = h / 2;
+let timeOffset = 0;
+
+// Constantes du signal (simulées)
+const fInfo = 2; // Fréquence du message
+const fPort = 40; // Fréquence de la porteuse (véhicule)
+const m = 0.8; // Indice de modulation
+
+// Générateur de bruit (pseudo-aléatoire fluide)
+function getNoise(t, amount) {
+  return (Math.sin(t * 1234) * Math.cos(t * 4321) + Math.sin(t * 888)) * 0.33 * amount;
+}
+
+function draw() {
+  const noiseLevel = +noiseInput.value / 100;
+  const filterTau = +filterInput.value; // Constante de décharge du condensateur
+  
+  // Mise à jour de l'UI
+  noiseVal.textContent = Math.round(noiseLevel * 100);
+  if (filterTau < 5) filterVal.textContent = "Trop faible (Grésillements)";
+  else if (filterTau > 25) filterVal.textContent = "Trop fort (Étouffé)";
+  else filterVal.textContent = "Optimal (Net)";
+
+  timeOffset += 0.003; 
+
+  let pathRaw = `M 0 ${yCenter}`;
+  let pathRect = `M 0 ${yCenter}`; // Signal redressé (positif uniquement)
+  let pathEnv = `M 0 ${yCenter}`; // Enveloppe détectée (filtre)
+  let pathClean = `M 0 ${yCenter}`; // Signal final restitué
+
+  let lastEnvY = yCenter; // Mémoire du condensateur
+  let dcOffsetSum = 0; // Pour centrer le signal final
+  let pointsCount = 0;
+
+  // 1ère passe : Calcul du signal complet
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+
+    // A. Onde émise d'origine (AM)
+    const valInfo = Math.sin(2 * Math.PI * fInfo * t);
+    const valCarrier = Math.sin(2 * Math.PI * fPort * t);
+    const amplitudeMod = (1 + m * valInfo);
+    let valRaw = amplitudeMod * valCarrier;
+
+    // Ajout du bruit de l'air
+    valRaw += getNoise(t, noiseLevel * 5); 
+
+    const yRaw = yCenter - valRaw * (h * 0.25);
+    pathRaw += ` L ${x} ${yRaw}`;
+
+    // B. Étape 1 du récepteur : Redressement (Diode)
+    // On ne garde que la partie positive (valeur absolue grossière)
+    let yRect = yCenter - Math.max(0, valRaw) * (h * 0.25);
+    pathRect += ` L ${x} ${yRect}`;
+
+    // C. Étape 2 du récepteur : Filtrage (Condensateur)
+    // Le condensateur se charge instantanément sur la crête, et se décharge lentement
+    let dischargeRate = (filterTau / 1000) * h;
+    
+    // Si la crête est plus haute que la charge actuelle du condensateur -> charge rapide
+    if (yRect < lastEnvY) {
+      lastEnvY = yRect;
+    } else {
+      // Sinon -> décharge lente
+      lastEnvY += dischargeRate; 
+      // On s'assure qu'il ne descend pas sous la ligne médiane
+      if (lastEnvY > yCenter) lastEnvY = yCenter; 
+    }
+    
+    pathEnv += ` L ${x} ${lastEnvY}`;
+    
+    dcOffsetSum += lastEnvY;
+    pointsCount++;
+  }
+
+  // Calcul de la composante continue (DC Offset) pour recentrer le son
+  const dcOffset = dcOffsetSum / pointsCount;
+
+  // 2ème passe : Dessin du signal restitué (Débarrassé du courant continu)
+  lastEnvY = yCenter;
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+    
+    const valInfo = Math.sin(2 * Math.PI * fInfo * t);
+    const valCarrier = Math.sin(2 * Math.PI * fPort * t);
+    const amplitudeMod = (1 + m * valInfo);
+    let valRaw = amplitudeMod * valCarrier + getNoise(t, noiseLevel * 5);
+    let yRect = yCenter - Math.max(0, valRaw) * (h * 0.25);
+    let dischargeRate = (filterTau / 1000) * h;
+    
+    if (yRect < lastEnvY) lastEnvY = yRect;
+    else { lastEnvY += dischargeRate; if(lastEnvY > yCenter) lastEnvY = yCenter; }
+
+    // Le signal restitué est l'enveloppe recentrée et amplifiée
+    // On amplifie légèrement pour retrouver la taille d'origine du panneau 1
+    let yClean = yCenter + (lastEnvY - dcOffset) * 2.5; 
+    
+    // Limiteur matériel (écrêtage si ça dépasse)
+    if (yClean < 10) yClean = 10;
+    if (yClean > h - 10) yClean = h - 10;
+
+    pathClean += ` L ${x} ${yClean}`;
+  }
+
+  // Rendu SVG
+  svgRaw.innerHTML = `<path d="${pathRaw}" stroke="var(--wave-raw)" stroke-width="1.5" fill="none" opacity="0.8"/>`;
+  
+  // Dans le panneau de traitement, on montre le signal redressé ET le lissage au dessus
+  svgProcess.innerHTML = `
+    <path d="${pathRect}" stroke="var(--wave-raw)" stroke-width="1" fill="none" opacity="0.3"/>
+    <path d="${pathEnv}" stroke="var(--wave-rect)" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  `;
+  
+  // Panneau final
+  svgClean.innerHTML = `<path d="${pathClean}" stroke="var(--wave-clean)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

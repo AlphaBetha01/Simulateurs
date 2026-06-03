@@ -1,0 +1,174 @@
+﻿LabCommon.initHeader({ bodySection: 'numerisation-can' });
+// RÃ©cupÃ©ration des Ã©lÃ©ments DOM
+const svgSignal = document.getElementById('svgSignal');
+const svgQuant = document.getElementById('svgQuant');
+const bitsBox = document.getElementById('bitsBox');
+
+const freqInput = document.getElementById('freqInput');
+const srInput = document.getElementById('srInput');
+const bitsInput = document.getElementById('bitsInput');
+
+const freqVal = document.getElementById('freqVal');
+const srVal = document.getElementById('srVal');
+const bitsVal = document.getElementById('bitsVal');
+
+// Variables pour l'animation
+let samplePoints = [];
+let scanLine1, scanLine2;
+const w = 800, h = 160;
+const yMin = 20, yMax = 140; // Marges pour le dessin
+const amplitude = (yMax - yMin) / 2;
+const yCenter = yMin + amplitude;
+const timeWindow = 1; // On affiche 1 seconde de signal
+
+function updateVisualization() {
+  const f = +freqInput.value;
+  const fs = +srInput.value;
+  const B = +bitsInput.value;
+  
+  freqVal.textContent = f;
+  srVal.textContent = fs;
+  bitsVal.textContent = B;
+
+  const numLevels = Math.pow(2, B);
+  const numSamples = Math.floor(fs * timeWindow);
+  samplePoints = [];
+
+  // ----------------------------------------------------
+  // PANNEAU 1 : SIGNAL ANALOGIQUE
+  // ----------------------------------------------------
+  let signalSVG = '';
+  
+  // TracÃ© du signal continu (onde sinusoÃ¯dale)
+  let wavePath = `M 0 ${yCenter}`;
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * timeWindow;
+    const y = yCenter - Math.sin(2 * Math.PI * f * t) * amplitude;
+    wavePath += ` L ${x} ${y}`;
+  }
+  signalSVG += `<path d="${wavePath}" stroke="var(--wave)" stroke-width="2" fill="none" opacity="0.8"/>`;
+
+  // TracÃ© des Ã©chantillons (Tiges + Points)
+  for(let i = 0; i <= numSamples; i++) {
+    const t = i / fs;
+    if (t > timeWindow) break;
+    
+    const x = (t / timeWindow) * w;
+    const sineValue = Math.sin(2 * Math.PI * f * t); // Valeur de -1 Ã  1
+    const y = yCenter - sineValue * amplitude;
+    
+    signalSVG += `<line x1="${x}" y1="${yCenter}" x2="${x}" y2="${y}" stroke="var(--wave)" stroke-width="1" opacity="0.5"/>`;
+    signalSVG += `<circle cx="${x}" cy="${y}" r="4" fill="var(--card)" stroke="var(--wave)" stroke-width="2"/>`;
+    
+    // Calcul de la valeur quantifiÃ©e pour le panneau 2
+    // Normalisation de la valeur sinusoÃ¯dale (de 0 Ã  1)
+    const normalized = (sineValue + 1) / 2;
+    // Trouver le palier le plus proche (de 0 Ã  numLevels - 1)
+    const quantizedLevel = Math.round(normalized * (numLevels - 1));
+    const yQuant = yMax - quantizedLevel * ((yMax - yMin) / (numLevels - 1));
+    
+    // Conversion en binaire (ajout des zÃ©ros Ã  gauche selon la rÃ©solution)
+    const binaryCode = quantizedLevel.toString(2).padStart(B, '0');
+    
+    samplePoints.push({ x, y, yQuant, code: binaryCode });
+  }
+
+  // Ajout de la ligne de balayage animÃ©e
+  signalSVG += `<line id="scan1" x1="0" y1="0" x2="0" y2="${h}" stroke="red" stroke-width="1" opacity="0.7"/>`;
+  svgSignal.innerHTML = signalSVG;
+
+  // ----------------------------------------------------
+  // PANNEAU 2 : QUANTIFICATION
+  // ----------------------------------------------------
+  let quantSVG = '';
+  
+  // Grille des niveaux de quantification
+  for(let i = 0; i < numLevels; i++) {
+    const yLevel = yMax - i * ((yMax - yMin) / (numLevels - 1));
+    quantSVG += `<line x1="0" y1="${yLevel}" x2="${w}" y2="${yLevel}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>`;
+  }
+
+  // Signal analogique en arriÃ¨re-plan (trÃ¨s clair)
+  quantSVG += `<path d="${wavePath}" stroke="var(--wave)" stroke-width="2" fill="none" opacity="0.15"/>`;
+
+  // TracÃ© du signal en "escalier" (Bloqueur d'ordre 0)
+  if (samplePoints.length > 0) {
+    let stairPath = `M 0 ${samplePoints[0].yQuant}`;
+    for(let i = 0; i < samplePoints.length; i++) {
+      const pt = samplePoints[i];
+      const nextX = i < samplePoints.length - 1 ? samplePoints[i+1].x : w;
+      stairPath += ` L ${pt.x} ${pt.yQuant} L ${nextX} ${pt.yQuant}`;
+      quantSVG += `<circle cx="${pt.x}" cy="${pt.yQuant}" r="4" fill="var(--quant)"/>`;
+    }
+    quantSVG += `<path d="${stairPath}" stroke="var(--quant)" stroke-width="2" fill="none"/>`;
+  }
+
+  // Ligne de balayage
+  quantSVG += `<line id="scan2" x1="0" y1="0" x2="0" y2="${h}" stroke="red" stroke-width="1" opacity="0.7"/>`;
+  svgQuant.innerHTML = quantSVG;
+
+  // ----------------------------------------------------
+  // PANNEAU 3 : CODAGE BINAIRE
+  // ----------------------------------------------------
+  bitsBox.innerHTML = '';
+  // Limiter le nombre de bits affichÃ©s pour Ã©viter de surcharger le DOM si Fe est trÃ¨s Ã©levÃ©e
+  const maxDisplay = Math.min(samplePoints.length, 100); 
+  for(let i = 0; i < maxDisplay; i++) {
+    const div = document.createElement('div');
+    div.className = 'bit';
+    div.textContent = samplePoints[i].code;
+    bitsBox.appendChild(div);
+  }
+
+  // RÃ©cupÃ©rer les rÃ©fÃ©rences des lignes de balayage
+  scanLine1 = document.getElementById('scan1');
+  scanLine2 = document.getElementById('scan2');
+}
+
+// ----------------------------------------------------
+// BOUCLE D'ANIMATION (Scanner fluide)
+// ----------------------------------------------------
+let lastActiveIndex = -1;
+function animateScanner() {
+  const duration = 4000; // 4 secondes pour parcourir l'Ã©cran
+  const timeElapsed = performance.now() % duration;
+  const progress = timeElapsed / duration;
+  const currentX = progress * w;
+
+  if (scanLine1 && scanLine2) {
+    scanLine1.setAttribute('x1', currentX); scanLine1.setAttribute('x2', currentX);
+    scanLine2.setAttribute('x1', currentX); scanLine2.setAttribute('x2', currentX);
+  }
+
+  // Mettre en surbrillance le code binaire correspondant
+  if (samplePoints.length > 0) {
+    // Trouver l'Ã©chantillon actuellement survolÃ©
+    let activeIndex = samplePoints.findIndex(pt => pt.x > currentX) - 1;
+    if (activeIndex < 0) activeIndex = 0;
+    
+    // Limite de sÃ©curitÃ©
+    if (activeIndex >= 100) activeIndex = 99; 
+
+    if (activeIndex !== lastActiveIndex) {
+      const bitElements = bitsBox.children;
+      if (lastActiveIndex >= 0 && lastActiveIndex < bitElements.length) {
+        bitElements[lastActiveIndex].classList.remove('active');
+      }
+      if (activeIndex >= 0 && activeIndex < bitElements.length) {
+        bitElements[activeIndex].classList.add('active');
+      }
+      lastActiveIndex = activeIndex;
+    }
+  }
+
+  requestAnimationFrame(animateScanner);
+}
+
+// Ã‰couteurs d'Ã©vÃ©nements
+freqInput.addEventListener('input', updateVisualization);
+srInput.addEventListener('input', updateVisualization);
+bitsInput.addEventListener('input', updateVisualization);
+
+// Initialisation
+updateVisualization();
+requestAnimationFrame(animateScanner);

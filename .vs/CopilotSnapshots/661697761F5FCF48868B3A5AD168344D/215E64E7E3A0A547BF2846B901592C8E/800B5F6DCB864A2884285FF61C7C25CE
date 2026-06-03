@@ -1,0 +1,126 @@
+﻿(function (global) {
+  function getParams() {
+    return new URLSearchParams(global.location.search);
+  }
+
+  function initHeader(options) {
+    const opts = options || {};
+    const homeLink = document.querySelector('.lab-global-header__home');
+    const brandSubtitle = document.querySelector('.lab-global-header__brand span');
+
+    if (homeLink && !homeLink.getAttribute('title')) {
+      homeLink.setAttribute('title', 'Retour à l’accueil du laboratoire');
+      homeLink.setAttribute('aria-label', 'Retour à l’accueil du laboratoire');
+    }
+
+    if (brandSubtitle && opts.brandSubtitle) {
+      brandSubtitle.textContent = opts.brandSubtitle;
+    }
+
+    if (opts.bodySection) {
+      document.body.dataset.labSection = opts.bodySection;
+    }
+
+    renderModuleNav(opts.navBasePath || inferBasePath(homeLink));
+  }
+
+  function inferBasePath(homeLink) {
+    if (!homeLink) {
+      return '';
+    }
+
+    const href = homeLink.getAttribute('href') || '';
+    return href.replace(/index\.html$/i, '');
+  }
+
+  function getActiveModule(section) {
+    if (!section) return 'home';
+    if (section.indexOf('analogique') === 0) return 'analogique';
+    if (section.indexOf('numerisation') === 0) return 'numerisation';
+    if (section.indexOf('modulations') === 0 || section.indexOf('compat-symbol') === 0) return 'modulations';
+    if (section.indexOf('transmission') === 0) return 'transmission';
+    if (section.indexOf('multiplexage') === 0 || section.indexOf('compat-pcm') === 0) return 'multiplexage';
+    return 'home';
+  }
+
+  function renderModuleNav(basePath) {
+    if (document.querySelector('.lab-module-nav')) {
+      return;
+    }
+
+    const prefix = basePath || '';
+    const bodySection = document.body.dataset.labSection || '';
+    const active = getActiveModule(bodySection);
+    const navItems = [
+      { key: 'home', label: 'Accueil', href: prefix + 'index.html' },
+      { key: 'analogique', label: 'Analogique', href: prefix + 'pages/analogique/Emetteur.html' },
+      { key: 'numerisation', label: 'Numérisation', href: prefix + 'pages/numerisation/CAN.html' },
+      { key: 'modulations', label: 'Modulations', href: prefix + 'pages/modulations/Simulateur 2.html' },
+      { key: 'transmission', label: 'Transmission', href: prefix + 'pages/transmission/Transmission.html' },
+      { key: 'multiplexage', label: 'Multiplexage', href: prefix + 'pages/multiplexage/MUX.html' }
+    ];
+
+    const nav = document.createElement('nav');
+    nav.className = 'lab-module-nav';
+    nav.setAttribute('aria-label', 'Navigation transversale du laboratoire');
+
+    const list = document.createElement('ul');
+    list.className = 'lab-module-nav__list';
+
+    navItems.forEach(function (item) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.className = 'lab-module-nav__link' + (item.key === active ? ' active' : '');
+      a.href = item.href;
+      a.textContent = item.label;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+
+    nav.appendChild(list);
+
+    const header = document.querySelector('.lab-global-header');
+    if (header && header.parentNode) {
+      header.parentNode.insertBefore(nav, header.nextSibling);
+    }
+  }
+
+  function redirectTo(url) {
+    global.location.replace(url);
+  }
+
+  function setupRedirectPage(targetUrl) {
+    redirectTo(targetUrl);
+  }
+
+  function applyMode(modeHandlers) {
+    const params = getParams();
+    const mode = params.get('mode');
+
+    if (mode && modeHandlers && typeof modeHandlers[mode] === 'function') {
+      modeHandlers[mode](params);
+    }
+
+    return { mode: mode, params: params };
+  }
+
+  function scrollToSection(id, delay) {
+    const wait = typeof delay === 'number' ? delay : 0;
+    global.setTimeout(function () {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, wait);
+  }
+
+  global.LabCommon = {
+    getParams: getParams,
+    initHeader: initHeader,
+    redirectTo: redirectTo,
+    setupRedirectPage: setupRedirectPage,
+    applyMode: applyMode,
+    scrollToSection: scrollToSection,
+    renderModuleNav: renderModuleNav
+  };
+})(window);

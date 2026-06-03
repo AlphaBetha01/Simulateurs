@@ -1,0 +1,1891 @@
+﻿(function (global) {
+  const RECENT_PAGES_KEY = 'labRecentPagesV1';
+  const LAB_PROGRESS_KEY = 'labProgressV1';
+  const LAB_QUIZ_RESULTS_KEY = 'labQuizResultsV1';
+  const LAB_TEACHER_MODE_KEY = 'labTeacherModeV1';
+  const LAB_PROFILE_KEY = 'labProfileV1';
+  const LAB_STRUCTURE = {
+    analogique: {
+      title: 'Cha\u00eene analogique',
+      pages: [
+        { id: 'analogique-emetteur', label: '\u00c9metteur AM / FM', href: 'pages/analogique/Emetteur.html' },
+        { id: 'analogique-amplificateur', label: 'Amplificateur', href: 'pages/analogique/Amplificateur.html' },
+        { id: 'analogique-recepteur', label: 'R\u00e9cepteur', href: 'pages/analogique/R\u00e9cepteur.html' }
+      ],
+      bridges: [
+        { label: 'Basculer vers le CAN', href: 'pages/numerisation/CAN.html' },
+        { label: 'Voir la transmission compl\u00e8te', href: 'pages/transmission/Transmission.html' }
+      ]
+    },
+    numerisation: {
+      title: 'Num\u00e9risation et PCM',
+      pages: [
+        { id: 'numerisation-can', label: 'Convertisseur CAN', href: 'pages/numerisation/CAN.html' },
+        { id: 'multiplexage-e1', label: 'Multitrame E1', href: 'pages/multiplexage/Simulateur_E12.html' }
+      ],
+      bridges: [
+        { label: 'Poursuivre vers les modulations', href: 'pages/modulations/Simulateur 2.html' },
+        { label: 'Comparer E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' }
+      ]
+    },
+    modulations: {
+      title: 'Modulations num\u00e9riques',
+      pages: [
+        { id: 'modulations-symbol', label: 'Analyse d\u2019un symbole', href: 'pages/modulations/Simulateur 2.html?mode=symbol&num=1' },
+        { id: 'modulations-sequence', label: 'S\u00e9quence de symboles', href: 'pages/modulations/Simulateur 2.html' },
+        { id: 'modulations-dashboard', label: 'Tableau de bord BER', href: 'pages/modulations/Tableau de Bord Modulations Num\u00e9riques.html' }
+      ],
+      bridges: [
+        { label: 'Tester la cha\u00eene de transmission', href: 'pages/transmission/Transmission.html' },
+        { label: 'Revenir au CAN', href: 'pages/numerisation/CAN.html' }
+      ]
+    },
+    transmission: {
+      title: 'Transmission sur canal',
+      pages: [
+        { id: 'transmission-base', label: 'Transmission p\u00e9dagogique', href: 'pages/transmission/Transmission.html' },
+        { id: 'transmission-dsp', label: 'Traitement du signal avanc\u00e9', href: 'pages/transmission/Transmission Num et Traite Sgnal.html' }
+      ],
+      bridges: [
+        { label: 'Comparer les modulations', href: 'pages/modulations/Tableau de Bord Modulations Num\u00e9riques.html' },
+        { label: 'Passer au multiplexage', href: 'pages/multiplexage/MUX.html' }
+      ]
+    },
+    multiplexage: {
+      title: 'Multiplexage et r\u00e9seaux',
+      pages: [
+        { id: 'multiplexage-e1', label: 'Multitrame E1', href: 'pages/multiplexage/Simulateur_E12.html' },
+        { id: 'multiplexage-compare', label: 'Comparatif E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' },
+        { id: 'multiplexage-pcm', label: 'PCM + TDM avec audio', href: 'pages/multiplexage/MUX.html?mode=pcm' },
+        { id: 'multiplexage-complet', label: 'Laboratoire r\u00e9seau complet', href: 'pages/multiplexage/MUX.html' }
+      ],
+      bridges: [
+        { label: 'Repartir de la cha\u00eene analogique', href: 'pages/analogique/Emetteur.html' },
+        { label: 'Voir la transmission num\u00e9rique', href: 'pages/transmission/Transmission.html' }
+      ]
+    }
+  };
+
+  const LAB_EVAL_DEFAULTS = {
+    home: {
+      expectedAnswers: [
+        'Un parcours complet suit g\u00e9n\u00e9ralement : analogique ? CAN ? modulations ? transmission ? multiplexage.',
+        'La page CAN sert de transition cl\u00e9 entre signal analogique et repr\u00e9sentation num\u00e9rique.',
+        'Les notions de capacit\u00e9, d\u2019overhead et de hi\u00e9rarchie deviennent centrales dans les modules de transmission et de multiplexage.'
+      ],
+      quiz: [
+        {
+          question: 'Quelle page joue le r\u00f4le de passerelle entre monde analogique et monde num\u00e9rique ? ',
+          options: ['Amplificateur', 'CAN', 'MUX'],
+          answer: 1,
+          explanation: 'Le convertisseur CAN introduit l\u2019\u00e9chantillonnage, la quantification et le codage binaire.'
+        },
+        {
+          question: 'Quel ordre est le plus coh\u00e9rent pour une d\u00e9couverte progressive ? ',
+          options: ['Multiplexage ? analogique ? CAN', 'Analogique ? CAN ? modulations ? transmission', 'Transmission ? analogique ? PCM'],
+          answer: 1,
+          explanation: 'On part d\u2019abord du signal physique avant de monter vers la modulation puis le r\u00e9seau.'
+        }
+      ]
+    },
+    analogique: {
+      expectedAnswers: [
+        'La cha\u00eene analogique transporte l\u2019information via une grandeur continue : amplitude, fr\u00e9quence ou enveloppe selon le bloc \u00e9tudi\u00e9.',
+        'Un fonctionnement non lin\u00e9aire appara\u00eet quand le montage atteint ses limites physiques, par exemple la saturation.',
+        'Le bon raisonnement consiste \u00e0 comparer entr\u00e9e, traitement et sortie pour expliquer la fid\u00e9lit\u00e9 finale.'
+      ],
+      quiz: [
+        {
+          question: 'Dans une modulation AM, o\u00f9 se lit principalement l\u2019information utile ? ',
+          options: ['Dans l\u2019enveloppe', 'Dans la tension d\u2019alimentation', 'Dans la seule phase'],
+          answer: 0,
+          explanation: 'L\u2019amplitude instantan\u00e9e de la porteuse suit le signal message, donc l\u2019enveloppe contient l\u2019information.'
+        },
+        {
+          question: 'Quel ph\u00e9nom\u00e8ne indique qu\u2019un amplificateur sort de son r\u00e9gime lin\u00e9aire ? ',
+          options: ['L\u2019\u00e9cr\u00eatage', 'La num\u00e9risation', 'Le multiplexage'],
+          answer: 0,
+          explanation: 'L\u2019\u00e9cr\u00eatage appara\u00eet lorsque la sortie ne peut plus suivre le gain demand\u00e9 \u00e0 cause des limites d\u2019alimentation.'
+        }
+      ]
+    },
+    numerisation: {
+      expectedAnswers: [
+        'Le crit�re fondamental d��chantillonnage est Fe ? 2fmax pour �viter l�aliasing.',
+        'L�augmentation du nombre de bits r�duit l�erreur de quantification et am�liore le SQNR.',
+        'L�aliasing est un d�faut temporel alors que la quantification est un d�faut d�amplitude.'
+      ],
+      quiz: [
+        {
+          question: 'Quel param�tre combat directement l�aliasing ? ',
+          options: ['La fr�quence d��chantillonnage', 'Le nombre de bits', 'La couleur du signal'],
+          answer: 0,
+          explanation: 'L�aliasing dispara�t en relevant Fe au-del� de la borne de Nyquist.'
+        },
+        {
+          question: 'Que fait principalement l�augmentation du nombre de bits ? ',
+          options: ['Elle r�duit l�erreur de quantification', 'Elle double la fr�quence du signal', 'Elle supprime automatiquement le bruit de canal'],
+          answer: 0,
+          explanation: 'Davantage de niveaux quantifi�s signifie un pas plus fin et donc une erreur d�amplitude plus faible.'
+        }
+      ]
+    },
+    modulations: {
+      expectedAnswers: [
+        'Une modulation plus dense augmente l�efficacit� spectrale mais r�duit la distance minimale entre symboles.',
+        'En PSK, l�information se lit surtout sur la phase ; en QAM, elle combine amplitude et phase.',
+        'Le plan I/Q permet une lecture g�om�trique directe de la d�cision symbole.'
+      ],
+      quiz: [
+        {
+          question: 'Pourquoi 64-QAM demande-t-elle un meilleur SNR que QPSK ? ',
+          options: ['Parce que ses points sont plus rapproch�s', 'Parce qu�elle utilise moins de bits', 'Parce qu�elle ne transmet pas sur I/Q'],
+          answer: 0,
+          explanation: 'La densit� de constellation augmente et la moindre perturbation peut changer la d�cision symbole.'
+        },
+        {
+          question: 'Quelle grandeur porte surtout l�information en PSK ? ',
+          options: ['La phase', 'La puissance d�alimentation', 'La largeur du c�ble'],
+          answer: 0,
+          explanation: 'La PSK code les symboles par des angles diff�rents dans le plan I/Q.'
+        }
+      ]
+    },
+    transmission: {
+      expectedAnswers: [
+        'Le SNR, la marge de capacit\u00e9 et l\u2019ouverture de l\u2019\u0153il sont des indicateurs prioritaires de robustesse de lien.',
+        'La gigue agit principalement sur le moment d\u2019\u00e9chantillonnage et de d\u00e9cision.',
+        'Le FEC n\u2019am\u00e9liore pas le canal physique lui-m\u00eame mais augmente la robustesse globale du syst\u00e8me.'
+      ],
+      quiz: [
+        {
+          question: 'Quel indicateur relie directement d\u00e9bit demand\u00e9 et capacit\u00e9 du canal ? ',
+          options: ['La marge de capacit\u00e9', 'La couleur du trac\u00e9', 'Le nombre de panneaux'],
+          answer: 0,
+          explanation: 'La marge de capacit\u00e9 exprime l\u2019\u00e9cart entre le d\u00e9bit utile et la limite que peut supporter le canal.'
+        },
+        {
+          question: 'Quel effet est typiquement li\u00e9 au jitter ? ',
+          options: ['Une fermeture horizontale de l\u2019\u0153il', 'Une hausse du nombre de bits par symbole', 'Une conversion PCM'],
+          answer: 0,
+          explanation: 'Le jitter perturbe surtout le calage temporel des d\u00e9cisions.'
+        }
+      ]
+    },
+    multiplexage: {
+      expectedAnswers: [
+        'Le multiplexage temporel partage une m\u00eame ressource physique en s\u00e9parant les utilisateurs par intervalles de temps.',
+        'E1 s\u00e9pare voix et signalisation alors que le T1 classique utilise historiquement du robbed bit signaling.',
+        'Les hi\u00e9rarchies PDH puis SDH/SONET servent \u00e0 agr\u00e9ger des flux primaires vers des capacit\u00e9s r\u00e9seau bien plus \u00e9lev\u00e9es.'
+      ],
+      quiz: [
+        {
+          question: 'Quelle affirmation d\u00e9crit le mieux l\u2019E1 classique ? ',
+          options: ['Signalisation s\u00e9par\u00e9e de la voix', 'Vol p\u00e9riodique du bit de poids faible', 'Aucune structure de trame'],
+          answer: 0,
+          explanation: 'L\u2019E1 r\u00e9serve des intervalles d\u00e9di\u00e9s \u00e0 la structure et \u00e0 la signalisation, laissant les voies utiles intactes.'
+        },
+        {
+          question: '\u00c0 quoi sert une hi\u00e9rarchie PDH/SDH ? ',
+          options: ['\u00c0 agr\u00e9ger plusieurs flux primaires', '\u00c0 cr\u00e9er une modulation FM', '\u00c0 filtrer le bruit analogique'],
+          answer: 0,
+          explanation: 'Ces hi\u00e9rarchies regroupent les tributaires de faible d\u00e9bit dans des liaisons de plus grande capacit\u00e9.'
+        }
+      ]
+    }
+  };
+
+  const LAB_GUIDE_DEFAULTS = {
+    analogique: {
+      title: 'Cha\u00eene analogique',
+      subtitle: 'Observez la transformation progressive du message, de la modulation jusqu\u2019\u00e0 la restitution.',
+      help: [
+        'Commencez par identifier la grandeur qui porte l\u2019information : amplitude, fr\u00e9quence ou enveloppe.',
+        'Reliez toujours une d\u00e9formation visuelle \u00e0 un effet physique : bruit, saturation, filtrage ou d\u00e9phasage.',
+        'Comparez le signal d\u2019entr\u00e9e, le signal trait\u00e9 et le signal restitu\u00e9 pour raisonner en cha\u00eene compl\u00e8te.'
+      ],
+      objectives: [
+        'Identifier le r\u00f4le de chaque bloc analogique de la cha\u00eene radio.',
+        'Relier un r\u00e9glage de curseur \u00e0 une d\u00e9formation temporelle observable.',
+        'Expliquer les limites physiques d\u2019un traitement analogique.'
+      ],
+      questions: [
+        'Quel param\u00e8tre modifie directement la fid\u00e9lit\u00e9 du message ?',
+        'Quelle grandeur reste stable et laquelle porte l\u2019information ?',
+        '\u00c0 partir de quel r\u00e9glage le traitement devient-il non lin\u00e9aire ?'
+      ],
+      tpSteps: [
+        { title: 'Observer la r\u00e9f\u00e9rence', text: 'Lancez la page dans un \u00e9tat nominal et rep\u00e9rez le signal de r\u00e9f\u00e9rence avant traitement.', target: '.controls' },
+        { title: 'Faire varier un seul param\u00e8tre', text: 'Modifiez un seul curseur \u00e0 la fois pour attribuer clairement chaque effet \u00e0 sa cause.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la fid\u00e9lit\u00e9', text: 'Comparez le signal final au signal de d\u00e9part et qualifiez la qualit\u00e9 de transmission.', target: '.stage' }
+      ]
+    },
+    numerisation: {
+      title: 'Num\u00e9risation',
+      subtitle: 'Passez du monde continu au monde discret en distinguant \u00e9chantillonnage, quantification et codage.',
+      help: [
+        'Surveillez toujours le rapport entre fr\u00e9quence du signal et fr\u00e9quence d\u2019\u00e9chantillonnage.',
+        'Le nombre de bits agit sur le bruit de quantification, pas sur l\u2019aliasing.',
+        'Interpr\u00e9tez les indicateurs comme des outils de dimensionnement de convertisseur.'
+      ],
+      objectives: [
+        'V\u00e9rifier le crit\u00e8re de Nyquist-Shannon.',
+        'Estimer l\u2019effet du nombre de bits sur la qualit\u00e9 num\u00e9rique.',
+        'Lire un codage binaire associ\u00e9 \u00e0 un niveau quantifi\u00e9.'
+      ],
+      questions: [
+        'Quand observe-t-on un repliement spectral ?',
+        'Comment \u00e9volue le SQNR quand la r\u00e9solution augmente ?',
+        'Pourquoi deux convertisseurs avec la m\u00eame Fe peuvent-ils donner des r\u00e9sultats diff\u00e9rents ?'
+      ],
+      tpSteps: [
+        { title: 'Cr\u00e9er un aliasing', text: 'R\u00e9glez un cas de sous-\u00e9chantillonnage puis notez la fr\u00e9quence apparente du signal repli\u00e9.', target: '.lab-preset-bar' },
+        { title: 'Revenir \u00e0 Nyquist', text: 'Placez-vous juste au seuil de Nyquist et observez la faible marge disponible.', target: '.lab-kpi-grid' },
+        { title: 'Augmenter la r\u00e9solution', text: 'Gardez Fe fixe puis augmentez le nombre de bits pour isoler l\u2019effet de la quantification.', target: '.stage' }
+      ]
+    },
+    modulations: {
+      title: 'Modulations num\u00e9riques',
+      subtitle: 'Lisez la constellation comme une carte de d\u00e9cision o\u00f9 se combinent phase, amplitude et robustesse au bruit.',
+      help: [
+        'En PSK, observez surtout l\u2019angle ; en QAM, amplitude et angle sont tous deux porteurs d\u2019information.',
+        'Plus la constellation est dense, plus la distance minimale entre symboles diminue.',
+        'Reliez la trajectoire I/Q \u00e0 la forme temporelle g\u00e9n\u00e9r\u00e9e.'
+      ],
+      objectives: [
+        'Identifier la grandeur informative dominante selon la famille de modulation.',
+        'Relier le nombre de bits par symbole \u00e0 la densit\u00e9 de constellation.',
+        'Interpr\u00e9ter une s\u00e9quence binaire comme une suite de points I/Q.'
+      ],
+      questions: [
+        'Quelle modulation offre la meilleure robustesse \u00e0 puissance \u00e9gale ?',
+        'Pourquoi 64-QAM exige-t-elle un meilleur SNR que QPSK ?',
+        'Comment la trajectoire I/Q refl\u00e8te-t-elle la succession des symboles ?'
+      ],
+      tpSteps: [
+        { title: 'Choisir une famille', text: 'S\u00e9lectionnez une modulation et notez la grandeur physique qui porte l\u2019information.', target: '.panel' },
+        { title: 'Comparer les constellations', text: 'Passez de BPSK \u00e0 16-QAM et observez la r\u00e9duction de l\u2019\u00e9cart entre points.', target: '.lab-kpi-grid' },
+        { title: 'Lire la forme d\u2019onde', text: 'Reliez chaque symbole affich\u00e9 \u00e0 son influence sur la trajectoire temporelle.', target: '.stage' }
+      ]
+    },
+    transmission: {
+      title: 'Transmission sur canal',
+      subtitle: 'Analysez la cha\u00eene compl\u00e8te avec ses limitations physiques : bruit, att\u00e9nuation, gigue et filtrage.',
+      help: [
+        'Commencez par le SNR et la marge de capacit\u00e9 avant d\u2019interpr\u00e9ter BER ou SER.',
+        'La gigue agit sur le temps de d\u00e9cision alors que le bruit agit sur l\u2019amplitude re\u00e7ue.',
+        'Utilisez les pr\u00e9r\u00e9glages comme sc\u00e9narios de bilan de liaison.'
+      ],
+      objectives: [
+        '\u00c9valuer la robustesse d\u2019un lien num\u00e9rique complet.',
+        'Relier une contrainte de canal \u00e0 une d\u00e9gradation de la d\u00e9cision.',
+        'Interpr\u00e9ter la capacit\u00e9 th\u00e9orique au regard du d\u00e9bit demand\u00e9.'
+      ],
+      questions: [
+        'Quel param\u00e8tre referme le plus rapidement l\u2019\u0153il ?',
+        'Dans quels cas le FEC apporte-t-il une marge utile ?',
+        'Pourquoi une modulation dense est-elle plus sensible \u00e0 distance \u00e9gale ?'
+      ],
+      tpSteps: [
+        { title: '\u00c9tablir un cas nominal', text: 'Choisissez un canal propre puis relevez SNR, d\u00e9bit et \u00e9tat du lien.', target: '.lab-preset-bar' },
+        { title: 'D\u00e9grader un param\u00e8tre', text: 'Augmentez distance, bruit ou jitter s\u00e9par\u00e9ment pour identifier leur impact dominant.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la r\u00e9ception', text: 'Interpr\u00e9tez BER/SER et diagramme de l\u2019\u0153il pour justifier la qualit\u00e9 finale.', target: '.stage' }
+      ]
+    },
+    multiplexage: {
+      title: 'Multiplexage et hi\u00e9rarchies',
+      subtitle: 'Passez de la voie \u00e9l\u00e9mentaire \u00e0 l\u2019architecture de transport en distinguant structure, signalisation et agr\u00e9gation.',
+      help: [
+        'Rep\u00e9rez d\u2019abord la ressource utile, puis l\u2019overhead n\u00e9cessaire \u00e0 la synchronisation et \u00e0 la supervision.',
+        'Comparez toujours voix utile, signalisation et d\u00e9bit ligne.',
+        'Interpr\u00e9tez la hi\u00e9rarchie comme un empilement de tributaires et d\u2019overhead r\u00e9seau.'
+      ],
+      objectives: [
+        'Lire une trame E1 ou T1 au niveau de ses champs fonctionnels.',
+        'Expliquer la diff\u00e9rence entre signalisation s\u00e9par\u00e9e et robbed bit signaling.',
+        'Relier un niveau PDH/SDH ou SONET \u00e0 sa capacit\u00e9 d\u2019agr\u00e9gation.'
+      ],
+      questions: [
+        'Pourquoi E1 et T1 n\u2019ont-ils pas la m\u00eame efficacit\u00e9 utile ?',
+        'Quel est l\u2019int\u00e9r\u00eat d\u2019une hi\u00e9rarchie synchrone face au PDH ?',
+        'Que transporte r\u00e9ellement l\u2019overhead dans une trame r\u00e9seau ?'
+      ],
+      tpSteps: [
+        { title: 'Identifier la structure', text: 'Commencez par distinguer les intervalles utiles des champs de cadrage et de signalisation.', target: '.lab-preset-bar' },
+        { title: 'Comparer deux normes', text: 'Passez d\u2019une architecture E1 \u00e0 T1 et relevez la diff\u00e9rence de logique r\u00e9seau.', target: '.lab-kpi-grid' },
+        { title: 'Monter en hi\u00e9rarchie', text: 'Observez comment une trame primaire devient un tribut d\u2019un niveau sup\u00e9rieur.', target: '#hierarchieSection' }
+      ]
+    }
+  };
+
+  const LAB_GUIDES = {
+    home: {
+      title: 'Portail du laboratoire virtuel',
+      subtitle: 'Utilisez l\u2019accueil comme carte d\u2019orientation pour construire un parcours progressif, du signal analogique jusqu\u2019aux r\u00e9seaux multiplex\u00e9s.',
+      help: [
+        'Commencez par la cha\u00eene analogique si vous souhaitez une progression p\u00e9dagogique classique.',
+        'Passez ensuite par le CAN puis les modulations avant d\u2019attaquer la transmission sur canal.',
+        'Terminez par le multiplexage pour replacer chaque flux dans une architecture r\u00e9seau r\u00e9elle.'
+      ],
+      objectives: [
+        'Identifier les grands blocs p\u00e9dagogiques du laboratoire.',
+        'Choisir un parcours coh\u00e9rent selon votre niveau.',
+        'Comprendre les passerelles entre couche physique, modulation et transport r\u00e9seau.'
+      ],
+      questions: [
+        'Quel ordre de visite permet de comprendre toute la cha\u00eene t\u00e9l\u00e9com ?',
+        'Quelle page relie le monde analogique au monde num\u00e9rique ?',
+        '\u00c0 quel moment la notion de capacit\u00e9 ou d\u2019overhead devient-elle centrale ?'
+      ],
+      tpSteps: [
+        { title: 'Choisir un parcours', text: 'Rep\u00e9rez le module de d\u00e9part selon votre objectif : analogique, num\u00e9risation, modulation, transmission ou multiplexage.', target: '.top-grid' },
+        { title: 'Filtrer les simulateurs', text: 'Utilisez la recherche rapide et les th\u00e8mes pour isoler un bloc pr\u00e9cis du laboratoire.', target: '.discovery-panel' },
+        { title: 'Planifier la progression', text: 'Suivez le parcours recommand\u00e9 pour passer du message analogique au transport r\u00e9seau.', target: '.sections' }
+      ]
+    },
+    'analogique-emetteur': {
+      title: '\u00c9metteur AM / FM',
+      subtitle: '\u00c9tudiez la formation du signal transmis en comparant modulation d\u2019amplitude et modulation de fr\u00e9quence.',
+      help: [
+        'En AM, l\u2019enveloppe suit le message utile.',
+        'En FM, l\u2019amplitude reste stable alors que la fr\u00e9quence instantan\u00e9e varie.',
+        'Comparez la bande occup\u00e9e estim\u00e9e selon la technique retenue.'
+      ],
+      objectives: [
+        'Diff\u00e9rencier AM et FM \u00e0 partir des formes d\u2019onde.',
+        'Relier fr\u00e9quence message et fr\u00e9quence porteuse.',
+        'Estimer l\u2019occupation spectrale d\u2019une modulation analogique.'
+      ],
+      questions: [
+        'Pourquoi la FM est-elle plus robuste \u00e0 l\u2019amplitude parasite ?',
+        '\u00c0 quoi correspond l\u2019indice de modulation en AM ?',
+        'Pourquoi la bande occup\u00e9e augmente-t-elle avec la d\u00e9viation FM ?'
+      ],
+      tpSteps: [
+        { title: 'Observer l\u2019information', text: 'Comparez le signal message et la porteuse avant modulation.', target: '.controls' },
+        { title: 'Basculer AM/FM', text: 'Activez alternativement AM puis FM et identifiez la grandeur modul\u00e9e.', target: '.lab-kpi-grid' },
+        { title: 'Conclure sur la bande', text: 'Reliez le r\u00e9glage choisi \u00e0 la bande occup\u00e9e affich\u00e9e.', target: '.stage' }
+      ]
+    },
+    'analogique-amplificateur': {
+      title: 'Amplificateur et saturation',
+      subtitle: 'Analysez le passage d\u2019un r\u00e9gime lin\u00e9aire \u00e0 un r\u00e9gime satur\u00e9 en observant gain et \u00e9cr\u00eatage.',
+      help: ['Le gain lin\u00e9aire se lit aussi en dB.', 'L\u2019\u00e9cr\u00eatage appara\u00eet quand la sortie atteint la limite d\u2019alimentation.', 'Une saturation augmente la distorsion harmonique.'],
+      objectives: ['Distinguer r\u00e9gime lin\u00e9aire et saturation.', 'Lire un taux de saturation.', 'Relier Vcc \u00e0 l\u2019amplitude r\u00e9ellement disponible.'],
+      questions: ['Pourquoi le gain ne peut-il pas cro\u00eetre ind\u00e9finiment ?', 'Que devient la forme spectrale d\u2019un sinus \u00e9cr\u00eat\u00e9 ?', 'Comment identifier visuellement une limite d\u2019alimentation ?'],
+      tpSteps: [
+        { title: 'Zone lin\u00e9aire', text: 'R\u00e9glez un gain mod\u00e9r\u00e9 puis relevez la cr\u00eate de sortie.', target: '.lab-preset-bar' },
+        { title: 'Approcher Vcc', text: 'Augmentez le gain jusqu\u2019\u00e0 voir appara\u00eetre la saturation.', target: '.lab-kpi-grid' },
+        { title: 'Comparer les puissances', text: 'Interpr\u00e9tez l\u2019\u00e9volution des vu-m\u00e8tres en entr\u00e9e et en sortie.', target: '.stage' }
+      ]
+    },
+    'analogique-recepteur': {
+      title: 'R\u00e9cepteur et d\u00e9modulation d\u2019enveloppe',
+      subtitle: '\u00c9tudiez l\u2019effet combin\u00e9 du bruit re\u00e7u et du filtrage d\u2019enveloppe sur la restitution du message.',
+      help: ['Le redressement extrait l\u2019enveloppe positive.', 'Le filtre doit \u00eatre assez rapide pour suivre le message mais assez lent pour lisser la HF.', 'Le SNR estim\u00e9 aide \u00e0 relier le bruit visuel \u00e0 l\u2019intelligibilit\u00e9.'],
+      objectives: ['Comprendre la d\u00e9tection d\u2019enveloppe.', 'Choisir un filtrage coh\u00e9rent.', '\u00c9valuer la qualit\u00e9 du message restitu\u00e9.'],
+      questions: ['Pourquoi un filtre trop lent \u00e9touffe-t-il le message ?', 'Pourquoi un filtre trop rapide laisse-t-il passer les parasites ?', 'Quel lien faites-vous entre SNR et qualit\u00e9 per\u00e7ue ?'],
+      tpSteps: [
+        { title: 'Canal propre', text: 'Commencez par un cas peu bruit\u00e9 pour visualiser le fonctionnement id\u00e9al.', target: '.lab-preset-bar' },
+        { title: 'Faire varier le filtre', text: 'Modifiez seulement la constante de lissage pour isoler l\u2019effet du condensateur.', target: '.lab-kpi-grid' },
+        { title: 'Qualifier la restitution', text: 'Concluez \u00e0 partir du panneau final et de l\u2019indicateur de qualit\u00e9.', target: '.stage' }
+      ]
+    },
+    'numerisation-can': {
+      title: 'Convertisseur CAN',
+      subtitle: 'Mettez en \u00e9vidence les contraintes fondamentales de tout convertisseur analogique-num\u00e9rique.',
+      help: ['L\u2019aliasing d\u00e9pend d\u2019abord de Fe.', 'Le bruit de quantification d\u00e9pend d\u2019abord de B.', 'Un bon diagnostic s\u00e9pare erreur temporelle et erreur d\u2019amplitude.'],
+      objectives: ['V\u00e9rifier Nyquist-Shannon.', 'Lire un pas de quantification.', 'Comparer plusieurs compromis convertisseur.'],
+      questions: ['Quel r\u00e9glage supprime l\u2019aliasing sans am\u00e9liorer la r\u00e9solution ?', 'Que signifie concr\u00e8tement un SQNR plus \u00e9lev\u00e9 ?', 'Pourquoi le nombre de niveaux suit-il une loi en puissance de deux ?'],
+      tpSteps: [
+        { title: 'Cr\u00e9er un d\u00e9faut d\u2019\u00e9chantillonnage', text: 'Utilisez le pr\u00e9r\u00e9glage de sous-\u00e9chantillonnage et d\u00e9crivez le repliement observ\u00e9.', target: '.lab-preset-bar' },
+        { title: 'Augmenter les bits', text: 'Gardez Fe constante puis augmentez B pour r\u00e9duire l\u2019\u00e9cart de quantification.', target: '.lab-kpi-grid' },
+        { title: 'Lire le code binaire', text: 'Associez un niveau quantifi\u00e9 \u00e0 sa repr\u00e9sentation num\u00e9rique.', target: '.stage' }
+      ]
+    },
+    'modulations-symbol': {
+      title: 'Analyse d\u2019un symbole',
+      subtitle: 'Utilisez un symbole unique pour relier bits, point I/Q et \u00e9quation temporelle.',
+      help: ['Un point I/Q est une repr\u00e9sentation g\u00e9om\u00e9trique d\u2019un symbole.', 'La phase se lit sur l\u2019angle et l\u2019amplitude sur la distance \u00e0 l\u2019origine.', 'En mode symbole unique, concentrez-vous sur l\u2019interpr\u00e9tation et non sur la transition.'],
+      objectives: ['Relier un mot binaire \u00e0 un seul symbole.', 'Lire amplitude, phase ou fr\u00e9quence selon la modulation.', 'Interpr\u00e9ter l\u2019\u00e9quation s(t).'],
+      questions: ['Quel param\u00e8tre change entre deux symboles PSK ?', 'Pourquoi QAM combine-t-elle deux degr\u00e9s de libert\u00e9 ?', 'Que repr\u00e9sente la distance \u00e0 l\u2019origine du plan I/Q ?'],
+      tpSteps: [
+        { title: 'Choisir un symbole', text: 'Saisissez un mot binaire valide et identifiez imm\u00e9diatement sa position en constellation.', target: '.panel' },
+        { title: 'Lire les mesures', text: 'Notez la phase, l\u2019amplitude ou ?f associ\u00e9e au symbole choisi.', target: '.lab-kpi-grid' },
+        { title: 'Interpr\u00e9ter l\u2019onde', text: 'Reliez les valeurs affich\u00e9es \u00e0 la forme s(t) produite.', target: '.stage' }
+      ]
+    },
+    'modulations-sequence': {
+      title: 'S\u00e9quence de symboles',
+      subtitle: 'Analysez les transitions entre symboles et leur traduction sur la trajectoire I/Q.',
+      help: ['La trajectoire entre points d\u00e9pend de l\u2019ordre des symboles.', 'Une s\u00e9quence permet d\u2019\u00e9tudier les transitions plus que la seule position.', 'Plus M augmente, plus l\u2019espace d\u00e9cisionnel se resserre.'],
+      objectives: ['Lire une s\u00e9quence compl\u00e8te de symboles.', 'Interpr\u00e9ter la trajectoire I/Q.', 'Comparer plusieurs familles de modulation.'],
+      questions: ['Pourquoi deux s\u00e9quences avec les m\u00eames symboles peuvent-elles produire des trajectoires diff\u00e9rentes ?', 'Quel int\u00e9r\u00eat p\u00e9dagogique a une s\u00e9quence multi-symboles ?', 'Quel compromis entre robustesse et efficacit\u00e9 observez-vous ?'],
+      tpSteps: [
+        { title: 'Composer une s\u00e9quence', text: 'Saisissez plusieurs symboles corrects puis observez l\u2019ordre de transition.', target: '.panel' },
+        { title: 'Comparer les familles', text: 'Passez de PSK \u00e0 QAM ou FSK et identifiez la grandeur dominante.', target: '.lab-kpi-grid' },
+        { title: 'Lire la trajectoire', text: 'Expliquez comment la suite de symboles se refl\u00e8te dans I/Q et dans s(t).', target: '.stage' }
+      ]
+    },
+    'modulations-dashboard': {
+      title: 'Tableau de bord des modulations',
+      subtitle: 'Comparez la performance th\u00e9orique de plusieurs ordres de modulation sous contrainte de bruit et de bande.',
+      help: ['L\u2019efficacit\u00e9 spectrale augmente avec M mais la robustesse diminue.', 'Eb/N0 et BER sont des outils de comparaison entre modulations.', 'Le roll-off agit sur la bande plus que sur le bruit lui-m\u00eame.'],
+      objectives: ['Comparer plusieurs modulations sur des crit\u00e8res th\u00e9oriques.', 'Relier Eb/N0, BER et efficacit\u00e9 spectrale.', 'Choisir une modulation selon le contexte de canal.'],
+      questions: ['Pourquoi une modulation dense est-elle attractive malgr\u00e9 sa sensibilit\u00e9 ?', 'Quel r\u00f4le joue le roll-off dans l\u2019occupation spectrale ?', 'Dans quel cas pr\u00e9f\u00e9reriez-vous BPSK \u00e0 16-QAM ?'],
+      tpSteps: [
+        { title: 'Choisir deux modulations', text: 'S\u00e9lectionnez une modulation robuste puis une modulation dense \u00e0 comparer.', target: '.controls, .panel, .wrap' },
+        { title: 'Comparer BER et efficacit\u00e9', text: 'Relevez les indicateurs de performance th\u00e9orique pour justifier votre choix.', target: '.lab-kpi-grid, .stats-board' },
+        { title: 'Conclure sur le compromis', text: '\u00c9noncez dans quel contexte r\u00e9seau chaque modulation devient pertinente.', target: '.wrap' }
+      ]
+    },
+    'transmission-base': {
+      title: 'Transmission p\u00e9dagogique compl\u00e8te',
+      subtitle: 'Faites un v\u00e9ritable bilan de liaison simplifi\u00e9 en suivant l\u2019effet du canal sur la r\u00e9cup\u00e9ration binaire.',
+      help: ['Le lien se juge d\u2019abord sur la marge de capacit\u00e9 et le SNR.', 'La gigue ferme l\u2019\u0153il sans forc\u00e9ment changer fortement l\u2019amplitude moyenne.', 'Le seuil de d\u00e9cision d\u00e9cale la fronti\u00e8re logique au r\u00e9cepteur.'],
+      objectives: ['\u00c9valuer la qualit\u00e9 d\u2019une transmission num\u00e9rique.', 'Relier BER \u00e0 un sc\u00e9nario de canal.', 'Utiliser les pr\u00e9r\u00e9glages comme cas d\u2019ing\u00e9nierie.'],
+      questions: ['Quel param\u00e8tre d\u00e9grade le plus vite le BER dans ce simulateur ?', 'Pourquoi la marge de capacit\u00e9 est-elle plus parlante qu\u2019un seul d\u00e9bit brut ?', 'Comment justifier l\u2019usage du Manchester ou du FEC ?'],
+      tpSteps: [
+        { title: 'Cas nominal', text: 'Commencez par une liaison propre puis relevez les indicateurs avant toute d\u00e9gradation.', target: '.lab-preset-bar' },
+        { title: 'Stress du lien', text: 'Appliquez un sc\u00e9nario radio ou satellite et observez l\u2019\u0153il ainsi que BER.', target: '.lab-kpi-grid' },
+        { title: 'Corriger le lien', text: 'Activez FEC, filtre ou gain TX pour r\u00e9cup\u00e9rer une marge acceptable.', target: '.stage' }
+      ]
+    },
+    'transmission-dsp': {
+      title: 'Traitement du signal avanc\u00e9',
+      subtitle: 'Liez constellation, spectre et diagramme de l\u2019\u0153il dans une lecture compl\u00e8te du canal num\u00e9rique.',
+      help: ['Le SER refl\u00e8te la s\u00e9paration r\u00e9elle des nuages de symboles.', 'Le spectre d\u00e9pend fortement du filtre de mise en forme et du roll-off.', 'Eb/N0 facilite la comparaison entre modulations d\u2019ordres diff\u00e9rents.'],
+      objectives: ['Relier spectre, I/Q et \u0153il \u00e0 un m\u00eame sc\u00e9nario de canal.', 'Comparer BPSK, QPSK et QAM.', 'Interpr\u00e9ter l\u2019effet du filtre RRC.'],
+      questions: ['Pourquoi le RRC r\u00e9duit-il l\u2019ISI ?', 'Comment expliquer une constellation plus floue mais un spectre plus contenu ?', 'Que r\u00e9v\u00e8le un \u0153il qui se ferme horizontalement ou verticalement ?'],
+      tpSteps: [
+        { title: 'Sc\u00e9nario robuste', text: 'D\u00e9marrez en BPSK ou QPSK pour visualiser une constellation tr\u00e8s s\u00e9par\u00e9e.', target: '.lab-preset-bar' },
+        { title: 'Densifier la modulation', text: 'Passez \u00e0 16-QAM ou 64-QAM et comparez l\u2019\u00e9cartement des points.', target: '.lab-kpi-grid' },
+        { title: 'Lire le canal', text: 'Confrontez SER, Eb/N0, spectre et \u0153il pour conclure sur la qualit\u00e9 de transmission.', target: '.stage' }
+      ]
+    },
+    'multiplexage-e1': {
+      title: 'Multitrame E1',
+      subtitle: 'D\u00e9codez la logique interne d\u2019une structure PCM 30/32 \u00e0 l\u2019\u00e9chelle des intervalles de temps.',
+      help: ['IT0 cadra la trame, IT16 porte la signalisation de multitrame.', 'Une trame dure 125 \u00b5s et donc la cadence vaut 8000 trames/s.', 'La multitrame donne acc\u00e8s \u00e0 la logique CAS sur 16 trames.'],
+      objectives: ['Identifier FAS, NFAS, VMT et CAS.', 'Expliquer le r\u00f4le de la multitrame.', 'Relier IT utile et d\u00e9bit voix de 64 kbit/s.'],
+      questions: ['Pourquoi la signalisation CAS s\u2019\u00e9tale-t-elle sur plusieurs trames ?', 'Quel est le r\u00f4le pr\u00e9cis du VMT ?', 'Combien de voies utiles l\u2019E1 laisse-t-il r\u00e9ellement disponibles ?'],
+      tpSteps: [
+        { title: 'Cadrer la trame', text: 'Commencez par IT0 et distinguez trame paire et impaire.', target: '.lab-preset-bar' },
+        { title: 'Observer la CAS', text: 'Passez sur IT16 pour comprendre l\u2019organisation de la signalisation.', target: '.lab-kpi-grid' },
+        { title: 'Lire une voie utile', text: 'Comparez ensuite une case de voix utile avec les champs d\u2019overhead.', target: '.stage' }
+      ]
+    },
+    'multiplexage-compare': {
+      title: 'Comparatif E1 / T1',
+      subtitle: 'Mettez en regard deux philosophies historiques du transport t\u00e9l\u00e9phonique num\u00e9rique.',
+      help: ['E1 s\u00e9pare mieux structure, signalisation et voies utiles.', 'T1 utilise un F-Bit et, historiquement, du robbed bit signaling.', 'Le bon r\u00e9flexe est de comparer d\u00e9bit ligne, capacit\u00e9 utile et m\u00e9thode de signalisation.'],
+      objectives: ['Comparer E1 et T1 sur le plan structurel.', 'Expliquer la notion de robbed bit signaling.', 'Mesurer l\u2019impact de l\u2019overhead et des choix de signalisation.'],
+      questions: ['Pourquoi l\u2019E1 est-il souvent qualifi\u00e9 de clear channel ?', 'Quel compromis historique a pouss\u00e9 le T1 vers le robbed bit ?', 'Quelle architecture pr\u00e9f\u00e9rez-vous pour un transport de donn\u00e9es modernes ?'],
+      tpSteps: [
+        { title: '\u00c9tudier E1', text: 'Commencez par la structure E1 et relevez ses champs r\u00e9serv\u00e9s.', target: '.lab-preset-bar' },
+        { title: 'Basculer en T1', text: 'Observez l\u2019apparition du F-Bit et des trames robbed bit.', target: '.lab-kpi-grid' },
+        { title: 'Comparer la logique', text: 'Concluez sur la s\u00e9paration ou l\u2019intrusion de la signalisation dans la voix.', target: '.stage' }
+      ]
+    },
+    'multiplexage-pcm': {
+      title: 'PCM + TDM avec audio',
+      subtitle: 'Injectez un flux audio p\u00e9dagogique dans une voie et suivez sa place dans la matrice TDM.',
+      help: ['La voie 1 sert de fil conducteur entre audio, octet PCM et case de trame.', 'L\u2019oscilloscope montre une num\u00e9risation simplifi\u00e9e mais coh\u00e9rente avec un canal t\u00e9l\u00e9phonique.', 'Le scanner mat\u00e9rialise l\u2019interlacement temporel des voies.'],
+      objectives: ['Relier audio analogique, octet PCM et position dans la trame.', 'Comprendre le multiplexage temporel voie par voie.', 'Suivre un tribut jusqu\u2019\u00e0 la hi\u00e9rarchie sup\u00e9rieure.'],
+      questions: ['Pourquoi l\u2019utilisateur ne per\u00e7oit-il pas les autres voies du multiplex ?', 'Comment un octet de voix devient-il un tribut r\u00e9seau ?', 'Que change la norme choisie sur le traitement de la voie audio ?'],
+      tpSteps: [
+        { title: 'Activer l\u2019audio', text: 'Injectez un signal sur la voie 1 et observez son octet live.', target: '#pcmSection' },
+        { title: 'Suivre la voie dans la trame', text: 'Rep\u00e9rez la case correspondante dans la matrice TDM.', target: '#trameSection' },
+        { title: 'Monter en hi\u00e9rarchie', text: 'Observez comment le flux primaire s\u2019ins\u00e8re dans un niveau de transport sup\u00e9rieur.', target: '#hierarchieSection' }
+      ]
+    },
+    'multiplexage-complet': {
+      title: 'Laboratoire r\u00e9seau complet',
+      subtitle: 'Reliez la source PCM, la trame TDM et la hi\u00e9rarchie PDH/SDH dans un seul parcours p\u00e9dagogique.',
+      help: ['Le m\u00eame laboratoire couvre source, trame et agr\u00e9gation.', 'Utilisez les sauts rapides pour passer du niveau voie au niveau r\u00e9seau.', 'Les indicateurs de capacit\u00e9 permettent de relier architecture et \u00e9chelle de trafic.'],
+      objectives: ['Comprendre le continuum PCM ? TDM ? hi\u00e9rarchie.', 'Comparer les architectures E1/PDH et T1/SONET.', 'Lire la capacit\u00e9 d\u2019agr\u00e9gation \u00e0 plusieurs niveaux.'],
+      questions: ['\u00c0 quel niveau appara\u00eet la notion de tribut ?', 'Pourquoi le transport optique synchrone simplifie-t-il l\u2019exploitation ?', 'Quel lien faites-vous entre voie \u00e0 64 kbit/s et capacit\u00e9 de niveau sup\u00e9rieur ?'],
+      tpSteps: [
+        { title: 'Commencer au PCM', text: 'Observez d\u2019abord comment un octet est produit \u00e0 partir d\u2019une source audio.', target: '#pcmSection' },
+        { title: 'Lire la matrice', text: 'Rep\u00e9rez ensuite la place de cet octet dans la trame primaire.', target: '#trameSection' },
+        { title: 'Passer au r\u00e9seau', text: 'Terminez sur la hi\u00e9rarchie d\u2019agr\u00e9gation pour quantifier la capacit\u00e9 transport\u00e9e.', target: '#hierarchieSection' }
+      ]
+    }
+  };
+
+  function getParams() {
+    return new URLSearchParams(global.location.search);
+  }
+
+  function readJsonStorage(key, fallbackValue) {
+    try {
+      const raw = global.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallbackValue;
+    } catch (error) {
+      return fallbackValue;
+    }
+  }
+
+  function writeJsonStorage(key, value) {
+    try {
+      global.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+    }
+  }
+
+  function emitLabProgressUpdated(detail) {
+    try {
+      if (typeof global.CustomEvent === 'function') {
+        global.dispatchEvent(new global.CustomEvent('lab-progress-updated', { detail: detail || {} }));
+        return;
+      }
+
+      if (document.createEvent) {
+        const event = document.createEvent('Event');
+        event.initEvent('lab-progress-updated', true, true);
+        event.detail = detail || {};
+        global.dispatchEvent(event);
+      }
+    } catch (error) {
+    }
+  }
+
+  function getAllPageIds() {
+    const ids = [];
+    Object.keys(LAB_STRUCTURE).forEach(function (moduleKey) {
+      (LAB_STRUCTURE[moduleKey].pages || []).forEach(function (page) {
+        if (page && page.id && ids.indexOf(page.id) === -1) {
+          ids.push(page.id);
+        }
+      });
+    });
+    return ids;
+  }
+
+  const ALL_PAGE_IDS = getAllPageIds();
+
+  function readLabProgress() {
+    return readJsonStorage(LAB_PROGRESS_KEY, { visited: {} });
+  }
+
+  function markPageVisited(pageId) {
+    if (!pageId || pageId === 'home') {
+      return;
+    }
+
+    const progress = readLabProgress();
+    progress.visited = progress.visited || {};
+    progress.visited[pageId] = Date.now();
+    writeJsonStorage(LAB_PROGRESS_KEY, progress);
+    emitLabProgressUpdated({ pageId: pageId });
+  }
+
+  function readQuizResults() {
+    const raw = readJsonStorage(LAB_QUIZ_RESULTS_KEY, {});
+    Object.keys(raw || {}).forEach(function (pageId) {
+      const entry = raw[pageId];
+      if (!entry) {
+        return;
+      }
+
+      if (!Array.isArray(entry.attempts)) {
+        const attempt = (typeof entry.score === 'number' && typeof entry.total === 'number')
+          ? [{ score: entry.score, total: entry.total, completedAt: entry.completedAt || Date.now() }]
+          : [];
+        raw[pageId] = {
+          score: typeof entry.score === 'number' ? entry.score : 0,
+          total: typeof entry.total === 'number' ? entry.total : 0,
+          completedAt: entry.completedAt || Date.now(),
+          attempts: attempt
+        };
+      }
+    });
+    return raw;
+  }
+
+  function saveQuizResult(pageId, score, total) {
+    if (!pageId || pageId === 'home') {
+      return;
+    }
+
+    const results = readQuizResults();
+    const previous = results[pageId] || { attempts: [] };
+    const attempts = Array.isArray(previous.attempts) ? previous.attempts.slice() : [];
+    attempts.push({
+      score: score,
+      total: total,
+      completedAt: Date.now()
+    });
+    results[pageId] = {
+      score: score,
+      total: total,
+      completedAt: Date.now(),
+      attempts: attempts
+    };
+    writeJsonStorage(LAB_QUIZ_RESULTS_KEY, results);
+  }
+
+  function readProfile() {
+    const profile = readJsonStorage(LAB_PROFILE_KEY, {});
+    return {
+      studentName: profile.studentName || '',
+      certificateSigner: profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire'
+    };
+  }
+
+  function saveProfile(profile) {
+    writeJsonStorage(LAB_PROFILE_KEY, {
+      studentName: profile.studentName || '',
+      certificateSigner: profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire'
+    });
+    emitLabProgressUpdated({ profile: true });
+  }
+
+  function getLatestAttempt(pageId) {
+    const entry = readQuizResults()[pageId];
+    if (!entry) {
+      return null;
+    }
+
+    if (Array.isArray(entry.attempts) && entry.attempts.length) {
+      return entry.attempts[entry.attempts.length - 1];
+    }
+
+    return (typeof entry.score === 'number' && typeof entry.total === 'number') ? entry : null;
+  }
+
+  function formatDateTime(timestamp) {
+    if (!timestamp) {
+      return '\u2014';
+    }
+    try {
+      return new Date(timestamp).toLocaleString('fr-FR');
+    } catch (error) {
+      return String(timestamp);
+    }
+  }
+
+  function getTeacherMode() {
+    try {
+      return global.localStorage.getItem(LAB_TEACHER_MODE_KEY) === '1';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setTeacherMode(value) {
+    try {
+      global.localStorage.setItem(LAB_TEACHER_MODE_KEY, value ? '1' : '0');
+    } catch (error) {
+    }
+  }
+
+  function safeExecute(action) {
+    try {
+      return action();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function getModulePages(moduleKey) {
+    return (LAB_STRUCTURE[moduleKey] && LAB_STRUCTURE[moduleKey].pages ? LAB_STRUCTURE[moduleKey].pages : []).map(function (page) {
+      return page.id;
+    });
+  }
+
+  function getModuleQuizStats(moduleKey) {
+    const pageIds = getModulePages(moduleKey);
+    const values = pageIds.map(function (pageId) {
+      return getLatestAttempt(pageId);
+    }).filter(function (result) {
+      return result && typeof result.score === 'number' && typeof result.total === 'number' && result.total > 0;
+    });
+
+    if (!values.length) {
+      return { completed: 0, average: 0 };
+    }
+
+    const average = values.reduce(function (sum, result) {
+      return sum + (result.score / result.total) * 100;
+    }, 0) / values.length;
+
+    return { completed: values.length, average: average };
+  }
+
+  function buildTeacherDashboardData() {
+    const progress = readLabProgress();
+    return Object.keys(LAB_STRUCTURE).map(function (moduleKey) {
+      const pageIds = getModulePages(moduleKey);
+      const visited = pageIds.filter(function (pageId) {
+        return !!(progress.visited || {})[pageId];
+      }).length;
+      const quizStats = getModuleQuizStats(moduleKey);
+      return {
+        key: moduleKey,
+        title: LAB_STRUCTURE[moduleKey].title,
+        totalPages: pageIds.length,
+        visitedPages: visited,
+        quizCompleted: quizStats.completed,
+        quizAverage: quizStats.average
+      };
+    });
+  }
+
+  function computeAchievements() {
+    const progress = readLabProgress();
+    const visitedCount = ALL_PAGE_IDS.filter(function (id) { return !!(progress.visited || {})[id]; }).length;
+    const totalPages = ALL_PAGE_IDS.length || 1;
+    const dashboard = buildTeacherDashboardData();
+    const quizResults = readQuizResults();
+    const quizCount = Object.keys(quizResults).length;
+    const allModulesComplete = dashboard.every(function (item) { return item.totalPages > 0 && item.visitedPages === item.totalPages; });
+    const allModulesWithQuiz = dashboard.every(function (item) { return item.totalPages === 0 || item.quizCompleted >= 1; });
+    const globalAverage = dashboard.filter(function (item) { return item.quizCompleted > 0; }).reduce(function (sum, item, _, arr) {
+      return sum + item.quizAverage / arr.length;
+    }, 0);
+
+    return {
+      badges: [
+        {
+          key: 'explorer',
+          title: 'Badge Explorateur',
+          earned: visitedCount >= 3,
+          text: 'Attribu\u00e9 d\u00e8s que 3 pages distinctes du laboratoire ont \u00e9t\u00e9 explor\u00e9es.'
+        },
+        {
+          key: 'analyst',
+          title: 'Badge Analyste',
+          earned: quizCount >= 3,
+          text: 'Attribu\u00e9 d\u00e8s que 3 quiz de modules ont \u00e9t\u00e9 valid\u00e9s.'
+        },
+        {
+          key: 'architect',
+          title: 'Badge Architecte R\u00e9seau',
+          earned: allModulesComplete,
+          text: 'Attribu\u00e9 lorsque toutes les pages p\u00e9dagogiques du laboratoire ont \u00e9t\u00e9 visit\u00e9es.'
+        },
+        {
+          key: 'mastery',
+          title: 'Badge Ma\u00eetrise',
+          earned: allModulesWithQuiz && globalAverage >= 70,
+          text: 'Attribu\u00e9 lorsque chaque module comporte au moins un quiz valid\u00e9 avec une moyenne globale d\u2019au moins 70 %.'
+        }
+      ],
+      certificate: {
+        earned: allModulesComplete && allModulesWithQuiz && globalAverage >= 75,
+        title: 'Certificat interne de progression t\u00e9l\u00e9com',
+        text: 'Certificat accord\u00e9 si tout le parcours est visit\u00e9 et si la moyenne globale aux quiz atteint au moins 75 %.'
+      },
+      globalAverage: globalAverage,
+      visitedCount: visitedCount,
+      totalPages: totalPages
+    };
+  }
+
+  function downloadTextFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+    const url = global.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    global.setTimeout(function () {
+      global.URL.revokeObjectURL(url);
+    }, 500);
+  }
+
+  function buildCsvReport() {
+    const progress = readLabProgress();
+    const quizResults = readQuizResults();
+    const dashboard = buildTeacherDashboardData();
+    const profile = readProfile();
+    const lines = ['Type;Identifiant;Titre;Visite;Quiz;Moyenne'];
+
+    lines.push(['Profil', 'etudiant', profile.studentName || 'Non renseign\u00e9', '', '', ''].join(';'));
+    lines.push(['Profil', 'signataire', profile.certificateSigner || 'Non renseign\u00e9', '', '', ''].join(';'));
+
+    dashboard.forEach(function (item) {
+      lines.push([
+        'Module',
+        item.key,
+        item.title,
+        item.visitedPages + '/' + item.totalPages,
+        item.quizCompleted,
+        item.quizCompleted ? item.quizAverage.toFixed(1) + '%' : '\u2014'
+      ].join(';'));
+    });
+
+    ALL_PAGE_IDS.forEach(function (pageId) {
+      const visited = !!(progress.visited || {})[pageId];
+      const result = getLatestAttempt(pageId);
+      lines.push([
+        'Page',
+        pageId,
+        pageId,
+        visited ? 'oui' : 'non',
+        result ? (result.score + '/' + result.total) : '\u2014',
+        result ? (((result.score / result.total) * 100).toFixed(1) + '%') : '\u2014'
+      ].join(';'));
+
+      const attempts = quizResults[pageId] && Array.isArray(quizResults[pageId].attempts) ? quizResults[pageId].attempts : [];
+      attempts.forEach(function (attempt, index) {
+        lines.push([
+          'Tentative',
+          pageId,
+          'Tentative ' + (index + 1),
+          formatDateTime(attempt.completedAt),
+          attempt.score + '/' + attempt.total,
+          attempt.total ? (((attempt.score / attempt.total) * 100).toFixed(1) + '%') : '\u2014'
+        ].join(';'));
+      });
+    });
+
+    return lines.join('\n');
+  }
+
+  function buildPrintableReportHtml() {
+    const dashboard = buildTeacherDashboardData();
+    const achievements = computeAchievements();
+    const quizResults = readQuizResults();
+    const profile = readProfile();
+    const rows = dashboard.map(function (item) {
+      return '<tr><td>' + item.title + '</td><td>' + item.visitedPages + '/' + item.totalPages + '</td><td>' + item.quizCompleted + '</td><td>' + (item.quizCompleted ? item.quizAverage.toFixed(1) + ' %' : '\u2014') + '</td></tr>';
+    }).join('');
+    const badgeRows = achievements.badges.map(function (badge) {
+      return '<li><strong>' + badge.title + '</strong> : ' + (badge.earned ? 'obtenu' : 'non obtenu') + ' \u2014 ' + badge.text + '</li>';
+    }).join('');
+    const historyRows = ALL_PAGE_IDS.map(function (pageId) {
+      const attempts = quizResults[pageId] && Array.isArray(quizResults[pageId].attempts) ? quizResults[pageId].attempts : [];
+      return attempts.map(function (attempt, index) {
+        return '<tr><td>' + pageId + '</td><td>Tentative ' + (index + 1) + '</td><td>' + formatDateTime(attempt.completedAt) + '</td><td>' + attempt.score + '/' + attempt.total + '</td></tr>';
+      }).join('');
+    }).join('');
+
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport p\u00e9dagogique</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111827}h1,h2{margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}ul{line-height:1.6}.sign{margin-top:20px;padding-top:12px;border-top:1px solid #cbd5e1}</style></head><body><h1>Rapport p\u00e9dagogique du laboratoire</h1><p><strong>\u00c9tudiant :</strong> ' + (profile.studentName || 'Non renseign\u00e9') + '<br><strong>Signataire :</strong> ' + (profile.certificateSigner || 'Non renseign\u00e9') + '</p><p>Export enseignant des visites, quiz et validations internes.</p><h2>Tableau de bord multi-pages</h2><table><thead><tr><th>Module</th><th>Visites</th><th>Quiz valid\u00e9s</th><th>Moyenne</th></tr></thead><tbody>' + rows + '</tbody></table><h2>Historique d\u00e9taill\u00e9 des tentatives</h2><table><thead><tr><th>Page</th><th>Tentative</th><th>Date</th><th>R\u00e9sultat</th></tr></thead><tbody>' + (historyRows || '<tr><td colspan="4">Aucune tentative enregistr\u00e9e.</td></tr>') + '</tbody></table><h2>Badges et certificat</h2><ul>' + badgeRows + '</ul><p><strong>Certificat interne :</strong> ' + (achievements.certificate.earned ? 'accord\u00e9' : 'non accord\u00e9') + ' \u2014 ' + achievements.certificate.text + '</p><div class="sign"><strong>Signature :</strong> ' + (profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire') + '<br><strong>Date :</strong> ' + formatDateTime(Date.now()) + '</div></body></html>';
+  }
+
+  function exportCsvReport() {
+    downloadTextFile('laboratoire-resultats.csv', buildCsvReport(), 'text/csv;charset=utf-8');
+  }
+
+  function exportPdfReport() {
+    const popup = global.open('', '_blank');
+    if (!popup) {
+      return;
+    }
+    popup.document.open();
+    popup.document.write(buildPrintableReportHtml());
+    popup.document.close();
+    popup.focus();
+    popup.print();
+  }
+
+  function initHeader(options) {
+    const opts = options || {};
+    const homeLink = document.querySelector('.lab-global-header__home');
+    const brandSubtitle = document.querySelector('.lab-global-header__brand span');
+    const basePath = opts.navBasePath || inferBasePath(homeLink);
+
+    if (homeLink && !homeLink.getAttribute('title')) {
+      homeLink.setAttribute('title', 'Retour \u00e0 l\u2019accueil du laboratoire');
+      homeLink.setAttribute('aria-label', 'Retour \u00e0 l\u2019accueil du laboratoire');
+    }
+
+    if (brandSubtitle && opts.brandSubtitle) {
+      brandSubtitle.textContent = opts.brandSubtitle;
+    }
+
+    if (opts.bodySection) {
+      document.body.dataset.labSection = opts.bodySection;
+    }
+
+    if (opts.pageId) {
+      document.body.dataset.labPage = opts.pageId;
+    }
+
+    safeExecute(function () {
+      markPageVisited(document.body.dataset.labPage || 'home');
+    });
+
+    safeExecute(function () {
+      renderModuleNav(basePath);
+    });
+
+    safeExecute(function () {
+      renderContextNav(basePath, document.body.dataset.labSection || '', document.body.dataset.labPage || '');
+    });
+
+    safeExecute(function () {
+      renderLearningSupport(document.body.dataset.labSection || '', document.body.dataset.labPage || '');
+    });
+
+    if (opts.trackVisit !== false) {
+      safeExecute(function () {
+        trackRecentPage({
+          title: document.title,
+          href: global.location.href,
+          section: document.body.dataset.labSection || '',
+          pageId: document.body.dataset.labPage || '',
+          subtitle: brandSubtitle ? brandSubtitle.textContent : ''
+        });
+      });
+    }
+  }
+
+  function getGuideDefinition(section, pageId) {
+    const moduleKey = pageId === 'home' || section === 'home' ? 'home' : getActiveModule(section);
+    const baseGuide = LAB_GUIDE_DEFAULTS[moduleKey] || LAB_GUIDES.home || {};
+    const directGuide = LAB_GUIDES[pageId] || LAB_GUIDES[section] || {};
+    const evalGuide = LAB_EVAL_DEFAULTS[moduleKey] || LAB_EVAL_DEFAULTS.home || {};
+
+    return {
+      title: directGuide.title || baseGuide.title || '',
+      subtitle: directGuide.subtitle || baseGuide.subtitle || '',
+      help: directGuide.help || baseGuide.help || [],
+      objectives: directGuide.objectives || baseGuide.objectives || [],
+      questions: directGuide.questions || baseGuide.questions || [],
+      tpSteps: directGuide.tpSteps || baseGuide.tpSteps || [],
+      expectedAnswers: directGuide.expectedAnswers || evalGuide.expectedAnswers || [],
+      quiz: directGuide.quiz || evalGuide.quiz || []
+    };
+  }
+
+  function createItemsList(tagName, items, className) {
+    const list = document.createElement(tagName);
+    list.className = className;
+    (items || []).forEach(function (item) {
+      const li = document.createElement('li');
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    return list;
+  }
+
+  function renderLearningSheet(guide) {
+    if (document.querySelector('.lab-learning-sheet')) {
+      return;
+    }
+
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return;
+    }
+
+    const sheet = document.createElement('section');
+    sheet.className = 'lab-learning-sheet';
+    sheet.setAttribute('aria-label', 'Objectifs p\u00e9dagogiques et questions d\u2019analyse');
+
+    const head = document.createElement('div');
+    head.className = 'lab-learning-sheet__head';
+
+    const headText = document.createElement('div');
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'lab-learning-sheet__eyebrow';
+    eyebrow.textContent = 'Fiche p\u00e9dagogique';
+    const title = document.createElement('h2');
+    title.className = 'lab-learning-sheet__title';
+    title.textContent = guide.title;
+    const subtitle = document.createElement('p');
+    subtitle.className = 'lab-learning-sheet__subtitle';
+    subtitle.textContent = guide.subtitle;
+    headText.appendChild(eyebrow);
+    headText.appendChild(title);
+    headText.appendChild(subtitle);
+    head.appendChild(headText);
+
+    const grid = document.createElement('div');
+    grid.className = 'lab-learning-sheet__grid';
+
+    const objectivesCard = document.createElement('article');
+    objectivesCard.className = 'lab-learning-sheet__card';
+    const objectivesTitle = document.createElement('h3');
+    objectivesTitle.textContent = 'Objectifs p\u00e9dagogiques';
+    objectivesCard.appendChild(objectivesTitle);
+    objectivesCard.appendChild(createItemsList('ul', guide.objectives, 'lab-learning-sheet__list'));
+
+    const questionsCard = document.createElement('article');
+    questionsCard.className = 'lab-learning-sheet__card';
+    const questionsTitle = document.createElement('h3');
+    questionsTitle.textContent = 'Questions d\u2019analyse';
+    questionsCard.appendChild(questionsTitle);
+    questionsCard.appendChild(createItemsList('ol', guide.questions, 'lab-learning-sheet__questions'));
+
+    grid.appendChild(objectivesCard);
+    grid.appendChild(questionsCard);
+    sheet.appendChild(head);
+    sheet.appendChild(grid);
+    host.appendChild(sheet);
+  }
+
+  function renderQuizSheet(guide, pageKey) {
+    if (document.querySelector('.lab-quiz-sheet') || !guide.quiz || !guide.quiz.length) {
+      return;
+    }
+
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return;
+    }
+
+    const section = document.createElement('section');
+    section.className = 'lab-quiz-sheet';
+    section.setAttribute('aria-label', 'Quiz interactif de fin de module');
+
+    const title = document.createElement('h2');
+    title.className = 'lab-quiz-sheet__title';
+    title.textContent = 'Quiz interactif de fin de module';
+    const subtitle = document.createElement('p');
+    subtitle.className = 'lab-quiz-sheet__subtitle';
+    subtitle.textContent = 'Validez les acquis essentiels du module puis comparez votre r\u00e9sultat avec les r\u00e9ponses attendues en mode enseignant.';
+    section.appendChild(title);
+    section.appendChild(subtitle);
+
+    guide.quiz.forEach(function (item, index) {
+      const card = document.createElement('article');
+      card.className = 'lab-quiz-question';
+      const cardTitle = document.createElement('h3');
+      cardTitle.className = 'lab-quiz-question__title';
+      cardTitle.textContent = (index + 1) + '. ' + item.question;
+      const options = document.createElement('div');
+      options.className = 'lab-quiz-options';
+
+      (item.options || []).forEach(function (option, optionIndex) {
+        const label = document.createElement('label');
+        label.className = 'lab-quiz-option';
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = 'labQuiz-' + pageKey + '-' + index;
+        input.value = String(optionIndex);
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(option));
+        options.appendChild(label);
+      });
+
+      card.appendChild(cardTitle);
+      card.appendChild(options);
+      section.appendChild(card);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'lab-quiz-actions';
+    const submit = document.createElement('button');
+    submit.className = 'lab-guide-btn lab-guide-btn--primary';
+    submit.type = 'button';
+    submit.textContent = 'Corriger le quiz';
+    actions.appendChild(submit);
+    section.appendChild(actions);
+
+    const feedback = document.createElement('div');
+    feedback.className = 'lab-quiz-feedback';
+    section.appendChild(feedback);
+
+    function renderStoredFeedback() {
+      const result = readQuizResults()[pageKey];
+      if (result && typeof result.score === 'number') {
+        feedback.textContent = 'Dernier score enregistr\u00e9 : ' + result.score + ' / ' + result.total + '.';
+      }
+    }
+
+    submit.addEventListener('click', function () {
+      let answered = 0;
+      let score = 0;
+      const lines = [];
+
+      guide.quiz.forEach(function (item, index) {
+        const checked = section.querySelector('input[name="labQuiz-' + pageKey + '-' + index + '"]:checked');
+        if (checked) {
+          answered += 1;
+          if (parseInt(checked.value, 10) === item.answer) {
+            score += 1;
+          }
+        }
+
+        lines.push(
+          'Q' + (index + 1) + ' : ' +
+          (checked && parseInt(checked.value, 10) === item.answer ? 'Correct' : 'Incorrect') +
+          ' \u2014 ' + (item.explanation || 'R\u00e9ponse enregistr\u00e9e.')
+        );
+      });
+
+      if (answered < guide.quiz.length) {
+        feedback.textContent = 'Veuillez r\u00e9pondre \u00e0 toutes les questions avant correction.';
+        return;
+      }
+
+      saveQuizResult(pageKey, score, guide.quiz.length);
+      feedback.innerHTML = 'Score : <strong>' + score + ' / ' + guide.quiz.length + '</strong><br>' + lines.join('<br>');
+      emitLabProgressUpdated({ pageKey: pageKey });
+    });
+
+    renderStoredFeedback();
+    host.appendChild(section);
+  }
+
+  function renderAchievementSheet() {
+    const host = document.querySelector('.wrap, .container');
+    if (!host) {
+      return;
+    }
+
+    let section = document.querySelector('.lab-achievement-sheet');
+    if (!section) {
+      section = document.createElement('section');
+      section.className = 'lab-achievement-sheet';
+      section.setAttribute('aria-label', 'Badges de r\u00e9ussite et certificat interne');
+      host.appendChild(section);
+    }
+
+    const data = computeAchievements();
+    const profile = readProfile();
+    section.innerHTML = '';
+
+    const title = document.createElement('h2');
+    title.className = 'lab-achievement-sheet__title';
+    title.textContent = 'Badges de r\u00e9ussite et certificat interne';
+    const subtitle = document.createElement('p');
+    subtitle.className = 'lab-achievement-sheet__subtitle';
+    subtitle.textContent = 'La progression globale du laboratoire d\u00e9bloque des badges p\u00e9dagogiques puis un certificat interne de validation.';
+    section.appendChild(title);
+    section.appendChild(subtitle);
+
+    const grid = document.createElement('div');
+    grid.className = 'lab-achievement-grid';
+    data.badges.forEach(function (badge) {
+      const card = document.createElement('article');
+      card.className = 'lab-badge-card' + (badge.earned ? ' is-earned' : '');
+      const state = document.createElement('div');
+      state.className = 'lab-badge-card__state';
+      state.textContent = badge.earned ? 'Obtenu' : '\u00c0 d\u00e9bloquer';
+      const cardTitle = document.createElement('h3');
+      cardTitle.className = 'lab-badge-card__title';
+      cardTitle.textContent = badge.title;
+      const text = document.createElement('div');
+      text.className = 'lab-badge-card__text';
+      text.textContent = badge.text;
+      card.appendChild(state);
+      card.appendChild(cardTitle);
+      card.appendChild(text);
+      grid.appendChild(card);
+    });
+
+    const certificate = document.createElement('article');
+    certificate.className = 'lab-certificate-card';
+    const meta = document.createElement('div');
+    meta.className = 'lab-certificate-card__meta';
+    meta.textContent = data.certificate.earned ? 'Certificat accord\u00e9' : 'Certificat en cours';
+    const certTitle = document.createElement('h3');
+    certTitle.className = 'lab-certificate-card__title';
+    certTitle.textContent = data.certificate.title;
+    const certText = document.createElement('div');
+    certText.className = 'lab-certificate-card__text';
+    certText.innerHTML = data.certificate.text + '<br><br><strong>\u00c9tudiant :</strong> ' + (profile.studentName || 'Non renseign\u00e9') + '<br><strong>Signature :</strong> ' + (profile.certificateSigner || 'Responsable p\u00e9dagogique du laboratoire');
+    certificate.appendChild(meta);
+    certificate.appendChild(certTitle);
+    certificate.appendChild(certText);
+    grid.appendChild(certificate);
+
+    section.appendChild(grid);
+  }
+
+  function renderLearningSupport(section, pageId) {
+    if (document.querySelector('.lab-guide-fab')) {
+      return;
+    }
+
+    const guide = getGuideDefinition(section, pageId);
+    if (!guide) {
+      return;
+    }
+
+    renderLearningSheet(guide);
+    renderQuizSheet(guide, pageId || section || 'home');
+    renderAchievementSheet();
+    renderGuideDrawer(guide, pageId || section || 'home');
+  }
+
+  function renderGuideDrawer(guide, pageKey) {
+    const drawer = document.createElement('aside');
+    drawer.className = 'lab-guide-drawer';
+    drawer.setAttribute('aria-label', 'Aide contextuelle du laboratoire');
+
+    const fab = document.createElement('button');
+    fab.className = 'lab-guide-fab';
+    fab.type = 'button';
+    fab.textContent = 'Aide \u2022 TP guid\u00e9';
+
+    const head = document.createElement('div');
+    head.className = 'lab-guide-drawer__head';
+    const headText = document.createElement('div');
+    const title = document.createElement('h2');
+    title.textContent = 'Assistant p\u00e9dagogique';
+    const subtitle = document.createElement('p');
+    subtitle.textContent = guide.subtitle;
+    headText.appendChild(title);
+    headText.appendChild(subtitle);
+    const close = document.createElement('button');
+    close.className = 'lab-guide-drawer__close';
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Fermer l\u2019aide');
+    close.textContent = '\u00d7';
+    head.appendChild(headText);
+    head.appendChild(close);
+
+    const tabs = document.createElement('div');
+    tabs.className = 'lab-guide-drawer__tabs';
+    const body = document.createElement('div');
+    body.className = 'lab-guide-drawer__body';
+
+    const panels = {};
+    ['help', 'tp', 'objectives', 'teacher', 'progress', 'quiz'].forEach(function (name) {
+      const button = document.createElement('button');
+      button.className = 'lab-guide-drawer__tab' + (name === 'help' ? ' active' : '');
+      button.type = 'button';
+      button.textContent = name === 'help'
+        ? 'Aide'
+        : (name === 'tp'
+          ? 'TP guid\u00e9'
+          : (name === 'objectives'
+            ? 'Objectifs'
+            : (name === 'teacher' ? 'Enseignant' : (name === 'progress' ? 'Progression' : 'Quiz'))));
+      button.dataset.panel = name;
+      tabs.appendChild(button);
+
+      const panel = document.createElement('section');
+      panel.className = 'lab-guide-panel' + (name === 'help' ? ' active' : '');
+      panel.dataset.panel = name;
+      panels[name] = panel;
+      body.appendChild(panel);
+    });
+
+    panels.help.appendChild(createItemsList('ul', guide.help, 'lab-guide-panel__list'));
+    panels.objectives.appendChild(createItemsList('ul', guide.objectives, 'lab-guide-panel__list'));
+    panels.objectives.appendChild(createItemsList('ol', guide.questions, 'lab-guide-panel__list'));
+
+    const steps = guide.tpSteps || [];
+    const stepKey = 'labGuideStep:' + pageKey;
+    let currentStep = 0;
+    try {
+      const stored = parseInt(global.localStorage.getItem(stepKey) || '0', 10);
+      currentStep = Math.max(0, Math.min(steps.length - 1, stored || 0));
+    } catch (error) {
+    }
+
+    const stepBox = document.createElement('div');
+    stepBox.className = 'lab-guide-step';
+    const stepMeta = document.createElement('div');
+    stepMeta.className = 'lab-guide-step__meta';
+    const stepTitle = document.createElement('h3');
+    stepTitle.className = 'lab-guide-step__title';
+    const stepText = document.createElement('div');
+    stepText.className = 'lab-guide-step__text';
+    const stepActions = document.createElement('div');
+    stepActions.className = 'lab-guide-step__actions';
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'lab-guide-btn';
+    prevBtn.type = 'button';
+    prevBtn.textContent = '\u00c9tape pr\u00e9c\u00e9dente';
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'lab-guide-btn lab-guide-btn--primary';
+    nextBtn.type = 'button';
+    nextBtn.textContent = '\u00c9tape suivante';
+    const targetBtn = document.createElement('button');
+    targetBtn.className = 'lab-guide-btn';
+    targetBtn.type = 'button';
+    targetBtn.textContent = 'Aller \u00e0 la zone';
+    const progress = document.createElement('div');
+    progress.className = 'lab-guide-progress';
+    stepActions.appendChild(prevBtn);
+    stepActions.appendChild(nextBtn);
+    stepActions.appendChild(targetBtn);
+    stepBox.appendChild(stepMeta);
+    stepBox.appendChild(stepTitle);
+    stepBox.appendChild(stepText);
+    stepBox.appendChild(stepActions);
+    stepBox.appendChild(progress);
+    panels.tp.appendChild(stepBox);
+
+    const teacherToggle = document.createElement('button');
+    teacherToggle.className = 'lab-teacher-toggle';
+    teacherToggle.type = 'button';
+    const teacherNote = document.createElement('div');
+    teacherNote.className = 'lab-guide-note';
+    const teacherAnswersBox = document.createElement('div');
+    const profileForm = document.createElement('div');
+    profileForm.className = 'lab-form-stack';
+    const studentField = document.createElement('div');
+    studentField.className = 'lab-form-field';
+    const studentLabel = document.createElement('label');
+    studentLabel.textContent = 'Nom de l\u2019\u00e9tudiant';
+    const studentInput = document.createElement('input');
+    studentInput.type = 'text';
+    studentInput.placeholder = 'Ex. A\u00efssatou Diallo';
+    studentField.appendChild(studentLabel);
+    studentField.appendChild(studentInput);
+    const signerField = document.createElement('div');
+    signerField.className = 'lab-form-field';
+    const signerLabel = document.createElement('label');
+    signerLabel.textContent = 'Signataire du certificat';
+    const signerInput = document.createElement('input');
+    signerInput.type = 'text';
+    signerInput.placeholder = 'Responsable p\u00e9dagogique du laboratoire';
+    signerField.appendChild(signerLabel);
+    signerField.appendChild(signerInput);
+    profileForm.appendChild(studentField);
+    profileForm.appendChild(signerField);
+    panels.teacher.appendChild(teacherToggle);
+    panels.teacher.appendChild(profileForm);
+    panels.teacher.appendChild(teacherNote);
+    panels.teacher.appendChild(teacherAnswersBox);
+
+    const progressStats = document.createElement('div');
+    progressStats.className = 'lab-guide-stats';
+    const progressBar = document.createElement('div');
+    progressBar.className = 'lab-guide-progressbar';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'lab-guide-progressbar__fill';
+    progressBar.appendChild(progressFill);
+    const progressNote = document.createElement('div');
+    progressNote.className = 'lab-guide-note';
+    panels.progress.appendChild(progressStats);
+    panels.progress.appendChild(progressBar);
+    panels.progress.appendChild(progressNote);
+
+    const quizSummary = document.createElement('div');
+    quizSummary.className = 'lab-guide-note';
+    const quizGoBtn = document.createElement('button');
+    quizGoBtn.className = 'lab-guide-btn lab-guide-btn--primary';
+    quizGoBtn.type = 'button';
+    quizGoBtn.textContent = 'Aller au quiz';
+    const exportCsvBtn = document.createElement('button');
+    exportCsvBtn.className = 'lab-guide-btn';
+    exportCsvBtn.type = 'button';
+    exportCsvBtn.textContent = 'Exporter CSV';
+    const exportPdfBtn = document.createElement('button');
+    exportPdfBtn.className = 'lab-guide-btn';
+    exportPdfBtn.type = 'button';
+    exportPdfBtn.textContent = 'Exporter PDF';
+    const exportActions = document.createElement('div');
+    exportActions.className = 'lab-dashboard-actions';
+    exportActions.appendChild(exportCsvBtn);
+    exportActions.appendChild(exportPdfBtn);
+    const teacherDashboard = document.createElement('div');
+    teacherDashboard.className = 'lab-dashboard-grid';
+    const historyBox = document.createElement('div');
+    historyBox.className = 'lab-guide-note';
+    panels.quiz.appendChild(quizSummary);
+    panels.quiz.appendChild(quizGoBtn);
+    panels.quiz.appendChild(exportActions);
+    panels.quiz.appendChild(historyBox);
+    panels.teacher.appendChild(teacherDashboard);
+
+    function persistStep() {
+      try {
+        global.localStorage.setItem(stepKey, String(currentStep));
+      } catch (error) {
+      }
+    }
+
+    function scrollToSelector(selector) {
+      if (!selector) {
+        return;
+      }
+      const target = document.querySelector(selector);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    function renderStep() {
+      if (!steps.length) {
+        stepMeta.textContent = 'TP guid\u00e9 indisponible';
+        stepTitle.textContent = 'Aucune \u00e9tape d\u00e9finie';
+        stepText.textContent = 'Cette page ne propose pas encore de sc\u00e9nario guid\u00e9.';
+        progress.textContent = '';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        targetBtn.disabled = true;
+        return;
+      }
+
+      const step = steps[currentStep];
+      stepMeta.textContent = '\u00c9tape ' + (currentStep + 1) + ' / ' + steps.length;
+      stepTitle.textContent = step.title;
+      stepText.textContent = step.text;
+      progress.textContent = 'Mode TP guid\u00e9 actif : avancez s\u00e9quentiellement puis validez votre interpr\u00e9tation physique.';
+      prevBtn.disabled = currentStep === 0;
+      nextBtn.disabled = currentStep === steps.length - 1;
+      targetBtn.disabled = !step.target;
+      persistStep();
+    }
+
+    function renderTeacherPanel() {
+      const teacherMode = getTeacherMode();
+      const profile = readProfile();
+      teacherToggle.textContent = teacherMode ? 'D\u00e9sactiver le mode enseignant' : 'Activer le mode enseignant';
+      studentInput.value = profile.studentName || '';
+      signerInput.value = profile.certificateSigner || '';
+      teacherAnswersBox.innerHTML = '';
+      teacherDashboard.innerHTML = '';
+
+      if (!teacherMode) {
+        teacherNote.textContent = 'Le mode enseignant masque les r\u00e9ponses attendues et les \u00e9l\u00e9ments de correction d\u00e9taill\u00e9s.';
+        return;
+      }
+
+      teacherNote.textContent = 'R\u00e9ponses attendues pour ce module : utilisez-les comme correction ou comme trame de synth\u00e8se.';
+
+      const answerCard = document.createElement('section');
+      answerCard.className = 'lab-teacher-answer';
+      const answerTitle = document.createElement('h3');
+      answerTitle.textContent = 'R\u00e9ponses attendues';
+      answerCard.appendChild(answerTitle);
+      answerCard.appendChild(createItemsList('ul', guide.expectedAnswers, 'lab-guide-panel__list'));
+      teacherAnswersBox.appendChild(answerCard);
+
+      if (guide.quiz && guide.quiz.length) {
+        const correctionCard = document.createElement('section');
+        correctionCard.className = 'lab-teacher-answer';
+        const correctionTitle = document.createElement('h3');
+        correctionTitle.textContent = 'Correction du quiz';
+        correctionCard.appendChild(correctionTitle);
+        correctionCard.appendChild(createItemsList('ul', guide.quiz.map(function (item, index) {
+          return 'Q' + (index + 1) + ' : ' + item.options[item.answer] + ' \u2014 ' + (item.explanation || 'Correction attendue.');
+        }), 'lab-guide-panel__list'));
+        teacherAnswersBox.appendChild(correctionCard);
+      }
+
+      buildTeacherDashboardData().forEach(function (item) {
+        const card = document.createElement('article');
+        card.className = 'lab-dashboard-card';
+        const meta = document.createElement('div');
+        meta.className = 'lab-dashboard-card__meta';
+        meta.textContent = item.visitedPages + '/' + item.totalPages + ' pages \u2022 ' + item.quizCompleted + ' quiz';
+        const title = document.createElement('h3');
+        title.className = 'lab-dashboard-card__title';
+        title.textContent = item.title;
+        const text = document.createElement('div');
+        text.className = 'lab-dashboard-card__text';
+        text.textContent = item.quizCompleted ? ('Moyenne quiz : ' + item.quizAverage.toFixed(1) + ' %.') : 'Aucun quiz valid\u00e9 pour ce module.';
+        card.appendChild(meta);
+        card.appendChild(title);
+        card.appendChild(text);
+        teacherDashboard.appendChild(card);
+      });
+    }
+
+    function renderProgressPanel() {
+      const progressState = readLabProgress();
+      const quizResults = readQuizResults();
+      const visitedCount = ALL_PAGE_IDS.filter(function (id) { return !!(progressState.visited || {})[id]; }).length;
+      const totalCount = ALL_PAGE_IDS.length || 1;
+      const quizCompleted = Object.keys(quizResults).length;
+      const moduleKey = getActiveModule(document.body.dataset.labSection || '');
+      const modulePages = (LAB_STRUCTURE[moduleKey] && LAB_STRUCTURE[moduleKey].pages ? LAB_STRUCTURE[moduleKey].pages : []).map(function (page) { return page.id; });
+      const moduleVisited = modulePages.filter(function (id) { return !!(progressState.visited || {})[id]; }).length;
+      const moduleStepInfo = steps.length ? ('TP local : \u00e9tape ' + (currentStep + 1) + ' / ' + steps.length) : 'TP local : non d\u00e9fini';
+      const stats = [
+        { label: 'Pages visit\u00e9es', value: visitedCount + ' / ' + totalCount },
+        { label: 'Quiz valid\u00e9s', value: quizCompleted + ' / ' + totalCount },
+        { label: 'Module actif', value: modulePages.length ? (moduleVisited + ' / ' + modulePages.length) : '\u2014' },
+        { label: 'TP local', value: steps.length ? (currentStep + 1) + ' / ' + steps.length : '\u2014' }
+      ];
+
+      progressStats.innerHTML = '';
+      stats.forEach(function (item) {
+        const card = document.createElement('div');
+        card.className = 'lab-guide-stat';
+        const label = document.createElement('div');
+        label.className = 'lab-guide-stat__label';
+        label.textContent = item.label;
+        const value = document.createElement('div');
+        value.className = 'lab-guide-stat__value';
+        value.textContent = item.value;
+        card.appendChild(label);
+        card.appendChild(value);
+        progressStats.appendChild(card);
+      });
+
+      progressFill.style.width = ((visitedCount / totalCount) * 100).toFixed(1) + '%';
+      progressNote.textContent = moduleStepInfo + '. La progression globale combine visites, TP locaux et quiz compl\u00e9t\u00e9s.';
+    }
+
+    function renderQuizPanel() {
+      const allResults = readQuizResults();
+      const result = allResults[pageKey];
+      if (result && typeof result.score === 'number') {
+        quizSummary.innerHTML = 'Dernier score sur cette page : <strong>' + result.score + ' / ' + result.total + '</strong>.';
+      } else {
+        quizSummary.textContent = 'Aucun score enregistr\u00e9 pour cette page. Le quiz interactif est disponible en bas du module.';
+      }
+      const attempts = result && Array.isArray(result.attempts) ? result.attempts : [];
+      if (attempts.length) {
+        historyBox.innerHTML = '<strong>Historique d\u00e9taill\u00e9 :</strong>';
+        const list = document.createElement('ol');
+        list.className = 'lab-history-list';
+        attempts.slice().reverse().forEach(function (attempt, index) {
+          const li = document.createElement('li');
+          const attemptNumber = attempts.length - index;
+          li.textContent = 'Tentative ' + attemptNumber + ' \u2014 ' + formatDateTime(attempt.completedAt) + ' \u2014 score ' + attempt.score + ' / ' + attempt.total + '.';
+          list.appendChild(li);
+        });
+        historyBox.appendChild(list);
+      } else {
+        historyBox.textContent = 'Historique d\u00e9taill\u00e9 : aucune tentative enregistr\u00e9e pour cette page.';
+      }
+      quizGoBtn.disabled = !document.querySelector('.lab-quiz-sheet');
+    }
+
+    prevBtn.addEventListener('click', function () {
+      if (currentStep > 0) {
+        currentStep -= 1;
+        renderStep();
+        renderProgressPanel();
+      }
+    });
+
+    nextBtn.addEventListener('click', function () {
+      if (currentStep < steps.length - 1) {
+        currentStep += 1;
+        renderStep();
+        renderProgressPanel();
+      }
+    });
+
+    targetBtn.addEventListener('click', function () {
+      if (steps[currentStep] && steps[currentStep].target) {
+        scrollToSelector(steps[currentStep].target);
+      }
+    });
+
+    teacherToggle.addEventListener('click', function () {
+      setTeacherMode(!getTeacherMode());
+      renderTeacherPanel();
+    });
+
+    studentInput.addEventListener('change', function () {
+      const profile = readProfile();
+      profile.studentName = studentInput.value.trim();
+      saveProfile(profile);
+      renderAchievementSheet();
+    });
+
+    signerInput.addEventListener('change', function () {
+      const profile = readProfile();
+      profile.certificateSigner = signerInput.value.trim() || 'Responsable p\u00e9dagogique du laboratoire';
+      saveProfile(profile);
+      renderAchievementSheet();
+    });
+
+    quizGoBtn.addEventListener('click', function () {
+      scrollToSelector('.lab-quiz-sheet');
+    });
+
+    exportCsvBtn.addEventListener('click', function () {
+      exportCsvReport();
+    });
+
+    exportPdfBtn.addEventListener('click', function () {
+      exportPdfReport();
+    });
+
+    tabs.addEventListener('click', function (event) {
+      const button = event.target.closest('.lab-guide-drawer__tab');
+      if (!button) {
+        return;
+      }
+
+      const panelName = button.dataset.panel;
+      Array.from(tabs.querySelectorAll('.lab-guide-drawer__tab')).forEach(function (tab) {
+        tab.classList.toggle('active', tab === button);
+      });
+      Array.from(body.querySelectorAll('.lab-guide-panel')).forEach(function (panel) {
+        panel.classList.toggle('active', panel.dataset.panel === panelName);
+      });
+    });
+
+    function setOpen(isOpen) {
+      drawer.classList.toggle('is-open', isOpen);
+    }
+
+    fab.addEventListener('click', function () {
+      setOpen(!drawer.classList.contains('is-open'));
+    });
+
+    close.addEventListener('click', function () {
+      setOpen(false);
+    });
+
+    renderStep();
+    renderTeacherPanel();
+    renderProgressPanel();
+    renderQuizPanel();
+    global.addEventListener('lab-progress-updated', function () {
+      renderProgressPanel();
+      renderQuizPanel();
+      renderTeacherPanel();
+      renderAchievementSheet();
+    });
+    drawer.appendChild(head);
+    drawer.appendChild(tabs);
+    drawer.appendChild(body);
+    document.body.appendChild(drawer);
+    document.body.appendChild(fab);
+  }
+
+  function inferBasePath(homeLink) {
+    if (!homeLink) {
+      return '';
+    }
+
+    const href = homeLink.getAttribute('href') || '';
+    return href.replace(/index\.html$/i, '');
+  }
+
+  function getActiveModule(section) {
+    if (!section) return 'home';
+    if (section.indexOf('analogique') === 0) return 'analogique';
+    if (section.indexOf('numerisation') === 0) return 'numerisation';
+    if (section.indexOf('modulations') === 0 || section.indexOf('compat-symbol') === 0) return 'modulations';
+    if (section.indexOf('transmission') === 0) return 'transmission';
+    if (section.indexOf('multiplexage') === 0 || section.indexOf('compat-pcm') === 0) return 'multiplexage';
+    return 'home';
+  }
+
+  function withBasePath(basePath, href) {
+    return encodeURI((basePath || '') + href);
+  }
+
+  function createLinkItem(className, item, basePath, activeId) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = className + (item.id && item.id === activeId ? ' active' : '');
+    a.href = withBasePath(basePath, item.href);
+    a.textContent = item.label;
+    li.appendChild(a);
+    return li;
+  }
+
+  function appendLinkList(container, title, items, className, basePath, activeId) {
+    if (!items || !items.length) {
+      return;
+    }
+
+    const card = document.createElement('section');
+    card.className = 'lab-context-nav__card';
+
+    const heading = document.createElement('h2');
+    heading.className = 'lab-context-nav__title';
+    heading.textContent = title;
+    card.appendChild(heading);
+
+    const list = document.createElement('ul');
+    list.className = 'lab-context-nav__list';
+    items.forEach(function (item) {
+      list.appendChild(createLinkItem(className, item, basePath, activeId));
+    });
+
+    card.appendChild(list);
+    container.appendChild(card);
+  }
+
+  function renderModuleNav(basePath) {
+    if (document.querySelector('.lab-module-nav')) {
+      return;
+    }
+
+    const prefix = basePath || '';
+    const bodySection = document.body.dataset.labSection || '';
+    const active = getActiveModule(bodySection);
+    const navItems = [
+      { key: 'home', label: 'Accueil', href: prefix + 'index.html' },
+      { key: 'analogique', label: 'Analogique', href: prefix + 'pages/analogique/Emetteur.html' },
+      { key: 'numerisation', label: 'Num\u00e9risation', href: prefix + 'pages/numerisation/CAN.html' },
+      { key: 'modulations', label: 'Modulations', href: prefix + 'pages/modulations/Simulateur 2.html' },
+      { key: 'transmission', label: 'Transmission', href: prefix + 'pages/transmission/Transmission.html' },
+      { key: 'multiplexage', label: 'Multiplexage', href: prefix + 'pages/multiplexage/MUX.html' }
+    ];
+
+    const nav = document.createElement('nav');
+    nav.className = 'lab-module-nav';
+    nav.setAttribute('aria-label', 'Navigation transversale du laboratoire');
+
+    const list = document.createElement('ul');
+    list.className = 'lab-module-nav__list';
+
+    navItems.forEach(function (item) {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.className = 'lab-module-nav__link' + (item.key === active ? ' active' : '');
+      a.href = encodeURI(item.href);
+      a.textContent = item.label;
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+
+    nav.appendChild(list);
+
+    const header = document.querySelector('.lab-global-header');
+    if (header && header.parentNode) {
+      header.parentNode.insertBefore(nav, header.nextSibling);
+    }
+  }
+
+  function readRecentPages() {
+    try {
+      const raw = global.localStorage.getItem(RECENT_PAGES_KEY);
+      const items = raw ? JSON.parse(raw) : [];
+      return Array.isArray(items) ? items : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeRecentPages(items) {
+    try {
+      global.localStorage.setItem(RECENT_PAGES_KEY, JSON.stringify(items));
+    } catch (error) {
+    }
+  }
+
+  function trackRecentPage(entry) {
+    if (!entry || !entry.href || !entry.title) {
+      return;
+    }
+
+    const items = readRecentPages().filter(function (item) {
+      return item && item.href !== entry.href;
+    });
+
+    items.unshift({
+      title: entry.title,
+      href: entry.href,
+      section: entry.section || '',
+      pageId: entry.pageId || '',
+      subtitle: entry.subtitle || '',
+      visitedAt: Date.now()
+    });
+
+    writeRecentPages(items.slice(0, 8));
+  }
+
+  function getRecentPages(limit) {
+    const max = typeof limit === 'number' ? limit : 8;
+    return readRecentPages().slice(0, max);
+  }
+
+  function clearRecentPages() {
+    try {
+      global.localStorage.removeItem(RECENT_PAGES_KEY);
+    } catch (error) {
+    }
+  }
+
+  function renderContextNav(basePath, section, pageId) {
+    if (document.querySelector('.lab-context-nav')) {
+      return;
+    }
+
+    const activeModule = getActiveModule(section);
+    const moduleDef = LAB_STRUCTURE[activeModule];
+    if (!moduleDef) {
+      return;
+    }
+
+    const pageIndex = moduleDef.pages.findIndex(function (page) {
+      return page.id === pageId;
+    });
+    const stepItems = [];
+
+    if (pageIndex > 0) {
+      stepItems.push(moduleDef.pages[pageIndex - 1]);
+    }
+    if (pageIndex >= 0 && pageIndex < moduleDef.pages.length - 1) {
+      stepItems.push(moduleDef.pages[pageIndex + 1]);
+    }
+    if (!stepItems.length && moduleDef.pages.length) {
+      stepItems.push(moduleDef.pages[0]);
+    }
+
+    const wrapper = document.createElement('section');
+    wrapper.className = 'lab-context-nav';
+    wrapper.setAttribute('aria-label', 'Navigation de parcours du module');
+
+    const inner = document.createElement('div');
+    inner.className = 'lab-context-nav__grid';
+
+    const intro = document.createElement('section');
+    intro.className = 'lab-context-nav__card lab-context-nav__card--intro';
+
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'lab-context-nav__eyebrow';
+    eyebrow.textContent = 'Parcours du laboratoire';
+
+    const title = document.createElement('h2');
+    title.className = 'lab-context-nav__title';
+    title.textContent = moduleDef.title;
+
+    const text = document.createElement('p');
+    text.className = 'lab-context-nav__text';
+    text.textContent = 'Navigation locale du module actif et passerelles rapides vers les autres briques p\u00e9dagogiques.';
+
+    intro.appendChild(eyebrow);
+    intro.appendChild(title);
+    intro.appendChild(text);
+    inner.appendChild(intro);
+
+    appendLinkList(inner, 'Dans ce module', moduleDef.pages, 'lab-context-nav__link', basePath, pageId);
+    appendLinkList(inner, '\u00c9tapes voisines', stepItems, 'lab-context-nav__link lab-context-nav__link--step', basePath, '');
+    appendLinkList(inner, 'Passerelles labo', moduleDef.bridges, 'lab-context-nav__link lab-context-nav__link--bridge', basePath, '');
+
+    wrapper.appendChild(inner);
+
+    const moduleNav = document.querySelector('.lab-module-nav');
+    if (moduleNav && moduleNav.parentNode) {
+      moduleNav.parentNode.insertBefore(wrapper, moduleNav.nextSibling);
+    }
+  }
+
+  function redirectTo(url) {
+    global.location.replace(url);
+  }
+
+  function setupRedirectPage(targetUrl) {
+    redirectTo(targetUrl);
+  }
+
+  function applyMode(modeHandlers) {
+    const params = getParams();
+    const mode = params.get('mode');
+
+    if (mode && modeHandlers && typeof modeHandlers[mode] === 'function') {
+      modeHandlers[mode](params);
+    }
+
+    return { mode: mode, params: params };
+  }
+
+  function scrollToSection(id, delay) {
+    const wait = typeof delay === 'number' ? delay : 0;
+    global.setTimeout(function () {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, wait);
+  }
+
+  global.LabCommon = {
+    getParams: getParams,
+    initHeader: initHeader,
+    redirectTo: redirectTo,
+    setupRedirectPage: setupRedirectPage,
+    applyMode: applyMode,
+    scrollToSection: scrollToSection,
+    renderModuleNav: renderModuleNav,
+    getRecentPages: getRecentPages,
+    clearRecentPages: clearRecentPages
+  };
+})(window);

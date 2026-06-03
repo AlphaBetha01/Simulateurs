@@ -1,0 +1,34 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="refresh" content="0; url=MUX.html?mode=pcm" />
+<title>Redirection : PCM + TDM</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/redirect-page.css" />
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/simulateur-mux-compat.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="lab-global-header">
+    <div class="lab-global-header__inner">
+      <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+      <div class="lab-global-header__brand">
+        <strong>Laboratoire Virtuel de Télécommunication</strong>
+        <span>Page de compatibilité • PCM + TDM</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notice">
+    Cette page a été fusionnée dans <strong>MUX.html</strong>.
+    <br />
+    Le mode compatible ouvre directement le laboratoire principal avec un focus sur le bloc <strong>PCM + TDM + audio</strong>.
+    <br /><br />
+    <a href="MUX.html?mode=pcm">Ouvrir le mode PCM unifié</a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,242 @@
+﻿:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --card-alt: #334155;
+  --tx: #3b82f6;
+  --rx: #10b981;
+  --warn: #f59e0b;
+  --err: #ef4444;
+  --text: #f8fafc;
+  --muted: #94a3b8;
+  --grid: #334155;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 20px;
+  font-size: 13px;
+}
+
+.wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 22px;
+  margin: 0;
+  color: #e2e8f0;
+  border-bottom: 2px solid var(--card-alt);
+  padding-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.control-panel {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 20px;
+  border: 1px solid var(--card-alt);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ctrl-group {
+  flex: 1;
+  min-width: 180px;
+}
+
+label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+span.val {
+  color: #38bdf8;
+  font-weight: bold;
+}
+
+input[type=range] {
+  width: 100%;
+  cursor: pointer;
+  accent-color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+select {
+  width: 100%;
+  padding: 6px;
+  background: #0f172a;
+  color: white;
+  border: 1px solid var(--muted);
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+}
+
+button {
+  padding: 6px 12px;
+  background: var(--tx);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  filter: brightness(1.2);
+}
+
+button.active-red {
+  background: var(--err);
+}
+
+button.active-green {
+  background: var(--rx);
+}
+
+.shannon-gauge {
+  background: #0f172a;
+  border: 1px solid var(--card-alt);
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+
+.shannon-bar {
+  height: 6px;
+  background: #334155;
+  border-radius: 4px;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.shannon-fill {
+  height: 100%;
+  width: 50%;
+  background: var(--rx);
+  transition: 0.2s;
+}
+
+.shannon-fill.danger {
+  background: var(--err);
+}
+
+.ber-counter {
+  font-family: monospace;
+  font-size: 14px;
+  background: #000;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #475569;
+  display: inline-block;
+  color: var(--warn);
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.block {
+  background: var(--card);
+  border: 1px solid var(--card-alt);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.block-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--card-alt);
+  padding-bottom: 6px;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.sub-controls {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--card-alt);
+}
+
+.scope {
+  background: #000;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  height: 100px;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+  margin-top: 4px;
+}
+
+.scope::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+svg,
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: absolute;
+  z-index: 1;
+}
+
+.scope-label {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 10px;
+  color: var(--muted);
+  z-index: 2;
+  font-family: monospace;
+}
+
+.bits {
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-align: center;
+  margin: 4px 0;
+}
+
+.bits span.err {
+  color: var(--err);
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.bits span.fec {
+  color: #a855f7;
+}

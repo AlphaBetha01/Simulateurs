@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Virtuel de Télécommunication</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/index.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Portail principal des simulateurs pédagogiques</span>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+  <header>
+    <h1>Laboratoire Virtuel de Télécommunication</h1>
+    <p class="subtitle">
+      Point d’entrée unique pour explorer les simulateurs du projet. Les pages ont été regroupées par thèmes pédagogiques : analogique,
+      numérisation, modulations numériques, transmission sur canal, puis multiplexage téléphonique et hiérarchies réseau.
+    </p>
+    <div class="badge-row">
+      <span class="badge">HTML autonome</span>
+      <span class="badge">SVG / Canvas</span>
+      <span class="badge">Animations temps réel</span>
+      <span class="badge">Web Audio API</span>
+    </div>
+  </header>
+
+  <div class="top-grid">
+    <section class="panel">
+      <h2>Parcours recommandé</h2>
+      <ul>
+        <li><strong>Étape 1</strong> : `Emetteur.html` → `Amplificateur.html` → `Récepteur.html`</li>
+        <li><strong>Étape 2</strong> : `CAN.html` pour passer de l’analogique au numérique</li>
+        <li><strong>Étape 3</strong> : `Simulateur 2.html` en mode symbole unique ou séquence pour les constellations</li>
+        <li><strong>Étape 4</strong> : `Transmission.html` puis `Transmission Num et Traite Sgnal.html`</li>
+        <li><strong>Étape 5</strong> : `Simulateur_E12.html`, `Simulateur_MUX.html`, puis `MUX.html`</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <h2>Refactorisation recommandée</h2>
+      <ul>
+        <li>Conserver `MUX.html` comme page réseau principale</li>
+        <li>Archiver `Simulateur_MUX11.html`</li>
+        <li>Fusionner à terme `Simulateur.html` et `Simulateur 2.html`</li>
+        <li>Conserver `Transmission.html` et `Transmission Num et Traite Sgnal.html` comme niveaux distincts</li>
+      </ul>
+      <div class="actions" style="margin-top:12px;">
+        <a class="btn" href="PLAN_REFACTORISATION.md">Voir le plan</a>
+      </div>
+    </section>
+  </div>
+
+  <div class="sections">
+    <section class="section">
+      <div class="section-head">
+        <h2>1. Chaîne analogique</h2>
+        <p>Émission, amplification et réception analogique</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Émetteur AM / FM</h3>
+          <div class="meta">
+            <span class="tag beginner">Débutant</span>
+            <span class="tag">Modulation</span>
+          </div>
+          <p>Visualise le signal d’information, la porteuse et le signal modulé avec bascule entre `AM` et `FM`.</p>
+          <div class="actions">
+            <a class="btn primary" href="Emetteur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Amplificateur / Répéteur</h3>
+          <div class="meta">
+            <span class="tag beginner">Débutant</span>
+            <span class="tag">Puissance</span>
+          </div>
+          <p>Montre l’effet du gain, de la saturation et de l’écrêtage sur un signal sinusoïdal.</p>
+          <div class="actions">
+            <a class="btn primary" href="Amplificateur.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Récepteur / Démodulation</h3>
+          <div class="meta">
+            <span class="tag beginner">Débutant</span>
+            <span class="tag">Filtrage</span>
+          </div>
+          <p>Illustre le bruit, le redressement et le filtrage passe-bas pour reconstruire le message.</p>
+          <div class="actions">
+            <a class="btn primary" href="Récepteur.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>2. Numérisation et PCM</h2>
+        <p>Échantillonnage, quantification, codage et trames E1</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Convertisseur CAN</h3>
+          <div class="meta">
+            <span class="tag beginner">Débutant</span>
+            <span class="tag">CAN</span>
+          </div>
+          <p>Montre l’effet de la fréquence d’échantillonnage et du nombre de bits sur la conversion analogique-numérique.</p>
+          <div class="actions">
+            <a class="btn primary" href="CAN.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Structure de la multitrame E1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Intermédiaire</span>
+            <span class="tag">PCM / E1</span>
+          </div>
+          <p>Inspecte `FAS`, `NFAS`, `VMT`, `CAS` et les voies utiles dans une représentation 16 × 32.</p>
+          <div class="actions">
+            <a class="btn primary" href="Simulateur_E12.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>3. Modulations numériques</h2>
+        <p>Analyse symbole par symbole et performances de constellation</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Analyse d’un symbole</h3>
+          <div class="meta">
+            <span class="tag intermediate">Intermédiaire</span>
+            <span class="tag">ASK / PSK / QAM / FSK</span>
+          </div>
+          <p>Mode unifié de `Simulateur 2.html` configuré pour un seul symbole, avec calcul `I/Q`, amplitude, phase et équation du signal.</p>
+          <div class="actions">
+            <a class="btn primary" href="Simulateur 2.html?mode=symbol&num=1">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Séquence de symboles</h3>
+          <div class="meta">
+            <span class="tag intermediate">Intermédiaire</span>
+            <span class="tag">Constellation</span>
+          </div>
+          <p>Version enrichie avec plusieurs symboles, trajectoire I/Q et onde temporelle multi-symboles.</p>
+          <div class="actions">
+            <a class="btn primary" href="Simulateur 2.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Tableau de bord des modulations</h3>
+          <div class="meta">
+            <span class="tag advanced">Avancé</span>
+            <span class="tag">BER / Eb/N0</span>
+          </div>
+          <p>Compare l’ordre de modulation, le `roll-off`, l’`Eb/N0`, l’efficacité spectrale et le TEB théorique.</p>
+          <div class="actions">
+            <a class="btn primary" href="Tableau de Bord Modulations Numériques.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>4. Transmission sur canal</h2>
+        <p>Chaîne complète, bruit, gigue, filtrage et mesures DSP</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Transmission pédagogique complète</h3>
+          <div class="meta">
+            <span class="tag intermediate">Intermédiaire</span>
+            <span class="tag">TX / RX</span>
+          </div>
+          <p>Chaîne `émetteur → canal → récepteur` avec BER, capacité type Shannon, jitter, FEC et diagramme de l’œil.</p>
+          <div class="actions">
+            <a class="btn primary" href="Transmission.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Traitement du signal avancé</h3>
+          <div class="meta">
+            <span class="tag advanced">Avancé</span>
+            <span class="tag">DSP / AWGN</span>
+          </div>
+          <p>Version expert avec constellation bruitée, spectre, diagramme de l’œil, signaux `I/Q`, `SER` et filtre `RRC`.</p>
+          <div class="actions">
+            <a class="btn primary" href="Transmission Num et Traite Sgnal.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>5. Multiplexage et réseaux téléphoniques</h2>
+        <p>Trames E1/T1, PCM temps réel, PDH, SDH et SONET</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <h3>Comparatif E1 / T1</h3>
+          <div class="meta">
+            <span class="tag intermediate">Intermédiaire</span>
+            <span class="tag">TDM</span>
+          </div>
+          <p>Compare la structure des trames Europe / US, la signalisation et le `robbed bit signaling`. L’ancienne variante `Simulateur_MUX11.html` a été archivée.</p>
+          <div class="actions">
+            <a class="btn primary" href="Simulateur_MUX.html">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>PCM + TDM avec audio</h3>
+          <div class="meta">
+            <span class="tag advanced">Avancé</span>
+            <span class="tag">PCM temps réel</span>
+          </div>
+          <p>Mode ciblé du laboratoire principal `MUX.html`, orienté sur l’oscillateur, l’octet PCM live et son insertion dans la voie 1 d’une trame E1/T1.</p>
+          <div class="actions">
+            <a class="btn primary" href="MUX.html?mode=pcm">Ouvrir</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Laboratoire réseau complet</h3>
+          <div class="meta">
+            <span class="tag advanced">Avancé</span>
+            <span class="tag">PDH / SDH / SONET</span>
+          </div>
+          <p>Page la plus complète du projet : PCM, trames, scanner, hiérarchies `E1/T1`, multiplexage `PDH` et transport optique.</p>
+          <div class="actions">
+            <a class="btn primary" href="MUX.html">Ouvrir</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer-note">
+    Aucun fichier existant n’a été déplacé. Cette page sert de façade d’entrée unique. La rationalisation recommandée est décrite dans `PLAN_REFACTORISATION.md`.
+  </div>
+</div>
+</body>
+</html>

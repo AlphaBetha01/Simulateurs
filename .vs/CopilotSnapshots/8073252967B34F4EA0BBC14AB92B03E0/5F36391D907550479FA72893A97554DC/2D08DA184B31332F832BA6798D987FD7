@@ -1,0 +1,371 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Avancé : Normes E1 (Europe) vs T1 (US/Japon)</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    
+    /* Couleurs E1 */
+    --fas: #10b981; --nfas: #f59e0b; --vmt: #8b5cf6; --cas: #3b82f6; 
+    
+    /* Couleurs T1 */
+    --fbit: #ef4444; /* Rouge: Bit de trame T1 */
+    --robbed: #d946ef; /* Fuchsia: Vol de bit T1 */
+    
+    /* Commun */
+    --voice: #e2e8f0; --voice-hover: #cbd5e1; --active-scan: #facc15;
+  }
+
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+  .wrap { max-width: 1300px; margin: 20px auto; padding: 24px; background: var(--card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+  h1 { margin: 0 0 5px; font-size: 24px; color: #0f172a; }
+  .subtitle { color: var(--muted); margin-bottom: 20px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
+
+  /* Contrôles Haut */
+  .top-bar { display: flex; justify-content: space-between; align-items: center; background: #f1f5f9; padding: 15px 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; gap: 15px;}
+  .standard-selector { display: flex; align-items: center; gap: 10px; font-weight: bold; }
+  select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; font-weight: bold; outline: none; cursor: pointer; background: white;}
+  
+  .controls { display: flex; gap: 15px; align-items: center; }
+  button { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;}
+  button:hover { background: #334155; }
+  button.active { background: #ef4444; }
+  .speed-ctrl { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; color: var(--muted);}
+
+  /* Layout principal */
+  .stage { display: grid; grid-template-columns: 2.2fr 1fr; gap: 24px; }
+
+  /* Grille */
+  .grid-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+  .grid-matrix { display: grid; gap: 2px; }
+  
+  .col-header, .row-header { font-size: 10px; font-weight: bold; color: var(--muted); display: flex; align-items: center; justify-content: center; text-align: center; }
+  .row-header { justify-content: flex-end; padding-right: 8px; }
+
+  .cell { 
+    height: 22px; border-radius: 3px; cursor: pointer; transition: transform 0.1s;
+    display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: monospace; color: rgba(0,0,0,0.6);
+  }
+  .cell:hover { transform: scale(1.25); z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+  
+  /* Types E1 */
+  .c-fas { background: var(--fas); color: white; font-weight:bold;}
+  .c-nfas { background: var(--nfas); color: white; font-weight:bold;}
+  .c-vmt { background: var(--vmt); color: white; font-weight:bold;}
+  .c-cas { background: var(--cas); color: white; font-weight:bold;}
+  
+  /* Types T1 */
+  .c-fbit { background: var(--fbit); color: white; font-weight:bold; }
+  .c-robbed { background: repeating-linear-gradient(45deg, var(--robbed), var(--robbed) 5px, #c026d3 5px, #c026d3 10px); color: white; font-weight:bold;}
+
+  /* Commun */
+  .c-voice { background: var(--voice); }
+  .c-voice:hover { background: var(--voice-hover); }
+  .cell.scanning { background: var(--active-scan) !important; transform: scale(1.15); box-shadow: 0 0 10px var(--active-scan); z-index: 5; color: black;}
+
+  /* Panneau d'information */
+  .info-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+  .info-title { font-size: 18px; font-weight: 800; color: #0f172a; border-bottom: 2px solid var(--border); padding-bottom: 8px; margin:0; }
+  .info-badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; color: white; width: fit-content; text-transform: uppercase; letter-spacing: 0.5px;}
+  .info-detail { font-size: 14px; line-height: 1.6; }
+  .info-binary { font-family: monospace; background: #1e293b; color: #38bdf8; padding: 12px; border-radius: 6px; font-size: 18px; text-align: center; letter-spacing: 3px; font-weight: bold;}
+  .bin-highlight { color: #facc15; } /* Pour souligner le bit volé */
+
+  /* Légende & Stats */
+  .bottom-section { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; font-weight: bold; align-items: flex-start; align-content: flex-start;}
+  .leg-item { display: flex; align-items: center; gap: 6px; background: white; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border);}
+  .leg-box { width: 14px; height: 14px; border-radius: 3px; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 15px; justify-content: flex-end;}
+  .stat-box { background: white; border: 1px solid var(--border); padding: 10px 15px; border-radius: 6px; text-align: right; min-width: 120px;}
+  .stat-val { font-size: 18px; font-weight: 900; font-family: monospace; color: #0ea5e9;}
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: bold; margin-top: 2px;}
+
+</style>
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Multiplexage téléphonique • comparaison E1 et T1</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Ingénierie de la Trame : Normes MIC E1 vs T1</h1>
+  <div class="subtitle">Analyse comparative des hiérarchies numériques plésiochrones (PDH) d'Europe et d'Amérique du Nord.</div>
+
+  <div class="top-bar">
+    <div class="standard-selector">
+      Sélecteur de Norme :
+      <select id="stdSelect">
+        <option value="E1">Norme E1 (Europe/Intl) - 2.048 Mbps</option>
+        <option value="T1">Norme T1 (US/Japon) - 1.544 Mbps</option>
+      </select>
+    </div>
+    
+    <div class="controls">
+      <div class="speed-ctrl">Vitesse: <input type="range" id="speedRange" min="1" max="50" value="25"></div>
+      <button id="btnPlay">▶ Lancer Simulation</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    
+    <div class="grid-container">
+      <div class="grid-matrix" id="grid">
+        </div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Analyseur de Trame</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">En attente</div>
+      <div class="info-detail" id="insp-desc">
+        Survolez la matrice pour décoder la fonction mathématique de chaque octet/bit.
+      </div>
+      <div class="info-binary" id="insp-bin" style="display: none;"></div>
+      
+      <div id="insp-footer" style="margin-top: auto; padding-top:15px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: var(--muted); line-height: 1.5;">
+        </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-section">
+    <div class="legend" id="legendBox">
+      </div>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-val" id="statRate">2.048 Mbps</div>
+        <div class="stat-label">Débit Ligne</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statChannels">30 Voies</div>
+        <div class="stat-label">Capacité Utile</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statBits">4096</div>
+        <div class="stat-label">Bits / Multitrame</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Elements DOM
+  const grid = document.getElementById('grid');
+  const stdSelect = document.getElementById('stdSelect');
+  const btnPlay = document.getElementById('btnPlay');
+  const speedRange = document.getElementById('speedRange');
+  
+  const inspTitle = document.getElementById('insp-title');
+  const inspBadge = document.getElementById('insp-badge');
+  const inspDesc = document.getElementById('insp-desc');
+  const inspBin = document.getElementById('insp-bin');
+  const inspFooter = document.getElementById('insp-footer');
+  const legendBox = document.getElementById('legendBox');
+  
+  let cells = [];
+  let isScanning = false;
+  let scanIndex = 0;
+  let scanInterval;
+  let currentStd = 'E1';
+
+  // Dictionnaires de légendes
+  const legends = {
+    E1: `
+      <div class="leg-item"><div class="leg-box" style="background: var(--fas)"></div> IT0 (Pair): Verrouillage Trame (FAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--nfas)"></div> IT0 (Impair): Alarmes (NFAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--vmt)"></div> IT16 (T0): Synchro Multitrame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--cas)"></div> IT16 (T1-T15): Signalisation (CAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> Voies Vocales / Data (8 bits purs)</div>
+    `,
+    T1: `
+      <div class="leg-item"><div class="leg-box" style="background: var(--fbit)"></div> F-Bit: Bit de Verrouillage (1 bit)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> Voie Vocale Normale (8 bits purs)</div>
+      <div class="leg-item"><div class="leg-box" style="background: repeating-linear-gradient(45deg, var(--robbed), var(--robbed) 5px, #c026d3 5px, #c026d3 10px)"></div> Voie Vocale avec Signalisation (Vol de Bit: 7b Voix + 1b Sig)</div>
+    `
+  };
+
+  function updateUIForStandard() {
+    currentStd = stdSelect.value;
+    stopScanner();
+    legendBox.innerHTML = legends[currentStd];
+    
+    if (currentStd === 'E1') {
+      document.getElementById('statRate').textContent = "2.048 Mbps";
+      document.getElementById('statChannels').textContent = "30 Voies";
+      document.getElementById('statBits').textContent = "4096 (2ms)";
+      inspFooter.innerHTML = `<strong>Rappel E1 :</strong> 1 IT = 8 bits. Séparation stricte entre la voix et la signalisation (Canal Sémaphore). 32 ITs de 64 kbps par trame.`;
+    } else {
+      document.getElementById('statRate').textContent = "1.544 Mbps";
+      document.getElementById('statChannels').textContent = "24 Voies";
+      document.getElementById('statBits').textContent = "2316 (1.5ms)"; // 12 trames * 193 bits (Supertrame D4)
+      inspFooter.innerHTML = `<strong>Rappel T1 :</strong> La signalisation est "cachée" dans la voix (In-band signaling). Cela dégrade marginalement la qualité vocale toutes les 6 trames (de 64 kbps à 56 kbps à cet instant précis).`;
+    }
+    
+    buildGrid();
+  }
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    cells = [];
+    
+    if (currentStd === 'E1') {
+      // Construction E1 (16 Lignes x 32 Colonnes)
+      grid.style.gridTemplateColumns = '35px repeat(32, 1fr)';
+      
+      grid.appendChild(document.createElement('div'));
+      for (let c = 0; c < 32; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = c; grid.appendChild(col);
+      }
+
+      for (let r = 0; r < 16; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        
+        for (let c = 0; c < 32; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          let type = 'voice';
+          if (c === 0) type = (r % 2 === 0) ? 'fas' : 'nfas';
+          else if (c === 16) type = (r === 0) ? 'vmt' : 'cas';
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    } 
+    else if (currentStd === 'T1') {
+      // Construction T1 (Supertrame D4 : 12 Lignes x (1 F-Bit + 24 Canaux))
+      grid.style.gridTemplateColumns = '35px 15px repeat(24, 1fr)'; // Le F-Bit est plus étroit (1 bit)
+      
+      grid.appendChild(document.createElement('div'));
+      let fbHead = document.createElement('div'); fbHead.className = 'col-header'; fbHead.textContent = 'F'; grid.appendChild(fbHead);
+      for (let c = 1; c <= 24; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = `CH${c}`; grid.appendChild(col);
+      }
+
+      for (let r = 1; r <= 12; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        
+        // F-Bit (Colonne 0)
+        let fcell = document.createElement('div'); fcell.className = 'cell c-fbit';
+        fcell.dataset.trame = r; fcell.dataset.it = 'F'; fcell.dataset.type = 'fbit';
+        fcell.addEventListener('mouseenter', () => updateInspector(fcell));
+        grid.appendChild(fcell); cells.push(fcell);
+
+        // Canaux 1 à 24
+        for (let c = 1; c <= 24; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          // Robbed bit in frame 6 and 12
+          let type = (r === 6 || r === 12) ? 'robbed' : 'voice-t1';
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    }
+    
+    updateInspector(cells[0]); // Select first cell
+  }
+
+  function updateInspector(cell) {
+    if(isScanning) return;
+
+    const trame = cell.dataset.trame;
+    const it = cell.dataset.it;
+    const type = cell.dataset.type;
+
+    inspTitle.textContent = currentStd === 'E1' ? `Trame ${trame} - Intervalle (IT) ${it}` : `Trame ${trame} - ${it === 'F' ? 'F-Bit' : 'Canal ' + it}`;
+    inspBin.style.display = 'block';
+
+    let randVoice = () => { let b=""; for(let i=0; i<8; i++) b+=Math.random()>0.5?"1":"0"; return b;};
+
+    switch (type) {
+      // --- E1 ---
+      case 'fas':
+        inspBadge.textContent = "FAS (Synchro Trame)"; inspBadge.style.background = "var(--fas)";
+        inspDesc.innerHTML = `<strong>Verrouillage spatial.</strong> Repère le début exact de la trame E1.`;
+        inspBin.innerHTML = "x 0 0 1 1 0 1 1"; break;
+      case 'nfas':
+        inspBadge.textContent = "NFAS (Alarmes)"; inspBadge.style.background = "var(--nfas)";
+        inspDesc.innerHTML = `<strong>Supervision.</strong> Le bit 2 est fixé à '1'. Contient les alarmes distantes (A).`;
+        inspBin.innerHTML = "x 1 A S S S S S"; break;
+      case 'vmt':
+        inspBadge.textContent = "VMT (Synchro Multitrame)"; inspBadge.style.background = "var(--vmt)";
+        inspDesc.innerHTML = `Signale le début du cycle de 16 trames, nécessaire pour décoder les signaux CAS.`;
+        inspBin.innerHTML = "0 0 0 0 x y x x"; break;
+      case 'cas':
+        inspBadge.textContent = "CAS (Signalisation Hors Bande)"; inspBadge.style.background = "var(--cas)";
+        inspDesc.innerHTML = `<strong>État téléphonique.</strong> Code l'état de la <b>Voie ${trame}</b> et de la <b>Voie ${parseInt(trame)+15}</b>.`;
+        inspBin.innerHTML = "a b c d  a b c d"; break;
+      case 'voice':
+        inspBadge.textContent = "Voie Utile (64 kbps)"; inspBadge.style.background = "var(--muted)";
+        inspDesc.innerHTML = `8 bits dédiés à 100% pour la voix ou les données (Clear Channel).`;
+        inspBin.innerHTML = randVoice().split('').join(' '); break;
+        
+      // --- T1 ---
+      case 'fbit':
+        inspBadge.textContent = "F-Bit (Synchro / Alarme)"; inspBadge.style.background = "var(--fbit)";
+        inspDesc.innerHTML = `<strong>Le 193ème bit.</strong> Ajouté au début de la trame de 192 bits (24x8). Sa valeur alterne pour former un motif de synchronisation (Terminal Framing) sur la Supertrame.`;
+        inspBin.innerHTML = Math.random() > 0.5 ? "1" : "0"; break;
+      case 'voice-t1':
+        inspBadge.textContent = "Voix (64 kbps)"; inspBadge.style.background = "var(--muted)";
+        inspDesc.innerHTML = `Échantillon standard. L'appelant bénéficie de l'intégralité des 8 bits sur cette trame.`;
+        inspBin.innerHTML = randVoice().split('').join(' '); break;
+      case 'robbed':
+        inspBadge.textContent = "Robbed Bit Signaling (Signalisation Dans la Bande)"; inspBadge.style.background = "var(--robbed)";
+        inspDesc.innerHTML = `<strong>Génie ou Bricolage US ?</strong> Pour éviter d'utiliser un canal entier pour la signalisation, le réseau <b>vole le bit de poids faible (LSB)</b> de la voix dans cette trame spécifique (Trame 6 ou 12). La voix n'est codée que sur 7 bits ici !`;
+        let vb = randVoice();
+        inspBin.innerHTML = `${vb.substring(0,7).split('').join(' ')} <span class="bin-highlight">S</span>`; break;
+    }
+  }
+
+  // Scanner Animation
+  btnPlay.addEventListener('click', () => { isScanning ? stopScanner() : startScanner(); });
+
+  function startScanner() {
+    isScanning = true; btnPlay.innerHTML = "⏸ Arrêter Simulation"; btnPlay.classList.add('active');
+    scanIndex = 0; runScannerLoop();
+  }
+
+  function stopScanner() {
+    isScanning = false; btnPlay.innerHTML = "▶ Lancer Simulation"; btnPlay.classList.remove('active');
+    clearTimeout(scanInterval); cells.forEach(c => c.classList.remove('scanning'));
+  }
+
+  function runScannerLoop() {
+    if(!isScanning) return;
+    if (scanIndex > 0) cells[scanIndex - 1].classList.remove('scanning');
+    else if (scanIndex === 0 && cells.length > 0) cells[cells.length - 1].classList.remove('scanning');
+    
+    cells[scanIndex].classList.add('scanning');
+    updateInspector(cells[scanIndex]);
+
+    scanIndex++; if (scanIndex >= cells.length) scanIndex = 0;
+    const delay = 350 - (speedRange.value * 6); 
+    scanInterval = setTimeout(runScannerLoop, delay);
+  }
+
+  stdSelect.addEventListener('change', updateUIForStandard);
+
+  // Init
+  updateUIForStandard();
+
+</script>
+</body>
+</html>

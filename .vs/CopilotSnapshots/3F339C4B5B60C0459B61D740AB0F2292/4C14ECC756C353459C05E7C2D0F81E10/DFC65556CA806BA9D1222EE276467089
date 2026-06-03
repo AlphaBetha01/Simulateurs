@@ -1,0 +1,128 @@
+﻿LabCommon.initHeader({ bodySection: 'analogique-amplificateur', pageId: 'analogique-amplificateur' });
+// RÃ©cupÃ©ration des Ã©lÃ©ments
+const svgIn = document.getElementById('svgIn');
+const svgOut = document.getElementById('svgOut');
+
+const inInput = document.getElementById('inInput');
+const gainInput = document.getElementById('gainInput');
+const clipInput = document.getElementById('clipInput');
+
+const inVal = document.getElementById('inVal');
+const gainVal = document.getElementById('gainVal');
+const clipVal = document.getElementById('clipVal');
+const displayGain = document.getElementById('displayGain');
+
+const meterIn = document.getElementById('meterIn');
+const meterOut = document.getElementById('meterOut');
+const textPowerIn = document.getElementById('textPowerIn');
+const textPowerOut = document.getElementById('textPowerOut');
+
+const w = 400, h = 160;
+const yCenter = h / 2;
+let timeOffset = 0;
+const freq = 3; // FrÃ©quence visuelle fixe
+
+function draw() {
+  const ampIn = +inInput.value;
+  const gain = +gainInput.value;
+  const clipLimit = +clipInput.value;
+  
+  // Mise Ã  jour de l'UI textuelle
+  inVal.textContent = Math.round(ampIn);
+  gainVal.textContent = gain.toFixed(1);
+  displayGain.textContent = gain.toFixed(1);
+  clipVal.textContent = clipLimit;
+
+  timeOffset += 0.005; 
+
+  let pathIn = `M 0 ${yCenter}`;
+  let pathOutIdeal = `M 0 ${yCenter}`; // Trace fantÃ´me si on dÃ©passe la saturation
+  let pathOutReal = `M 0 ${yCenter}`;
+
+  // Calcul visuel (Ã©chelle pour que l'onde tienne dans le SVG)
+  // On considÃ¨re que 150 mV = 70 pixels (quasi le bord du SVG)
+  const scale = 70 / 150; 
+  
+  let currentPowerOutRaw = 0;
+
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+    const sineVal = Math.sin(2 * Math.PI * freq * t);
+    
+    // Signal d'entrÃ©e
+    const vIn = sineVal * ampIn;
+    const yIn = yCenter - (vIn * scale);
+    pathIn += ` L ${x} ${yIn}`;
+
+    // Signal de sortie idÃ©al (sans limite)
+    const vOutIdeal = vIn * gain;
+    const yOutIdeal = yCenter - (vOutIdeal * scale);
+    pathOutIdeal += ` L ${x} ${yOutIdeal}`;
+
+    // Signal de sortie rÃ©el (avec Ã©crÃªtage / saturation)
+    let vOutReal = vOutIdeal;
+    if (vOutReal > clipLimit) vOutReal = clipLimit;
+    if (vOutReal < -clipLimit) vOutReal = -clipLimit;
+    
+    const yOutReal = yCenter - (vOutReal * scale);
+    pathOutReal += ` L ${x} ${yOutReal}`;
+
+    // On rÃ©cupÃ¨re la valeur absolue max pour calculer la puissance
+    if (Math.abs(vOutReal) > currentPowerOutRaw) {
+        currentPowerOutRaw = Math.abs(vOutReal);
+    }
+  }
+
+  // Rendu SVG EntrÃ©e
+  svgIn.innerHTML = `<path d="${pathIn}" stroke="var(--wave-in)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  // Rendu SVG Sortie (Incluant les lignes de limites Vcc)
+  const clipYTop = yCenter - (clipLimit * scale);
+  const clipYBot = yCenter + (clipLimit * scale);
+  
+  let outHTML = `
+    <!-- Lignes de saturation (Alimentation) -->
+    <line x1="0" y1="${clipYTop}" x2="${w}" y2="${clipYTop}" stroke="var(--clip-line)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <line x1="0" y1="${clipYBot}" x2="${w}" y2="${clipYBot}" stroke="var(--clip-line)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <text x="5" y="${clipYTop - 5}" fill="var(--clip-line)" font-size="10" font-weight="bold">+Vcc</text>
+    <text x="5" y="${clipYBot + 12}" fill="var(--clip-line)" font-size="10" font-weight="bold">-Vcc</text>
+  `;
+
+  // Si on sature, on affiche le signal idÃ©al en arriÃ¨re-plan (pointillÃ©s clairs)
+  if (ampIn * gain > clipLimit) {
+    outHTML += `<path d="${pathOutIdeal}" stroke="var(--wave-out)" stroke-width="1.5" stroke-dasharray="4 4" fill="none" opacity="0.3"/>`;
+  }
+
+  // Onde de sortie rÃ©elle
+  outHTML += `<path d="${pathOutReal}" stroke="var(--wave-out)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  svgOut.innerHTML = outHTML;
+
+  // Calcul et mise Ã  jour des Vu-mÃ¨tres de puissance
+  // P = V^2 / R (On simplifie en disant P est proportionnel Ã  V^2)
+  const maxPowerTheoretical = Math.pow(150, 2); // basÃ© sur le max possible (150mV)
+  
+  const powerIn = Math.pow(ampIn, 2);
+  const powerOut = Math.pow(currentPowerOutRaw, 2);
+
+  const percentIn = Math.min(100, (powerIn / maxPowerTheoretical) * 100);
+  const percentOut = Math.min(100, (powerOut / maxPowerTheoretical) * 100);
+
+  meterIn.style.width = `${percentIn}%`;
+  meterOut.style.width = `${percentOut}%`;
+
+  // Changement de couleur si Ã§a sature
+  if (currentPowerOutRaw >= clipLimit && clipLimit < (ampIn * gain)) {
+      meterOut.style.backgroundColor = "var(--clip-line)"; // Devient rouge
+  } else {
+      meterOut.style.backgroundColor = "var(--wave-out)"; // Reste violet
+  }
+
+  // Valeurs fictives arbitraires pour l'affichage (ex: microWatts)
+  textPowerIn.textContent = Math.round(powerIn / 100) + 'uW';
+  textPowerOut.textContent = Math.round(powerOut / 100) + 'uW';
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);

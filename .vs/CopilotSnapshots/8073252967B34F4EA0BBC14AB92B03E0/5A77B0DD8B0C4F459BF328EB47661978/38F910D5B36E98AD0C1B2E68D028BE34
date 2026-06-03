@@ -1,0 +1,484 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Expert : Onde, PCM et Trames Télécom</title>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    --fas: #10b981; --nfas: #f59e0b; --vmt: #8b5cf6; --cas: #3b82f6; 
+    --fbit: #ef4444; --robbed: #d946ef; 
+    --voice: #e2e8f0; --voice-hover: #cbd5e1; --active-scan: #facc15; --audio-ch: #0ea5e9;
+  }
+
+  body { font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 1450px; margin: 20px auto; padding: 24px; background: var(--card); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+  h1 { margin: 0 0 5px; font-size: 26px; color: #0f172a; }
+  .subtitle { color: var(--muted); margin-bottom: 25px; font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 15px;}
+
+  /* Layout principal : 3 Colonnes */
+  .stage { display: grid; grid-template-columns: 320px 2fr 320px; gap: 20px; align-items: start;}
+
+  /* Panneaux */
+  .panel { background: #f1f5f9; padding: 18px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px;}
+  .panel h3 { margin: 0; font-size: 15px; color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px;}
+  .panel-desc { font-size: 12px; color: #475569; margin-bottom: 5px; background: white; padding: 10px; border-radius: 6px; border: 1px dashed #cbd5e1;}
+  
+  select, input[type="range"] { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; font-weight: bold; width: 100%; box-sizing: border-box; cursor: pointer; }
+  button { background: #0f172a; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; font-size: 13px;}
+  button:hover { background: #334155; }
+  button.active { background: #ef4444; }
+  button.btn-audio { background: var(--audio-ch); }
+  button.btn-audio:hover { background: #0284c7; }
+
+  /* Onde Sonore / Oscilloscope */
+  .oscilloscope-container { background: #0f172a; border-radius: 8px; padding: 10px; position: relative; margin-top: 5px;}
+  canvas { width: 100%; height: 100px; background: #020617; border-radius: 4px; border: 1px solid #334155;}
+  .live-bin-display { text-align: center; color: #10b981; font-family: monospace; font-size: 18px; font-weight: bold; margin-top: 10px; letter-spacing: 2px;}
+
+  /* Grille PDH */
+  .grid-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+  .grid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;}
+  .grid-matrix { display: grid; gap: 2px; }
+  .col-header, .row-header { font-size: 10px; font-weight: bold; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+  .row-header { justify-content: flex-end; padding-right: 8px; }
+
+  .cell { 
+    height: 22px; border-radius: 3px; cursor: pointer; transition: transform 0.1s;
+    display: flex; align-items: center; justify-content: center; font-size: 9px; font-family: monospace; color: rgba(0,0,0,0.6);
+  }
+  .cell:hover { transform: scale(1.3); z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+  
+  .c-fas { background: var(--fas); color: white; font-weight:bold;}
+  .c-nfas { background: var(--nfas); color: white; font-weight:bold;}
+  .c-vmt { background: var(--vmt); color: white; font-weight:bold;}
+  .c-cas { background: var(--cas); color: white; font-weight:bold;}
+  .c-fbit { background: var(--fbit); color: white; font-weight:bold; }
+  .c-robbed { background: repeating-linear-gradient(45deg, var(--robbed), var(--robbed) 5px, #c026d3 5px, #c026d3 10px); color: white; font-weight:bold;}
+  .c-voice { background: var(--voice); }
+  .c-voice:hover { background: var(--voice-hover); }
+  .c-audio { background: var(--audio-ch); color: white; font-weight: bold; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);}
+  .cell.scanning { background: var(--active-scan) !important; transform: scale(1.2); box-shadow: 0 0 10px var(--active-scan); z-index: 5; color: black; font-weight:bold;}
+
+  /* Panneau Inspecteur */
+  .info-panel { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .info-title { font-size: 16px; font-weight: 800; color: #0f172a; margin:0; }
+  .info-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; width: fit-content;}
+  .info-detail { font-size: 13px; line-height: 1.5; }
+  .info-binary { font-family: monospace; background: #1e293b; color: #38bdf8; padding: 15px; border-radius: 6px; font-size: 20px; text-align: center; letter-spacing: 4px; font-weight: bold;}
+  
+  /* Section Théorie */
+  .theory-section { margin-top: 30px; border-top: 2px solid var(--border); padding-top: 20px; }
+  .theory-section h2 { font-size: 20px; color: #0f172a; margin-bottom: 20px;}
+  .theory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .theory-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);}
+  .theory-card h4 { margin: 0 0 10px 0; color: #0ea5e9; font-size: 15px; display: flex; align-items: center; gap: 8px;}
+  .theory-card p { font-size: 13px; color: #475569; margin: 0 0 10px 0; text-align: justify;}
+  .theory-card ul { margin: 0; padding-left: 20px; font-size: 13px; color: #475569;}
+  .theory-card li { margin-bottom: 5px; }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Laboratoire Intégral : De la Voix (Analogique) au Réseau PDH (Numérique)</h1>
+  <div class="subtitle">Ce simulateur montre comment un signal analogique est transformé en bits (PCM), puis multiplexé dans une trame réseau (TDM).</div>
+
+  <div class="stage">
+    
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <div class="panel">
+        <h3>1. Choix du Réseau (Multiplexage)</h3>
+        <div class="panel-desc">
+          Sélectionnez la norme de la trame physique dans laquelle nous allons injecter les appels téléphoniques.
+        </div>
+        <select id="stdSelect">
+          <option value="E1">Norme E1 (Europe) - 2.048 Mbps</option>
+          <option value="T1">Norme T1 (US/Japon) - 1.544 Mbps</option>
+        </select>
+        
+        <button id="btnPlay">▶ Lancer le Scanner Temporel</button>
+        <div style="font-size: 11px; color: var(--muted); text-align: center; margin-top: 5px;">
+          Ralenti Pédagogique: <span id="speedVal">150</span> ms / intervalle
+        </div>
+        <input type="range" id="speedRange" min="10" max="500" value="150" step="10">
+      </div>
+
+      <div class="panel" style="border-color: var(--audio-ch); background: #f0f9ff;">
+        <h3 style="color: var(--audio-ch); border-color: #bae6fd;">2. Convertisseur PCM (Voie 1)</h3>
+        <div class="panel-desc">
+          Générez une onde sonore. L'oscilloscope ci-dessous lit l'onde, l'échantillonne et la convertit instantanément en un octet binaire (8 bits).
+        </div>
+        <button id="btnAudio" class="btn-audio">Activer le Son (Oscillateur)</button>
+        <select id="freqSelect" disabled>
+          <option value="150">Basse Fréquence (150 Hz)</option>
+          <option value="440" selected>Fréquence Médium (440 Hz)</option>
+          <option value="880">Haute Fréquence (880 Hz)</option>
+        </select>
+        
+        <div class="oscilloscope-container">
+          <canvas id="oscCanvas"></canvas>
+          <div class="live-bin-display" id="liveAudioBin">-- AUDIO OFF --</div>
+        </div>
+        <div style="font-size: 11px; color: #475569; text-align: center;">
+          Cet octet est injecté 8000 fois par seconde dans la <strong style="color: var(--audio-ch);">Voie 1</strong> de la grille à droite.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-container">
+      <div class="grid-header">
+        <strong style="color: #0f172a; font-size: 14px;">Représentation Spatiale de la Trame (TDM)</strong>
+        <span style="font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">Chaque case = 8 bits (1 octet)</span>
+      </div>
+      <div class="grid-matrix" id="grid"></div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Analyseur de Trame</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">Survolez la grille</div>
+      
+      <div class="panel-desc" style="background: white; border: none; padding: 0; margin-bottom: 0;">
+        <strong>Que contient cette case ?</strong> Connectez l'inspecteur à une cellule pour la décoder.
+      </div>
+      
+      <div class="info-detail" id="insp-desc">En attente de sélection...</div>
+      <div class="info-binary" id="insp-bin">--------</div>
+      <div id="insp-footer" style="margin-top: auto; padding-top:10px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: var(--muted); line-height: 1.5;"></div>
+    </div>
+
+  </div>
+
+  <div class="theory-section">
+    <h2>Guide Théorique : Comprendre la Logique du Simulateur</h2>
+    <div class="theory-grid">
+      
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">1️⃣</span> Échantillonnage (La Source PCM)</h4>
+        <p>Le bloc "Convertisseur PCM" simule la transformation de la voix analogique en données numériques, basée sur le théorème de Shannon-Nyquist :</p>
+        <ul>
+          <li><strong>Le filtre :</strong> La voix humaine est limitée à 4000 Hz.</li>
+          <li><strong>L'échantillonnage :</strong> On prend la valeur de l'onde 8000 fois par seconde.</li>
+          <li><strong>La quantification :</strong> Chaque valeur est codée sur un mot binaire de 8 bits (l'octet vert clignotant).</li>
+        </ul>
+        <p><em>Logique :</em> Un appel génère donc 8000 octets par seconde, soit un débit de <strong>64 kbps</strong>.</p>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">2️⃣</span> Multiplexage Temporel (TDM)</h4>
+        <p>Un câble en cuivre ou une fibre optique coûte très cher. Au lieu de tirer un câble par appel, la grille (matrice) au centre simule le <strong>TDM (Time Division Multiplexing)</strong>.</p>
+        <p>Le réseau prend 1 octet de l'Appel 1, puis 1 octet de l'Appel 2, etc., et les met à la queue leu leu dans une "Trame".</p>
+        <ul>
+          <li><strong>E1 :</strong> Regroupe 30 appels + 2 canaux techniques (32 cases).</li>
+          <li><strong>T1 :</strong> Regroupe 24 appels + 1 bit technique.</li>
+        </ul>
+        <p><em>Logique :</em> Le "Scanner" parcourt ces cases pour les envoyer physiquement sur le fil l'une après l'autre.</p>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">3️⃣</span> La Signalisation (Le "cerveau" du réseau)</h4>
+        <p>Transmettre la voix ne suffit pas. Comment le réseau sait-il qu'un numéro est composé, que le téléphone sonne, ou qu'on a raccroché ? C'est la <strong>Signalisation</strong>.</p>
+        <ul>
+          <li><strong>En E1 (Europe) :</strong> On est très organisé. On dédie une colonne entière (la colonne 16 en bleu) uniquement à ça. C'est propre, la voix n'est jamais perturbée.</li>
+          <li><strong>En T1 (US/Japon) :</strong> On est économe. On n'a pas de colonne dédiée. Sur les trames 6 et 12, on <strong>vole le 8ème bit</strong> de l'octet de l'utilisateur pour y cacher le statut du téléphone.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // --- DOM Elements ---
+  const grid = document.getElementById('grid');
+  const stdSelect = document.getElementById('stdSelect');
+  const btnPlay = document.getElementById('btnPlay');
+  const speedRange = document.getElementById('speedRange');
+  const speedVal = document.getElementById('speedVal');
+  
+  const inspTitle = document.getElementById('insp-title');
+  const inspBadge = document.getElementById('insp-badge');
+  const inspDesc = document.getElementById('insp-desc');
+  const inspBin = document.getElementById('insp-bin');
+  const inspFooter = document.getElementById('insp-footer');
+  
+  // --- Audio Elements ---
+  const btnAudio = document.getElementById('btnAudio');
+  const freqSelect = document.getElementById('freqSelect');
+  const liveAudioBin = document.getElementById('liveAudioBin');
+  const canvas = document.getElementById('oscCanvas');
+  const canvasCtx = canvas.getContext('2d');
+  
+  // --- État Global ---
+  let cells = [];
+  let isScanning = false;
+  let scanIndex = 0;
+  let scanInterval;
+  let currentStd = 'E1';
+  let activeInspectedCell = null;
+
+  // --- Moteur Web Audio API ---
+  let audioCtx, oscillator, analyser, dataArray;
+  let isAudioActive = false;
+  let currentLiveBinary = "00000000";
+
+  function resizeCanvas() { canvas.width = canvas.parentElement.clientWidth - 20; canvas.height = 100; }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  btnAudio.addEventListener('click', () => {
+    if (!isAudioActive) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      oscillator = audioCtx.createOscillator();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.value = parseInt(freqSelect.value);
+      
+      oscillator.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      oscillator.start();
+      
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      isAudioActive = true;
+      btnAudio.textContent = "Désactiver le Son";
+      btnAudio.style.background = "#ef4444";
+      freqSelect.disabled = false;
+      
+      if(audioCtx.state === 'suspended') audioCtx.resume();
+      drawOscilloscope();
+    } else {
+      oscillator.stop();
+      audioCtx.close();
+      isAudioActive = false;
+      btnAudio.textContent = "Activer le Son (Oscillateur)";
+      btnAudio.style.background = "var(--audio-ch)";
+      freqSelect.disabled = true;
+      liveAudioBin.textContent = "-- AUDIO OFF --";
+      currentLiveBinary = "00000000";
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+      updateInspector(activeInspectedCell); 
+    }
+  });
+
+  freqSelect.addEventListener('change', () => {
+    if(isAudioActive) oscillator.frequency.value = parseInt(freqSelect.value);
+  });
+
+  function drawOscilloscope() {
+    if (!isAudioActive) return;
+    requestAnimationFrame(drawOscilloscope);
+    
+    analyser.getByteTimeDomainData(dataArray);
+    
+    canvasCtx.fillStyle = '#020617';
+    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    canvasCtx.lineWidth = 2;
+    canvasCtx.strokeStyle = '#0ea5e9';
+    canvasCtx.beginPath();
+    
+    let sliceWidth = canvas.width * 1.0 / analyser.frequencyBinCount;
+    let x = 0;
+    
+    for(let i = 0; i < analyser.frequencyBinCount; i++) {
+      let v = dataArray[i] / 128.0; 
+      let y = v * (canvas.height / 2);
+      if(i === 0) canvasCtx.moveTo(x, y);
+      else canvasCtx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    canvasCtx.stroke();
+
+    canvasCtx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+    canvasCtx.beginPath(); canvasCtx.moveTo(canvas.width/2, 0); canvasCtx.lineTo(canvas.width/2, canvas.height); canvasCtx.stroke();
+
+    let centerSample = dataArray[Math.floor(analyser.frequencyBinCount / 2)];
+    currentLiveBinary = centerSample.toString(2).padStart(8, '0');
+    
+    liveAudioBin.textContent = `${currentLiveBinary.substring(0,4)} ${currentLiveBinary.substring(4,8)}`;
+    
+    // MAJ instantanée de l'inspecteur si branché sur le canal audio
+    if (activeInspectedCell && activeInspectedCell.dataset.type === 'audio') {
+        if (currentStd === 'T1' && (activeInspectedCell.dataset.trame == 6 || activeInspectedCell.dataset.trame == 12)) {
+            let robbedBin = currentLiveBinary.substring(0,7);
+            inspBin.innerHTML = `${robbedBin.split('').join(' ')} <span style="color:#ef4444">S</span>`;
+        } else {
+            inspBin.innerHTML = currentLiveBinary.split('').join(' ');
+        }
+    }
+  }
+
+  // --- Moteur de la Grille PDH ---
+  speedRange.addEventListener('input', () => { speedVal.textContent = speedRange.value; });
+
+  function updateUIForStandard() {
+    currentStd = stdSelect.value;
+    stopScanner();
+    buildGrid();
+  }
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    cells = [];
+    
+    if (currentStd === 'E1') {
+      grid.style.gridTemplateColumns = '30px repeat(32, 1fr)';
+      grid.appendChild(document.createElement('div'));
+      for (let c = 0; c < 32; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = c; 
+        if(c === 1) col.style.color = "var(--audio-ch)";
+        grid.appendChild(col);
+      }
+
+      for (let r = 0; r < 16; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        for (let c = 0; c < 32; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          let type = 'voice';
+          if (c === 0) type = (r % 2 === 0) ? 'fas' : 'nfas';
+          else if (c === 16) type = (r === 0) ? 'vmt' : 'cas';
+          else if (c === 1) type = 'audio'; 
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+      inspFooter.innerHTML = `<strong>Rappel Logique E1 :</strong> 32 IT (Canaux) par trame. La signalisation (bleue) et la synchronisation (vert/orange) ont leurs propres canaux exclusifs. La voix n'est jamais touchée.`;
+    } 
+    else if (currentStd === 'T1') {
+      grid.style.gridTemplateColumns = '30px 12px repeat(24, 1fr)'; 
+      grid.appendChild(document.createElement('div'));
+      let fbHead = document.createElement('div'); fbHead.className = 'col-header'; fbHead.textContent = 'F'; grid.appendChild(fbHead);
+      for (let c = 1; c <= 24; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = `C${c}`; 
+        if(c === 1) col.style.color = "var(--audio-ch)";
+        grid.appendChild(col);
+      }
+
+      for (let r = 1; r <= 12; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        let fcell = document.createElement('div'); fcell.className = 'cell c-fbit';
+        fcell.dataset.trame = r; fcell.dataset.it = 'F'; fcell.dataset.type = 'fbit';
+        fcell.addEventListener('mouseenter', () => updateInspector(fcell));
+        grid.appendChild(fcell); cells.push(fcell);
+
+        for (let c = 1; c <= 24; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          let type = 'voice';
+          if (c === 1) type = 'audio';
+          else if (r === 6 || r === 12) type = 'robbed';
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+      inspFooter.innerHTML = `<strong>Rappel Logique T1 :</strong> 24 Canaux + 1 bit F. Pour ne pas gaspiller de bande passante, la signalisation "vole" un bit sur la voix (cases hachurées) aux trames 6 et 12.`;
+    }
+    updateInspector(cells[0]);
+  }
+
+  function updateInspector(cell) {
+    if(!cell || (isScanning && cell !== cells[scanIndex])) return; 
+    
+    activeInspectedCell = cell; 
+    
+    const trame = cell.dataset.trame; 
+    const it = cell.dataset.it; 
+    const type = cell.dataset.type;
+
+    inspTitle.textContent = currentStd === 'E1' ? `Trame ${trame} - Intervalle (IT) ${it}` : `Trame ${trame} - ${it === 'F' ? 'F-Bit' : 'Canal ' + it}`;
+
+    let randVoice = () => { let b=""; for(let i=0; i<8; i++) b+=Math.random()>0.5?"1":"0"; return b;};
+
+    switch (type) {
+      case 'fas':
+        inspBadge.textContent = "FAS (Synchro Trame)"; inspBadge.style.background = "var(--fas)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Le réseau émet des millions de bits à la seconde. Cet octet fixe permet à l'équipement distant de "verrouiller" son horloge et de savoir exactement où commence la trame.`;
+        inspBin.innerHTML = "x 0 0 1 1 0 1 1"; break;
+      case 'nfas':
+        inspBadge.textContent = "NFAS (Alarmes)"; inspBadge.style.background = "var(--nfas)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Si un câble est coupé d'un côté, il faut prévenir l'autre côté. Le bit A (Alarme) sert à cela. Le bit 2 est forcé à '1' pour ne pas être confondu avec un FAS.`;
+        inspBin.innerHTML = "x 1 A S S S S S"; break;
+      case 'vmt':
+        inspBadge.textContent = "VMT (Multitrame)"; inspBadge.style.background = "var(--vmt)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Un seul IT16 ne suffit pas pour transmettre le statut de 30 téléphones. On les répartit sur 16 trames. Cet octet indique le début de ce super-cycle de 16 trames.`;
+        inspBin.innerHTML = "0 0 0 0 x y x x"; break;
+      case 'cas':
+        inspBadge.textContent = "CAS (Signalisation)"; inspBadge.style.background = "var(--cas)";
+        const k = parseInt(trame, 10);
+        inspDesc.innerHTML = `<strong>Logique :</strong> C'est le canal sémaphore. Il transmet le statut (raccroché, occupé...) de la <b>Voie ${k} (située dans l'IT${k})</b> et de la <b>Voie ${k + 15} (située dans l'IT${k + 16})</b>. La voix pure est ainsi préservée.`;
+        inspBin.innerHTML = "a b c d  a b c d"; break;
+      case 'fbit':
+        inspBadge.textContent = "F-Bit (Synchro T1)"; inspBadge.style.background = "var(--fbit)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Au lieu de gaspiller 8 bits pour la synchro comme en Europe, les US n'ajoutent qu'un seul bit en tête de trame (Terminal Framing). Son motif sur plusieurs trames permet de se synchroniser.`;
+        inspBin.innerHTML = Math.random() > 0.5 ? "1" : "0"; break;
+      case 'robbed':
+        inspBadge.textContent = "Robbed Bit (Vol de bit)"; inspBadge.style.background = "var(--robbed)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Sur cette trame précise, le réseau force l'utilisateur à céder son bit de poids faible (LSB). La qualité vocale chute à 7 bits le temps d'un instant pour permettre au signal "raccroché/décroché" de passer. C'est la signalisation In-Band.`;
+        inspBin.innerHTML = `${randVoice().substring(0,7).split('').join(' ')} <span style="color:#ef4444" title="Bit de Signalisation volé">S</span>`; break;
+      case 'voice':
+        inspBadge.textContent = "Données Utilisateur"; inspBadge.style.background = "var(--muted)";
+        inspDesc.innerHTML = `<strong>Logique :</strong> Canal libre (Clear Channel). L'appelant bénéficie d'une capacité de 64 kbps continue sans aucune perturbation réseau.`;
+        inspBin.innerHTML = randVoice().split('').join(' '); break;
+      case 'audio':
+        inspBadge.textContent = "Voie Audio Injectée (Live)"; inspBadge.style.background = "var(--audio-ch)";
+        if(isAudioActive) {
+          inspDesc.innerHTML = `<strong>Logique de l'échantillonnage :</strong> Ce binaire correspond mathématiquement à la valeur analogique de la courbe bleue de l'oscilloscope à l'instant T.`;
+          if (currentStd === 'T1' && (trame == 6 || trame == 12)) {
+             let robbedBin = currentLiveBinary.substring(0,7);
+             inspBin.innerHTML = `${robbedBin.split('').join(' ')} <span style="color:#ef4444">S</span>`;
+          } else {
+             inspBin.innerHTML = currentLiveBinary.split('').join(' ');
+          }
+        } else {
+          inspDesc.innerHTML = `Activez l'oscillateur PCM à gauche pour observer la transformation d'un signal analogique en octet numérique.`;
+          inspBin.innerHTML = "0 0 0 0  0 0 0 0";
+        }
+        break;
+    }
+  }
+
+  // --- Animation du Scanner ---
+  btnPlay.addEventListener('click', () => { isScanning ? stopScanner() : startScanner(); });
+
+  function startScanner() {
+    isScanning = true; btnPlay.innerHTML = "⏸ Arrêter le Scanner Temporel"; btnPlay.classList.add('active');
+    scanIndex = 0; runScannerLoop();
+  }
+
+  function stopScanner() {
+    isScanning = false; btnPlay.innerHTML = "▶ Lancer le Scanner Temporel"; btnPlay.classList.remove('active');
+    clearTimeout(scanInterval); 
+    cells.forEach(c => c.classList.remove('scanning'));
+  }
+
+  function runScannerLoop() {
+    if(!isScanning) return;
+    
+    if (scanIndex > 0) cells[scanIndex - 1].classList.remove('scanning');
+    else if (scanIndex === 0 && cells.length > 0) cells[cells.length - 1].classList.remove('scanning');
+    
+    cells[scanIndex].classList.add('scanning');
+    updateInspector(cells[scanIndex]);
+
+    scanIndex++; if (scanIndex >= cells.length) scanIndex = 0;
+    
+    const delay = parseInt(speedRange.value); 
+    scanInterval = setTimeout(runScannerLoop, delay);
+  }
+
+  stdSelect.addEventListener('change', updateUIForStandard);
+  updateUIForStandard();
+
+</script>
+</body>
+</html>

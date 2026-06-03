@@ -1,0 +1,30 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="refresh" content="0; url=Simulateur%202.html?mode=symbol&num=1" />
+<title>Redirection : Analyse d’un symbole</title>
+<link rel="stylesheet" href="assets/css/redirect-page.css" />
+</head>
+<body>
+<div class="wrap">
+  <div class="home-row">
+    <a class="home-link" href="index.html">← Accueil du laboratoire</a>
+  </div>
+
+  <script>
+    window.location.replace('Simulateur%202.html?mode=symbol&num=1');
+  </script>
+
+  <div class="notice">
+    Cette page a été fusionnée dans <strong>Simulateur 2.html</strong>.
+    <br />
+    Le mode compatible ouvre directement l’analyse d’un <strong>symbole unique</strong>.
+    <br /><br />
+    <a href="Simulateur%202.html?mode=symbol&num=1">Ouvrir le mode symbole unique</a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation CAN Pédagogique</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/can.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Numérisation • échantillonnage et quantification</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : Convertisseur Analogique-Numérique (CAN)</h1>
+  
+  <div class="controls">
+    <div class="control">
+      <label>Fréquence du signal <span class="val"><span id="freqVal">3</span> Hz</span></label>
+      <input id="freqInput" type="range" min="1" max="10" value="3">
+    </div>
+    <div class="control">
+      <label>Fréq. d'échantillonnage (Fe) <span class="val"><span id="srVal">30</span> Hz</span></label>
+      <input id="srInput" type="range" min="10" max="100" value="30">
+    </div>
+    <div class="control">
+      <label>Résolution (Bits) <span class="val"><span id="bitsVal">3</span> bits</span></label>
+      <input id="bitsInput" type="range" min="2" max="6" value="3">
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="panel">
+      <div class="title">1. Signal Analogique & Échantillonnage</div>
+      <svg id="svgSignal" viewBox="0 0 800 160" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="panel">
+      <div class="title">2. Quantification (Blocage en escalier)</div>
+      <svg id="svgQuant" viewBox="0 0 800 160" preserveAspectRatio="none"></svg>
+    </div>
+
+    <div class="panel">
+      <div class="title">3. Codage Binaire</div>
+      <div id="bitsBox" class="bits-container"></div>
+    </div>
+  </div>
+
+  <footer>Déplacez les curseurs pour observer l'impact du théorème de Shannon et de l'erreur de quantification.</footer>
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/can.js"></script>
+</body>
+</html>

@@ -1,0 +1,473 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur : Analyse d'un Symbole (Saisie Libre)</title>
+<style>
+  :root {
+    --bg: #0f172a; --panel: #1e293b; --border: #334155;
+    --text: #f8fafc; --muted: #94a3b8;
+    --accent: #38bdf8; --ref: #64748b;
+    --tx: #10b981; --err: #ef4444; --warn: #f59e0b;
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    margin: 0; padding: 20px; font-size: 14px;
+  }
+  .container {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 350px 1fr; gap: 20px;
+  }
+  h1 { grid-column: 1 / -1; margin: 0 0 10px 0; font-size: 22px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+  
+  /* Panneaux */
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 15px;
+  }
+  .control-group { display: flex; flex-direction: column; gap: 6px; }
+  label { font-weight: 600; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;}
+  select, input[type="text"] {
+    width: 100%; padding: 10px; background: #020617; color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px; outline: none; font-size: 14px;
+    box-sizing: border-box; font-family: monospace;
+  }
+  select:focus, input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"].invalid { border-color: var(--err); color: var(--err); }
+  input[type="text"].valid { border-color: var(--tx); color: var(--tx); font-weight: bold;}
+  
+  .hint { font-size: 11px; color: var(--muted); margin-top: -4px; }
+
+  /* Metrics Box */
+  .metrics { background: #020617; padding: 15px; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;}
+  .metric-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .metric-val { font-weight: bold; font-family: monospace; color: var(--accent); font-size: 15px;}
+  .equation-box {
+    background: rgba(56, 189, 248, 0.1); border: 1px dashed var(--accent);
+    padding: 10px; border-radius: 4px; text-align: center; font-family: monospace;
+    font-size: 14px; margin-top: 5px; color: #e0f2fe;
+  }
+
+  /* Overlay d'erreur pour les métriques */
+  .metrics-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(2, 6, 23, 0.95); display: flex; flex-direction: column;
+    justify-content: center; align-items: center; text-align: center; padding: 20px;
+    color: var(--err); font-weight: bold; font-size: 13px; border: 1px solid var(--err); border-radius: 6px;
+  }
+
+  /* Canvas */
+  .stage { display: flex; flex-direction: column; gap: 20px; }
+  .view-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 15px; position: relative;}
+  .view-title { font-weight: bold; margin-bottom: 10px; font-size: 14px; color: var(--accent); }
+  canvas { background: #000; border-radius: 4px; width: 100%; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+  
+  #constCanvas { aspect-ratio: 1; max-width: 400px; margin: 0 auto; display: block; }
+  #timeCanvas { height: 250px; }
+
+  .legend { display: flex; gap: 15px; font-size: 12px; justify-content: center; margin-top: 8px; color: var(--muted); }
+  .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px;}
+  .leg-ref::before { background: var(--ref); }
+  .leg-mod::before { background: var(--tx); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Laboratoire : Code Binaire ➔ Onde Physique</h1>
+  
+  <div class="panel">
+    <div class="control-group">
+      <label>1. Schéma de Modulation</label>
+      <select id="modType">
+        <option value="ASK">ASK (Amplitude Shift Keying)</option>
+        <option value="PSK">PSK (Phase Shift Keying)</option>
+        <option value="QAM" selected>QAM (Quadrature Amplitude Mod.)</option>
+        <option value="FSK">FSK (Frequency Shift Keying)</option>
+      </select>
+    </div>
+    
+    <div class="control-group">
+      <label>2. Valence (M)</label>
+      <select id="modOrder"></select>
+    </div>
+
+    <div class="control-group">
+      <label>3. Symbole Binaire à transmettre</label>
+      <input type="text" id="binInput" placeholder="Ex: 1011" autocomplete="off" maxlength="8">
+      <div class="hint" id="inputHint">Veuillez saisir exactement 4 bits.</div>
+    </div>
+
+    <div class="metrics">
+      <!-- Overlay affiché si erreur de saisie -->
+      <div id="errorOverlay" class="metrics-overlay">
+        Saisie en attente ou invalide.<br><span id="errorMsg" style="color:var(--muted); font-weight:normal; margin-top:5px;">Attente de n bits.</span>
+      </div>
+
+      <div class="metric-row"><span>Composante En Phase (I)</span> <span id="valI" class="metric-val">0.00</span></div>
+      <div class="metric-row"><span>Composante Quadrature (Q)</span> <span id="valQ" class="metric-val">0.00</span></div>
+      <div style="height:1px; background:var(--border); margin: 5px 0;"></div>
+      <div class="metric-row"><span>Amplitude (Enveloppe)</span> <span id="valA" class="metric-val">0.00</span></div>
+      <div class="metric-row"><span>Déphasage (φ)</span> <span id="valP" class="metric-val" style="color:#a855f7">0°</span></div>
+      <div class="metric-row" id="rowFreq" style="display:none;"><span>Décalage Fréq (Δf)</span> <span id="valF" class="metric-val" style="color:var(--warn)">0 Hz</span></div>
+      
+      <label style="margin-top: 10px;">Équation du Signal Émis : s(t) =</label>
+      <div class="equation-box" id="eqBox"></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- Constellation -->
+    <div class="view-card" style="display: flex; flex-direction: column;">
+      <div class="view-title">Diagramme Complexe (Plan I/Q)</div>
+      <canvas id="constCanvas" width="400" height="400"></canvas>
+      <div class="legend" id="constLegend">Le vecteur indique l'Amplitude et la Phase.</div>
+    </div>
+
+    <!-- Onde Temporelle -->
+    <div class="view-card">
+      <div class="view-title">Onde Porteuse sur la durée du symbole (Ts)</div>
+      <canvas id="timeCanvas" width="800" height="250"></canvas>
+      <div class="legend">
+        <span class="leg-mod">Signal Modulé s(t)</span>
+        <span class="leg-ref">Porteuse de Référence cos(2πf_ct)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const modConfig = {
+  ASK: [2, 4, 8],
+  PSK: [2, 4, 8, 16],
+  QAM: [4, 16, 64],
+  FSK: [2, 4, 8]
+};
+
+const els = {
+  modType: document.getElementById('modType'),
+  modOrder: document.getElementById('modOrder'),
+  binInput: document.getElementById('binInput'),
+  inputHint: document.getElementById('inputHint'),
+  errorOverlay: document.getElementById('errorOverlay'),
+  errorMsg: document.getElementById('errorMsg'),
+  vI: document.getElementById('valI'),
+  vQ: document.getElementById('valQ'),
+  vA: document.getElementById('valA'),
+  vP: document.getElementById('valP'),
+  vF: document.getElementById('valF'),
+  rowFreq: document.getElementById('rowFreq'),
+  eqBox: document.getElementById('eqBox'),
+  constLegend: document.getElementById('constLegend'),
+  ctxConst: document.getElementById('constCanvas').getContext('2d'),
+  ctxTime: document.getElementById('timeCanvas').getContext('2d')
+};
+
+let mapDict = {}; // Dictionnaire de mapping: "010" -> {I, Q, amp, phase, freqOffset}
+let allSymbols = []; // Liste de tous les symboles possibles pour dessiner le fond
+let currentValidSymbol = null; // Objet contenant les données du symbole actuellement validé
+
+// Générateur de Code de Gray (Récursif)
+function getGrayCodes(n) {
+  if (n === 1) return ['0', '1'];
+  const prev = getGrayCodes(n - 1);
+  const result = [];
+  for (let i = 0; i < prev.length; i++) result.push('0' + prev[i]);
+  for (let i = prev.length - 1; i >= 0; i--) result.push('1' + prev[i]);
+  return result;
+}
+
+// Mise à jour de la liste des Valences
+function updateOrderOptions() {
+  const type = els.modType.value;
+  const currentVal = els.modOrder.value;
+  els.modOrder.innerHTML = '';
+  modConfig[type].forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = `${m} (n = ${Math.log2(m)} bits)`;
+    if(m == currentVal) opt.selected = true;
+    els.modOrder.appendChild(opt);
+  });
+  if(!els.modOrder.value) els.modOrder.value = modConfig[type][0];
+  
+  els.rowFreq.style.display = type === 'FSK' ? 'flex' : 'none';
+  generateMapping();
+  validateInput(); // Revalider l'input avec la nouvelle configuration
+}
+
+// Génération du Dictionnaire de Mapping (Table de vérité)
+function generateMapping() {
+  const type = els.modType.value;
+  const M = parseInt(els.modOrder.value);
+  const n = Math.log2(M);
+  
+  mapDict = {};
+  allSymbols = [];
+
+  if (type === 'QAM') {
+    // Code de Gray 2D pour la QAM
+    const L = Math.sqrt(M); // Niveaux par axe (ex: 4 pour 16-QAM)
+    const nHalf = n / 2;
+    const gray1D = getGrayCodes(nHalf);
+    
+    for (let i = 0; i < L; i++) {
+      for (let j = 0; j < L; j++) {
+        const bin = gray1D[i] + gray1D[j]; // Concaténation (Moitié I, Moitié Q)
+        const I = (2 * i - L + 1) / (L - 1);
+        const Q = (L - 1 - 2 * j) / (L - 1);
+        const amp = Math.sqrt(I*I + Q*Q);
+        const phase = Math.atan2(Q, I);
+        
+        const pt = { bin, I, Q, phase, amp, freqOffset: 0 };
+        mapDict[bin] = pt;
+        allSymbols.push(pt);
+      }
+    }
+  } else {
+    // Code de Gray 1D pour ASK, PSK, FSK
+    const gray = getGrayCodes(n);
+    for (let idx = 0; idx < M; idx++) {
+      const bin = gray[idx];
+      let I = 0, Q = 0, phase = 0, amp = 0, freqOffset = 0;
+
+      if (type === 'ASK') {
+        amp = (2 * idx - M + 1) / (M - 1);
+        I = amp; Q = 0;
+        phase = I < 0 ? Math.PI : 0;
+        amp = Math.abs(amp);
+      } else if (type === 'PSK') {
+        phase = (2 * Math.PI * idx) / M + (M > 2 ? Math.PI/M : 0);
+        I = Math.cos(phase);
+        Q = Math.sin(phase);
+        amp = 1;
+      } else if (type === 'FSK') {
+        I = 1; Q = 0; amp = 1; phase = 0;
+        freqOffset = (idx - (M - 1) / 2);
+      }
+
+      const pt = { bin, I, Q, phase, amp, freqOffset };
+      mapDict[bin] = pt;
+      allSymbols.push(pt);
+    }
+  }
+}
+
+// Fonction de validation du champ de saisie
+function validateInput() {
+  const val = els.binInput.value.trim();
+  const M = parseInt(els.modOrder.value);
+  const n = Math.log2(M);
+  
+  els.inputHint.textContent = `Veuillez saisir exactement ${n} bit(s) (0 ou 1).`;
+  
+  // Vérification: longueur correcte et uniquement des 0 et 1
+  const isValidBinary = /^[01]+$/.test(val);
+  
+  if (val.length === 0) {
+    setErrorState("En attente de saisie...");
+  } else if (!isValidBinary) {
+    setErrorState("Erreur : Uniquement des 0 et des 1.");
+  } else if (val.length !== n) {
+    setErrorState(`Erreur : Il faut exactement ${n} bit(s). Actuellement: ${val.length}`);
+  } else {
+    // Validé !
+    els.binInput.className = "valid";
+    currentValidSymbol = mapDict[val];
+    els.errorOverlay.style.display = "none"; // Cacher l'overlay
+    updateDisplayMetrics();
+    drawConstellation();
+    drawWaveform();
+  }
+}
+
+function setErrorState(msg) {
+  els.binInput.className = els.binInput.value.length > 0 ? "invalid" : "";
+  currentValidSymbol = null;
+  els.errorMsg.textContent = msg;
+  els.errorOverlay.style.display = "flex";
+  drawConstellation(); // Redessine le fond sans surbrillance
+  drawWaveform(); // Efface l'onde
+}
+
+// Écouteurs d'événements
+els.modType.addEventListener('change', updateOrderOptions);
+els.modOrder.addEventListener('change', () => { generateMapping(); validateInput(); });
+els.binInput.addEventListener('input', validateInput);
+
+function formatPhase(rad) {
+  let deg = Math.round(rad * (180 / Math.PI));
+  if (deg < 0) deg += 360;
+  if (deg === 360) deg = 0;
+  return deg + "°";
+}
+
+function updateDisplayMetrics() {
+  if (!currentValidSymbol) return;
+  const symData = currentValidSymbol;
+  const type = els.modType.value;
+  
+  els.vI.textContent = symData.I.toFixed(2);
+  els.vQ.textContent = symData.Q.toFixed(2);
+  els.vA.textContent = symData.amp.toFixed(2);
+  els.vP.textContent = formatPhase(symData.phase);
+  
+  if (type === 'FSK') {
+    els.vF.textContent = symData.freqOffset > 0 ? "+" + symData.freqOffset + " Δf" : symData.freqOffset + " Δf";
+    els.constLegend.textContent = "Pour la FSK, les points sont espacés sur l'axe des fréquences (1D).";
+    let fStr = symData.freqOffset !== 0 ? (symData.freqOffset > 0 ? `+ ${symData.freqOffset}Δf` : `- ${Math.abs(symData.freqOffset)}Δf`) : "";
+    els.eqBox.innerHTML = `cos(2π(f_c ${fStr})t)`;
+  } else {
+    els.constLegend.textContent = "Le vecteur indique l'Amplitude (longueur) et la Phase (angle).";
+    let iSign = symData.I >= 0 ? "" : "-";
+    let qSign = symData.Q >= 0 ? "-" : "+";
+    let eq = `${iSign}${Math.abs(symData.I).toFixed(2)} cos(2πf_ct) ${qSign} ${Math.abs(symData.Q).toFixed(2)} sin(2πf_ct)`;
+    
+    let phaseStr = "";
+    let deg = Math.round(symData.phase * (180/Math.PI));
+    if(deg !== 0) phaseStr = deg > 0 ? `+ ${deg}°` : `- ${Math.abs(deg)}°`;
+    
+    els.eqBox.innerHTML = `<span style="color:#94a3b8; font-size:12px;">${eq}</span><br><b>${symData.amp.toFixed(2)} cos(2πf_ct ${phaseStr})</b>`;
+  }
+}
+
+function drawConstellation() {
+  const ctx = els.ctxConst;
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const cx = w/2, cy = h/2;
+  const scale = (w/2) * 0.75; 
+  
+  ctx.clearRect(0, 0, w, h);
+
+  // Axes
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '12px sans-serif';
+  ctx.fillText("I (En Phase)", w - 70, cy - 10);
+  ctx.fillText("Q", cx + 10, 20);
+
+  const type = els.modType.value;
+
+  if (type === 'FSK') {
+    allSymbols.forEach(pt => {
+      const isSelected = currentValidSymbol && (pt.bin === currentValidSymbol.bin);
+      const fx = cx + pt.freqOffset * (scale / (allSymbols.length/2));
+      ctx.fillStyle = isSelected ? '#10b981' : '#475569';
+      ctx.beginPath(); ctx.arc(fx, cy, isSelected ? 8 : 4, 0, 2*Math.PI); ctx.fill();
+      if(isSelected) {
+        ctx.strokeStyle = '#10b981'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(fx, cy, 12, 0, 2*Math.PI); ctx.stroke();
+      }
+    });
+    return;
+  }
+
+  // Dessin des points idéaux (le fond)
+  allSymbols.forEach(pt => {
+    const px = cx + pt.I * scale;
+    const py = cy - pt.Q * scale; // Y inversé en canvas
+    ctx.fillStyle = '#475569';
+    ctx.beginPath(); ctx.arc(px, py, 4, 0, 2*Math.PI); ctx.fill();
+  });
+
+  // Si un symbole valide est sélectionné, on le met en évidence
+  if (currentValidSymbol) {
+    const px = cx + currentValidSymbol.I * scale;
+    const py = cy - currentValidSymbol.Q * scale;
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke();
+
+    const angle = Math.atan2(cy - py, px - cx);
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px - 10 * Math.cos(angle - Math.PI/6), py + 10 * Math.sin(angle - Math.PI/6));
+    ctx.lineTo(px - 10 * Math.cos(angle + Math.PI/6), py + 10 * Math.sin(angle + Math.PI/6));
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, 2*Math.PI); ctx.fill();
+    
+    // Texte à côté du point
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`[${currentValidSymbol.bin}]`, px + 10, py - 10);
+  } else {
+    // Message d'erreur sur le canvas si invalide
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center'; ctx.font = '14px sans-serif';
+    ctx.fillText("Saisie en attente ou incorrecte", cx, cy + 5);
+    ctx.textAlign = 'left'; // Reset
+  }
+}
+
+function drawWaveform() {
+  const ctx = els.ctxTime;
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  const cy = h/2;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+
+  if (!currentValidSymbol) {
+    ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center'; ctx.font = '14px sans-serif';
+    ctx.fillText("Veuillez saisir un symbole valide pour voir l'onde.", w/2, cy);
+    ctx.textAlign = 'left';
+    return;
+  }
+
+  const type = els.modType.value;
+  const cycles = 4; 
+  
+  // Porteuse Référence
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  for(let x=0; x<=w; x++) {
+    const t = x / w; 
+    const ref = Math.cos(2 * Math.PI * cycles * t);
+    const y = cy - ref * (h/2.5);
+    if(x===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Signal Modulé
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  
+  for(let x=0; x<=w; x++) {
+    const t = x / w;
+    let signal = 0;
+    
+    if (type === 'FSK') {
+      const delta = currentValidSymbol.freqOffset * 0.5;
+      signal = Math.cos(2 * Math.PI * (cycles + delta) * t);
+    } else {
+      const wt = 2 * Math.PI * cycles * t;
+      signal = currentValidSymbol.I * Math.cos(wt) - currentValidSymbol.Q * Math.sin(wt);
+    }
+    
+    const y = cy - signal * (h/2.5);
+    if(x===0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+// Initialisation
+window.onload = () => {
+  updateOrderOptions();
+};
+</script>
+</body>
+</html>

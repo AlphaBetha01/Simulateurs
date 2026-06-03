@@ -1,0 +1,108 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation Pédagogique : L'Amplificateur</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/amplificateur.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Chaîne analogique • amplification et saturation</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : Amplificateur & Répéteur</h1>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>1. Amplitude d'Entrée (Source) <span class="val" style="color:var(--wave-in)"><span id="inVal">20</span> mV</span></label>
+      <input id="inInput" class="blue" type="range" min="5" max="50" step="1" value="20">
+    </div>
+    <div class="control-group">
+      <label>2. Gain de l'Amplificateur (Multiplicateur) <span class="val">x<span id="gainVal">3</span></span></label>
+      <input id="gainInput" type="range" min="1" max="10" step="0.5" value="3">
+    </div>
+    <div class="control-group">
+      <label>3. Limite d'Alimentation (Vcc) <span class="val" style="color:var(--clip-line)">±<span id="clipVal">100</span> mV</span></label>
+      <input id="clipInput" class="red" type="range" min="30" max="150" step="5" value="100">
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Préréglages amplification">
+    <button class="lab-preset-btn" type="button" data-amp-preset="linear">Zone linéaire</button>
+    <button class="lab-preset-btn" type="button" data-amp-preset="edge">Proche saturation</button>
+    <button class="lab-preset-btn" type="button" data-amp-preset="clip">Écrêtage sévère</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures amplification">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Gain équivalent</div>
+      <div id="ampGainDb" class="lab-kpi-value">9.5 dB</div>
+      <div class="lab-kpi-note">Conversion pratique du gain linéaire en gain logarithmique.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Crête de sortie</div>
+      <div id="ampPeakOut" class="lab-kpi-value">60 mV</div>
+      <div class="lab-kpi-note">Amplitude maximale réellement disponible en sortie.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Taux de saturation</div>
+      <div id="ampSatRate" class="lab-kpi-value">0 %</div>
+      <div id="ampModeNote" class="lab-kpi-note">Fonctionnement linéaire, sans écrêtage visible.</div>
+    </article>
+  </div>
+
+  
+
+  <div class="stage">
+    <!-- Panneau 1 : Signal d'entrée -->
+    <div class="panel">
+      <div class="title">1. Signal d'Entrée (Atténué)</div>
+      <svg id="svgIn" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      
+      <div class="power-meter">
+        <div class="meter-label">P. Entrée</div>
+        <div class="meter-track"><div id="meterIn" class="meter-fill" style="background: var(--wave-in)"></div></div>
+        <div id="textPowerIn" class="meter-value">0W</div>
+      </div>
+    </div>
+
+    <!-- Symbole schématique -->
+    <div class="amp-symbol-container">
+      <svg viewBox="0 0 100 100" style="height: 60px; overflow: visible;">
+        <!-- Triangle de l'ampli opérationnel -->
+        <polygon points="10,10 90,50 10,90" class="amp-triangle" />
+        <line x1="0" y1="50" x2="10" y2="50" stroke="var(--accent)" stroke-width="3"/>
+        <line x1="90" y1="50" x2="100" y2="50" stroke="var(--accent)" stroke-width="3"/>
+      </svg>
+      <div class="amp-gain-text">Gain<br>x<span id="displayGain">3</span></div>
+    </div>
+
+    <!-- Panneau 2 : Signal de sortie -->
+    <div class="panel highlight">
+      <div class="title" style="color: var(--accent)">2. Signal de Sortie (Amplifié)</div>
+      <svg id="svgOut" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      
+      <div class="power-meter">
+        <div class="meter-label">P. Sortie</div>
+        <div class="meter-track"><div id="meterOut" class="meter-fill" style="background: var(--accent)"></div></div>
+        <div id="textPowerOut" class="meter-value">0W</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>La puissance (l'énergie) est proportionnelle au carré de l'amplitude. Poussez le gain trop haut, et l'amplificateur "sature" car il manque d'énergie électrique (Vcc).</footer>
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/amplificateur.js"></script>
+</body>
+</html>

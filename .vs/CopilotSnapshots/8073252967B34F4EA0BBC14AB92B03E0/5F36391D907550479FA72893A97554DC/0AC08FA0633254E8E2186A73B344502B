@@ -1,0 +1,487 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur Expert 4.0 : Télécommunications Avancées</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-alt: #334155;
+    --tx: #3b82f6; --rx: #10b981; --warn: #f59e0b; --err: #ef4444;
+    --text: #f8fafc; --muted: #94a3b8; --grid: #334155;
+  }
+  body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; font-size: 13px; }
+  .wrap { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 22px; margin: 0; color: #e2e8f0; border-bottom: 2px solid var(--card-alt); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+  
+  /* Panneaux */
+  .control-panel { background: var(--card); padding: 16px; border-radius: 8px; display: flex; gap: 20px; border: 1px solid var(--card-alt); flex-wrap: wrap; align-items: center;}
+  .ctrl-group { flex: 1; min-width: 180px; }
+  label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase;}
+  span.val { color: #38bdf8; font-weight: bold; }
+  input[type=range] { width: 100%; cursor: pointer; accent-color: #38bdf8; margin-bottom: 8px; }
+  select { width: 100%; padding: 6px; background: #0f172a; color: white; border: 1px solid var(--muted); border-radius: 4px; outline: none; font-family: inherit;}
+  
+  button { padding: 6px 12px; background: var(--tx); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+  button:hover { filter: brightness(1.2); }
+  button.active-red { background: var(--err); }
+  button.active-green { background: var(--rx); }
+
+  /* Jauges et compteurs */
+  .shannon-gauge { background: #0f172a; border: 1px solid var(--card-alt); border-radius: 4px; padding: 8px; text-align: center; }
+  .shannon-bar { height: 6px; background: #334155; border-radius: 4px; margin-top: 6px; position: relative; overflow: hidden; }
+  .shannon-fill { height: 100%; width: 50%; background: var(--rx); transition: 0.2s; }
+  .shannon-fill.danger { background: var(--err); }
+  .ber-counter { font-family: monospace; font-size: 14px; background: #000; padding: 4px 8px; border-radius: 4px; border: 1px solid #475569; display: inline-block; color: var(--warn);}
+
+  /* Grille des Oscilloscopes */
+  .stage { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .block { background: var(--card); border: 1px solid var(--card-alt); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .block-title { font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--card-alt); padding-bottom: 6px; font-size: 14px; margin-bottom: 4px;}
+  
+  /* Zone de mini-réglages internes aux blocs */
+  .sub-controls { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; border: 1px solid var(--card-alt); }
+  
+  .scope { background: #000; border: 1px solid #475569; border-radius: 4px; position: relative; overflow: hidden; height: 100px; box-shadow: inset 0 0 10px rgba(255,255,255,0.05); margin-top: 4px;}
+  .scope::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent); background-size: 20px 20px; pointer-events: none; }
+  svg, canvas { width: 100%; height: 100%; display: block; position: absolute; z-index: 1;}
+  .scope-label { position: absolute; top: 4px; left: 6px; font-size: 10px; color: var(--muted); z-index: 2; font-family: monospace; }
+
+  .bits { font-family: 'Courier New', monospace; font-size: 15px; letter-spacing: 2px; text-align: center; margin: 4px 0;}
+  .bits span.err { color: var(--err); background: rgba(239, 68, 68, 0.2); }
+  .bits span.fec { color: #a855f7; }
+</style>
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Transmission numérique • chaîne complète TX / canal / RX</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>
+    Labo Virtuel 4.0 : Paramètres Avancés
+    <div>
+      <button id="btnPlayPause">⏸️ Pause / Mesures</button>
+      <button id="btnAudio">🔇 Son</button>
+    </div>
+  </h1>
+  
+  <!-- PANNEAU CENTRAL : LE CANAL PHYSIQUE -->
+  <div class="control-panel">
+    <div class="ctrl-group" style="flex: 1.5">
+      <label>Média Physique <span class="val" id="valNoise">Atténuation: 10 dB</span></label>
+      <select id="mediaType">
+        <option value="fibre">Fibre Optique (Très faible atténuation)</option>
+        <option value="cuivre" selected>Câble Cuivre (Atténuation moyenne)</option>
+        <option value="radio">Radio Terrestre (Forte atténuation)</option>
+        <option value="sat">Satellite GEO (Distance extrême)</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Distance de transmission <span class="val" id="valDist">20 km</span></label>
+      <input type="range" id="dist" min="0" max="100" value="20">
+    </div>
+
+    <div class="ctrl-group">
+      <label>Gigue Temporelle (Jitter) <span class="val" id="valJitter" style="color:var(--warn)">0 %</span></label>
+      <input type="range" id="jitter" min="0" max="40" step="1" value="0">
+    </div>
+
+    <div class="ctrl-group shannon-gauge" style="flex: 1.5">
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:#cbd5e1; font-weight:bold;">
+        <span>Débit (Rb)</span>
+        <span>Limite Théorique (C)</span>
+      </div>
+      <div style="font-family:monospace; font-size:13px; margin-top:4px;">
+        <span id="valRb" style="color:#38bdf8">12 kbps</span> / <span id="valC" style="color:#10b981">40 kbps</span>
+      </div>
+      <div class="shannon-bar"><div id="shannonFill" class="shannon-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    
+    <!-- 1. ÉMETTEUR -->
+    <div class="block" style="border-top: 3px solid var(--tx);">
+      <div class="block-title" style="color:var(--tx)">Émetteur (TX)</div>
+      
+      <div class="sub-controls">
+        <label>Débit d'Échantillonnage (Rb) <span class="val" id="valFe">12 bits</span></label>
+        <input type="range" id="fe" min="4" max="32" step="2" value="12">
+        <label>Gain d'Émission (Amplitude) <span class="val" id="valGain">x1.0</span></label>
+        <input type="range" id="txGain" min="0.2" max="2.0" step="0.1" value="1.0">
+      </div>
+      
+      <div class="scope">
+        <div class="scope-label">1. Source Analogique (Baseband)</div>
+        <svg id="svgSource" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="sub-controls" style="display: flex; gap: 10px;">
+        <div style="flex: 1">
+            <label>Codage Ligne</label>
+            <select id="lineCode" style="padding: 2px; font-size: 11px;">
+            <option value="nrz">NRZ</option>
+            <option value="manchester">Manchester</option>
+            </select>
+        </div>
+        <div style="flex: 1">
+            <label>Fréq. Porteuse (fc) <span class="val" id="valFc">30 Hz</span></label>
+            <input type="range" id="fc" min="10" max="60" step="1" value="30" style="margin:0;">
+        </div>
+      </div>
+
+      <div class="scope">
+        <div class="scope-label">2. Porteuse Modulée (BPSK)</div>
+        <svg id="svgMod" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="bits" id="txBits" style="color:var(--tx)"></div>
+    </div>
+
+    <!-- 2. CANAL -->
+    <div class="block" style="border-top: 3px solid var(--muted); background: #020617;">
+      <div class="block-title" style="color:var(--muted)">Canal Physique (AWGN)</div>
+      
+      <div style="text-align:center; font-size:11px; color:var(--muted); padding: 5px;">
+        Atténuation, Bruit Thermique & Gigue d'Horloge.
+      </div>
+
+      <div class="scope" style="height: 160px;">
+        <div class="scope-label">3. Signal Reçu (Atténué + Bruité)</div>
+        <svg id="svgChannel" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="scope" style="height: 150px; background: #001;">
+        <div class="scope-label" style="color:#0ea5e9">4. Diagramme de l'Œil (Sync)</div>
+        <canvas id="eyeCanvas" width="400" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. RÉCEPTEUR -->
+    <div class="block" style="border-top: 3px solid var(--rx);">
+      <div class="block-title" style="color:var(--rx)">
+        Récepteur (RX) 
+        <span style="float:right;" class="ber-counter">BER: <span id="valBER">0.00</span>%</span>
+      </div>
+
+      <div class="sub-controls">
+        <label>Seuil de Décision (Comparateur) <span class="val" id="valThresh" style="color:var(--warn)">0.0 V</span></label>
+        <input type="range" id="threshold" min="-1" max="1" step="0.05" value="0">
+        <label>Correction d'Erreur (FEC) <span id="valFec" class="val" style="color:#a855f7">OFF</span></label>
+        <input type="range" id="fec" min="0" max="1" step="1" value="0">
+      </div>
+
+      <div class="bits" id="rxBits" style="color:var(--rx)"></div>
+      
+      <div class="scope">
+        <div class="scope-label">5. Décision Logique & Régénération</div>
+        <svg id="svgDemod" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="sub-controls">
+        <label>Filtre Passe-Bas (Lissage CNA) <span id="valFilter" class="val">ON</span></label>
+        <input type="range" id="filter" min="0" max="1" step="1" value="1" style="margin-bottom:0;">
+      </div>
+
+      <div class="scope">
+        <div class="scope-label">6. Signal Restitué</div>
+        <svg id="svgOut" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const state = { time: 0, speed: 0.04, playingAudio: false, isPaused: false };
+const stats = { totalBits: 0, errorBits: 0 };
+
+const phys = {
+  cuivre: { attBase: 5, attKm: 0.5, cap: 80 }, 
+  fibre:  { attBase: 1, attKm: 0.05, cap: 200 }, 
+  radio:  { attBase: 15, attKm: 1.2, cap: 40 },
+  sat:    { attBase: 30, attKm: 0.01, cap: 45 }
+};
+
+const $ = id => document.getElementById(id);
+const ui = {
+  dist: $('dist'), media: $('mediaType'), fe: $('fe'), lineCode: $('lineCode'),
+  fec: $('fec'), filter: $('filter'), btnAudio: $('btnAudio'), btnPlayPause: $('btnPlayPause'),
+  txGain: $('txGain'), fc: $('fc'), jitter: $('jitter'), threshold: $('threshold'),
+  svgSource: $('svgSource'), svgMod: $('svgMod'), svgChannel: $('svgChannel'), 
+  svgDemod: $('svgDemod'), svgOut: $('svgOut'), eyeCanvas: $('eyeCanvas'),
+  txBits: $('txBits'), rxBits: $('rxBits'),
+  vDist: $('valDist'), vNoise: $('valNoise'), vFe: $('valFe'),
+  vRb: $('valRb'), vC: $('valC'), shFill: $('shannonFill'), vBER: $('valBER')
+};
+
+const ctxEye = ui.eyeCanvas.getContext('2d');
+let audioCtx, osc, noiseNode, gainMaster, gainNoise;
+
+// Pause
+ui.btnPlayPause.addEventListener('click', () => {
+  state.isPaused = !state.isPaused;
+  if (state.isPaused) {
+      ui.btnPlayPause.textContent = "▶️ Reprendre"; ui.btnPlayPause.classList.add('active-red');
+      if (audioCtx) gainMaster.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+  } else {
+      ui.btnPlayPause.textContent = "⏸️ Pause / Mesures"; ui.btnPlayPause.classList.remove('active-red');
+  }
+});
+
+// Audio
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  osc = audioCtx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 440;
+  const bufferSize = audioCtx.sampleRate * 2;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+  noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = noiseBuffer; noiseNode.loop = true;
+  gainMaster = audioCtx.createGain(); gainNoise = audioCtx.createGain();
+  osc.connect(gainMaster); noiseNode.connect(gainNoise); gainNoise.connect(gainMaster);
+  gainMaster.connect(audioCtx.destination);
+  osc.start(); noiseNode.start(); gainMaster.gain.value = 0;
+}
+
+ui.btnAudio.addEventListener('click', () => {
+  if (!audioCtx) initAudio();
+  state.playingAudio = !state.playingAudio;
+  if (state.playingAudio) {
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    ui.btnAudio.textContent = "🔊 Son Activé"; ui.btnAudio.classList.add('active-green');
+  } else {
+    gainMaster.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    ui.btnAudio.textContent = "🔇 Son"; ui.btnAudio.classList.remove('active-green');
+  }
+});
+
+function getAnalogVal(t) { return Math.sin(t * 3) * 0.7 + Math.sin(t * 7.5) * 0.2; }
+
+function draw() {
+  if (!state.isPaused) state.time += state.speed;
+  const tGlobal = state.time;
+  
+  // Variables Utilisateur
+  const dist = +ui.dist.value;
+  const fe = +ui.fe.value;
+  const media = phys[ui.media.value];
+  const useManchester = ui.lineCode.value === 'manchester';
+  const useFec = +ui.fec.value === 1;
+  const useFilter = +ui.filter.value === 1;
+  const txGain = +ui.txGain.value;
+  const fPorteuse = +ui.fc.value;
+  const jitterVal = +ui.jitter.value;
+  const threshVal = +ui.threshold.value;
+
+  const w = 400, h = 100, hEye = 150;
+  
+  // UI Texts
+  $('valGain').textContent = `x${txGain.toFixed(1)}`;
+  $('valFc').textContent = `${fPorteuse} Hz`;
+  $('valJitter').textContent = `${jitterVal}%`;
+  $('valThresh').textContent = `${threshVal.toFixed(2)} V`;
+  $('valFec').textContent = useFec ? 'ON (+15dB)' : 'OFF';
+  $('valFilter').textContent = useFilter ? 'ON' : 'OFF (ZOH)';
+
+  // Mathématiques & SNR
+  // Le gain TX augmente la puissance émise, donc compense l'atténuation.
+  const gainDB = 10 * Math.log10(txGain * txGain); 
+  const attenuation = Math.max(0, media.attBase + (dist * media.attKm) - gainDB);
+  const SNR_dB = 45 - attenuation; 
+  const SNR_linear = Math.pow(10, SNR_dB / 10);
+  
+  let capacity = media.cap * Math.log2(1 + SNR_linear) / 10; 
+  if (capacity < 0.1) capacity = 0.1;
+  const effectiveCapacity = capacity + (useFec ? 15 : 0);
+  
+  const shannonRatio = fe / effectiveCapacity;
+  
+  // Calcul du BER Mathématique influencé par les NOUVEAUX paramètres
+  let BER = 0; 
+  if (shannonRatio > 0.8) BER = (shannonRatio - 0.8) * 0.5; 
+  // Impact du Jitter sur le BER (désynchronisation)
+  BER += (jitterVal / 100) * 0.3;
+  // Impact du Seuil de Décision décalé
+  BER += Math.abs(threshVal) * 0.4;
+  
+  if (BER > 0.5) BER = 0.5; // Plafond (pur hasard)
+
+  ui.vDist.textContent = (ui.media.value === 'sat' ? dist * 700 + 35000 : dist) + " km";
+  ui.vNoise.textContent = `Atténuation: ${attenuation.toFixed(1)} dB`;
+  ui.vFe.textContent = `${fe} bits`;
+  ui.vRb.textContent = `${fe} kbps`;
+  ui.vC.textContent = `${effectiveCapacity.toFixed(1)} kbps`;
+  
+  const fillPct = Math.min(100, (fe / effectiveCapacity) * 100);
+  ui.shFill.style.width = fillPct + '%';
+  ui.shFill.className = `shannon-fill ${fillPct > 90 ? 'danger' : ''}`;
+
+  if (state.playingAudio && audioCtx && !state.isPaused) {
+    if (BER > 0.4) {
+      gainMaster.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+    } else {
+      gainMaster.gain.setTargetAtTime(0.3 * txGain, audioCtx.currentTime, 0.1);
+      let noiseLevel = Math.max(0, (shannonRatio - 0.3)) * 0.2 + (jitterVal/100)*0.1;
+      if (useFec) noiseLevel *= 0.1;
+      gainNoise.gain.setTargetAtTime(noiseLevel, audioCtx.currentTime, 0.1);
+    }
+  }
+
+  // --- RENDU ---
+  const bitW = w / fe;
+  let txBitStr = "", rxBitStr = "";
+  let pSrc = `M 0 50`, pDig = `M 0 50`, pMod = `M 0 50`, pCh = `M 0 80`, pDemod = "", pOut = `M 0 50`;
+  
+  if (!state.isPaused) {
+    ctxEye.fillStyle = 'rgba(0, 0, 17, 0.15)';
+    ctxEye.fillRect(0, 0, w, hEye);
+  }
+  
+  // Tracé du Seuil de décision sur l'œil
+  ctxEye.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+  ctxEye.lineWidth = 1;
+  ctxEye.beginPath();
+  const eyeThreshY = (hEye/2) - (threshVal * 40);
+  ctxEye.moveTo(0, eyeThreshY); ctxEye.lineTo(w, eyeThreshY);
+  ctxEye.stroke();
+
+  ctxEye.lineWidth = 1.5;
+  
+  let prevDemodY = null;
+  const bitArray = [];
+
+  for(let i=0; i<fe; i++) {
+    const tBit = ((i + 0.5) * bitW / w) * 4 + tGlobal;
+    const bitVal = getAnalogVal(tBit) > 0 ? 1 : 0;
+    txBitStr += bitVal;
+    
+    let rxBitVal = bitVal;
+    let isError = false, isFecFixed = false;
+    
+    if (BER > 0 && Math.random() < BER) {
+      if (useFec && shannonRatio <= 1.0 && jitterVal < 20 && Math.abs(threshVal) < 0.5) {
+         isFecFixed = true; // FEC répare si les conditions ne sont pas cataclysmiques
+      } else {
+         rxBitVal = rxBitVal ? 0 : 1;
+         isError = true;
+      }
+    }
+    bitArray.push({ tx: bitVal, rx: rxBitVal, err: isError, fec: isFecFixed });
+
+    if (!state.isPaused) {
+        stats.totalBits++;
+        if (isError) stats.errorBits++;
+    }
+
+    if (isError) rxBitStr += `<span class="err">${rxBitVal}</span>`;
+    else if (isFecFixed) rxBitStr += `<span class="fec">${rxBitVal}</span>`;
+    else rxBitStr += rxBitVal;
+
+    const x1 = i * bitW, x2 = (i + 1) * bitW;
+    
+    const drawLineCode = (start, end, val) => {
+        if (useManchester) {
+            const mid = start + (end - start)/2;
+            const y1 = val ? 20 : 80, y2 = val ? 80 : 20;
+            pDig += ` ${start===0?'M':'L'} ${start} ${y1} L ${mid} ${y1} L ${mid} ${y2} L ${end} ${y2}`;
+        } else {
+            const y = val ? 20 : 80;
+            pDig += ` ${start===0?'M':'L'} ${start} ${y} L ${end} ${y}`;
+        }
+    };
+    drawLineCode(x1, x2, bitVal);
+
+    const drawRxCode = (start, end, val, color) => {
+      const y = val ? 20 : 80;
+      if (prevDemodY !== null && prevDemodY !== y) pDemod += `<line x1="${start}" y1="${prevDemodY}" x2="${start}" y2="${y}" stroke="${color}" stroke-width="2"/>`;
+      pDemod += `<line x1="${start}" y1="${y}" x2="${end}" y2="${y}" stroke="${color}" stroke-width="2"/>`;
+      prevDemodY = y;
+    };
+    drawRxCode(x1, x2, rxBitVal, isError ? 'var(--err)' : (isFecFixed ? '#a855f7' : 'var(--rx)'));
+  }
+
+  if (stats.totalBits > 0) {
+      ui.vBER.textContent = ((stats.errorBits / stats.totalBits) * 100).toFixed(2);
+  }
+
+  // Dessin Haute Résolution
+  for(let x=0; x<=w; x+=2) {
+    const t = (x / w) * 4 + tGlobal;
+    const bitIdx = Math.min(fe - 1, Math.floor(x / bitW));
+    const bitVal = bitArray[bitIdx].tx;
+    
+    const valAna = getAnalogVal(t) * txGain;
+    pSrc += ` L ${x} ${50 - valAna * 30}`;
+
+    let phase = bitVal ? 0 : Math.PI;
+    const valMod = Math.sin(t * fPorteuse + phase) * txGain;
+    pMod += ` L ${x} ${50 - valMod * 30}`;
+
+    const noiseLevel = Math.max(0, 100 - SNR_dB) * 0.015; 
+    const noise = (Math.random() + Math.random() + Math.random() - 1.5) * noiseLevel;
+    const attScale = Math.max(0.1, 1 - (attenuation / 100)); 
+    
+    const valCh = (valMod * attScale) + noise;
+    pCh += ` L ${x} ${80 - valCh * 50}`;
+
+    // Application du Jitter sur l'oscilloscope de l'oeil
+    const eyeWidth = bitW * 2;
+    // Décalage horizontal aléatoire basé sur le curseur jitter
+    const jOffset = (Math.random() - 0.5) * (jitterVal / 100) * bitW;
+    const localX = (x + jOffset + w) % eyeWidth; 
+    
+    const eyeY = (hEye/2) - (useManchester ? (Math.sin(t*fPorteuse)*attScale > 0 ? 1 : -1) : (bitVal ? 1 : -1)) * 40 * attScale + (noise * 40);
+    
+    if (!state.isPaused) {
+        if (localX <= 2) {
+            ctxEye.beginPath(); ctxEye.moveTo(localX, eyeY);
+        } else {
+            ctxEye.lineTo(localX, eyeY);
+            ctxEye.strokeStyle = BER < 0.1 ? 'rgba(16, 185, 129, 0.4)' : (BER < 0.3 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+            ctxEye.stroke(); ctxEye.beginPath(); ctxEye.moveTo(localX, eyeY);
+        }
+    }
+
+    let yOut = 50;
+    if (useFilter) {
+      let outVal = getAnalogVal(t) * txGain;
+      if (bitArray[bitIdx].err) outVal = -outVal + (Math.random()-0.5)*0.5; 
+      yOut = 50 - outVal * 30;
+    } else {
+      const bRx = bitArray[bitIdx].rx;
+      yOut = 50 - (bRx ? 1 : -1) * 20;
+    }
+    pOut += ` L ${x} ${yOut}`;
+  }
+
+  ui.txBits.textContent = txBitStr;
+  ui.rxBits.innerHTML = rxBitStr;
+
+  ui.svgSource.innerHTML = `<path d="${pSrc}" stroke="#60a5fa" stroke-width="2" fill="none" />
+    <path d="${pDig}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2 2" fill="none"/>`;
+  ui.svgMod.innerHTML = `<path d="${pMod}" stroke="#818cf8" stroke-width="1.5" fill="none" />`;
+  ui.svgChannel.innerHTML = `<path d="${pCh}" stroke="${SNR_dB > 15 ? '#cbd5e1' : '#ef4444'}" stroke-width="1.5" fill="none" opacity="0.8"/>`;
+  
+  // Tracé ligne de seuil sur le démodulateur
+  const demodThreshY = 50 - (threshVal * 30);
+  ui.svgDemod.innerHTML = pDemod + `<line x1="0" y1="${demodThreshY}" x2="${w}" y2="${demodThreshY}" stroke="rgba(239,68,68,0.5)" stroke-dasharray="4 4"/>`;
+  
+  ui.svgOut.innerHTML = `<path d="${pOut}" stroke="${BER > 0.1 ? 'var(--err)' : 'var(--rx)'}" stroke-width="2.5" fill="none" />`;
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

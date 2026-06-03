@@ -1,0 +1,203 @@
+﻿LabCommon.initHeader({ bodySection: 'multiplexage-compare' });
+  // Elements DOM
+  const grid = document.getElementById('grid');
+  const stdSelect = document.getElementById('stdSelect');
+  const btnPlay = document.getElementById('btnPlay');
+  const speedRange = document.getElementById('speedRange');
+  
+  const inspTitle = document.getElementById('insp-title');
+  const inspBadge = document.getElementById('insp-badge');
+  const inspDesc = document.getElementById('insp-desc');
+  const inspBin = document.getElementById('insp-bin');
+  const inspFooter = document.getElementById('insp-footer');
+  const legendBox = document.getElementById('legendBox');
+  
+  let cells = [];
+  let isScanning = false;
+  let scanIndex = 0;
+  let scanInterval;
+  let currentStd = 'E1';
+
+  // Dictionnaires de lÃ©gendes
+  const legends = {
+    E1: `
+      <div class="leg-item"><div class="leg-box" style="background: var(--fas)"></div> IT0 (Pair): Verrouillage Trame (FAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--nfas)"></div> IT0 (Impair): Alarmes (NFAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--vmt)"></div> IT16 (T0): Synchro Multitrame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--cas)"></div> IT16 (T1-T15): Signalisation (CAS)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> Voies Vocales / Data (8 bits purs)</div>
+    `,
+    T1: `
+      <div class="leg-item"><div class="leg-box" style="background: var(--fbit)"></div> F-Bit: Bit de Verrouillage (1 bit)</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> Voie Vocale Normale (8 bits purs)</div>
+      <div class="leg-item"><div class="leg-box" style="background: repeating-linear-gradient(45deg, var(--robbed), var(--robbed) 5px, #c026d3 5px, #c026d3 10px)"></div> Voie Vocale avec Signalisation (Vol de Bit: 7b Voix + 1b Sig)</div>
+    `
+  };
+
+  function updateUIForStandard() {
+    currentStd = stdSelect.value;
+    stopScanner();
+    legendBox.innerHTML = legends[currentStd];
+    
+    if (currentStd === 'E1') {
+      document.getElementById('statRate').textContent = "2.048 Mbps";
+      document.getElementById('statChannels').textContent = "30 Voies";
+      document.getElementById('statBits').textContent = "4096 (2ms)";
+      inspFooter.innerHTML = `<strong>Rappel E1 :</strong> 1 IT = 8 bits. SÃ©paration stricte entre la voix et la signalisation (Canal SÃ©maphore). 32 ITs de 64 kbps par trame.`;
+    } else {
+      document.getElementById('statRate').textContent = "1.544 Mbps";
+      document.getElementById('statChannels').textContent = "24 Voies";
+      document.getElementById('statBits').textContent = "2316 (1.5ms)"; // 12 trames * 193 bits (Supertrame D4)
+      inspFooter.innerHTML = `<strong>Rappel T1 :</strong> La signalisation est "cachÃ©e" dans la voix (In-band signaling). Cela dÃ©grade marginalement la qualitÃ© vocale toutes les 6 trames (de 64 kbps Ã  56 kbps Ã  cet instant prÃ©cis).`;
+    }
+    
+    buildGrid();
+  }
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    cells = [];
+    
+    if (currentStd === 'E1') {
+      // Construction E1 (16 Lignes x 32 Colonnes)
+      grid.style.gridTemplateColumns = '35px repeat(32, 1fr)';
+      
+      grid.appendChild(document.createElement('div'));
+      for (let c = 0; c < 32; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = c; grid.appendChild(col);
+      }
+
+      for (let r = 0; r < 16; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        
+        for (let c = 0; c < 32; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          let type = 'voice';
+          if (c === 0) type = (r % 2 === 0) ? 'fas' : 'nfas';
+          else if (c === 16) type = (r === 0) ? 'vmt' : 'cas';
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    } 
+    else if (currentStd === 'T1') {
+      // Construction T1 (Supertrame D4 : 12 Lignes x (1 F-Bit + 24 Canaux))
+      grid.style.gridTemplateColumns = '35px 15px repeat(24, 1fr)'; // Le F-Bit est plus Ã©troit (1 bit)
+      
+      grid.appendChild(document.createElement('div'));
+      let fbHead = document.createElement('div'); fbHead.className = 'col-header'; fbHead.textContent = 'F'; grid.appendChild(fbHead);
+      for (let c = 1; c <= 24; c++) {
+        let col = document.createElement('div'); col.className = 'col-header'; col.textContent = `CH${c}`; grid.appendChild(col);
+      }
+
+      for (let r = 1; r <= 12; r++) {
+        let row = document.createElement('div'); row.className = 'row-header'; row.textContent = `T${r}`; grid.appendChild(row);
+        
+        // F-Bit (Colonne 0)
+        let fcell = document.createElement('div'); fcell.className = 'cell c-fbit';
+        fcell.dataset.trame = r; fcell.dataset.it = 'F'; fcell.dataset.type = 'fbit';
+        fcell.addEventListener('mouseenter', () => updateInspector(fcell));
+        grid.appendChild(fcell); cells.push(fcell);
+
+        // Canaux 1 Ã  24
+        for (let c = 1; c <= 24; c++) {
+          let cell = document.createElement('div'); cell.className = 'cell';
+          // Robbed bit in frame 6 and 12
+          let type = (r === 6 || r === 12) ? 'robbed' : 'voice-t1';
+          
+          cell.classList.add(`c-${type}`);
+          cell.dataset.trame = r; cell.dataset.it = c; cell.dataset.type = type;
+          cell.addEventListener('mouseenter', () => updateInspector(cell));
+          grid.appendChild(cell); cells.push(cell);
+        }
+      }
+    }
+    
+    updateInspector(cells[0]); // Select first cell
+  }
+
+  function updateInspector(cell) {
+    if(isScanning) return;
+
+    const trame = cell.dataset.trame;
+    const it = cell.dataset.it;
+    const type = cell.dataset.type;
+
+    inspTitle.textContent = currentStd === 'E1' ? `Trame ${trame} - Intervalle (IT) ${it}` : `Trame ${trame} - ${it === 'F' ? 'F-Bit' : 'Canal ' + it}`;
+    inspBin.style.display = 'block';
+
+    let randVoice = () => { let b=""; for(let i=0; i<8; i++) b+=Math.random()>0.5?"1":"0"; return b;};
+
+    switch (type) {
+      // --- E1 ---
+      case 'fas':
+        inspBadge.textContent = "FAS (Synchro Trame)"; inspBadge.style.background = "var(--fas)";
+        inspDesc.innerHTML = `<strong>Verrouillage spatial.</strong> RepÃ¨re le dÃ©but exact de la trame E1.`;
+        inspBin.innerHTML = "x 0 0 1 1 0 1 1"; break;
+      case 'nfas':
+        inspBadge.textContent = "NFAS (Alarmes)"; inspBadge.style.background = "var(--nfas)";
+        inspDesc.innerHTML = `<strong>Supervision.</strong> Le bit 2 est fixÃ© Ã  '1'. Contient les alarmes distantes (A).`;
+        inspBin.innerHTML = "x 1 A S S S S S"; break;
+      case 'vmt':
+        inspBadge.textContent = "VMT (Synchro Multitrame)"; inspBadge.style.background = "var(--vmt)";
+        inspDesc.innerHTML = `Signale le dÃ©but du cycle de 16 trames, nÃ©cessaire pour dÃ©coder les signaux CAS.`;
+        inspBin.innerHTML = "0 0 0 0 x y x x"; break;
+      case 'cas':
+        inspBadge.textContent = "CAS (Signalisation Hors Bande)"; inspBadge.style.background = "var(--cas)";
+        inspDesc.innerHTML = `<strong>Ã‰tat tÃ©lÃ©phonique.</strong> Code l'Ã©tat de la <b>Voie ${trame}</b> et de la <b>Voie ${parseInt(trame)+15}</b>.`;
+        inspBin.innerHTML = "a b c d  a b c d"; break;
+      case 'voice':
+        inspBadge.textContent = "Voie Utile (64 kbps)"; inspBadge.style.background = "var(--muted)";
+        inspDesc.innerHTML = `8 bits dÃ©diÃ©s Ã  100% pour la voix ou les donnÃ©es (Clear Channel).`;
+        inspBin.innerHTML = randVoice().split('').join(' '); break;
+        
+      // --- T1 ---
+      case 'fbit':
+        inspBadge.textContent = "F-Bit (Synchro / Alarme)"; inspBadge.style.background = "var(--fbit)";
+        inspDesc.innerHTML = `<strong>Le 193Ã¨me bit.</strong> AjoutÃ© au dÃ©but de la trame de 192 bits (24x8). Sa valeur alterne pour former un motif de synchronisation (Terminal Framing) sur la Supertrame.`;
+        inspBin.innerHTML = Math.random() > 0.5 ? "1" : "0"; break;
+      case 'voice-t1':
+        inspBadge.textContent = "Voix (64 kbps)"; inspBadge.style.background = "var(--muted)";
+        inspDesc.innerHTML = `Ã‰chantillon standard. L'appelant bÃ©nÃ©ficie de l'intÃ©gralitÃ© des 8 bits sur cette trame.`;
+        inspBin.innerHTML = randVoice().split('').join(' '); break;
+      case 'robbed':
+        inspBadge.textContent = "Robbed Bit Signaling (Signalisation Dans la Bande)"; inspBadge.style.background = "var(--robbed)";
+        inspDesc.innerHTML = `<strong>GÃ©nie ou Bricolage US ?</strong> Pour Ã©viter d'utiliser un canal entier pour la signalisation, le rÃ©seau <b>vole le bit de poids faible (LSB)</b> de la voix dans cette trame spÃ©cifique (Trame 6 ou 12). La voix n'est codÃ©e que sur 7 bits ici !`;
+        let vb = randVoice();
+        inspBin.innerHTML = `${vb.substring(0,7).split('').join(' ')} <span class="bin-highlight">S</span>`; break;
+    }
+  }
+
+  // Scanner Animation
+  btnPlay.addEventListener('click', () => { isScanning ? stopScanner() : startScanner(); });
+
+  function startScanner() {
+    isScanning = true; btnPlay.innerHTML = "â¸ ArrÃªter Simulation"; btnPlay.classList.add('active');
+    scanIndex = 0; runScannerLoop();
+  }
+
+  function stopScanner() {
+    isScanning = false; btnPlay.innerHTML = "â–¶ Lancer Simulation"; btnPlay.classList.remove('active');
+    clearTimeout(scanInterval); cells.forEach(c => c.classList.remove('scanning'));
+  }
+
+  function runScannerLoop() {
+    if(!isScanning) return;
+    if (scanIndex > 0) cells[scanIndex - 1].classList.remove('scanning');
+    else if (scanIndex === 0 && cells.length > 0) cells[cells.length - 1].classList.remove('scanning');
+    
+    cells[scanIndex].classList.add('scanning');
+    updateInspector(cells[scanIndex]);
+
+    scanIndex++; if (scanIndex >= cells.length) scanIndex = 0;
+    const delay = 350 - (speedRange.value * 6); 
+    scanInterval = setTimeout(runScannerLoop, delay);
+  }
+
+  stdSelect.addEventListener('change', updateUIForStandard);
+
+  // Init
+  updateUIForStandard();

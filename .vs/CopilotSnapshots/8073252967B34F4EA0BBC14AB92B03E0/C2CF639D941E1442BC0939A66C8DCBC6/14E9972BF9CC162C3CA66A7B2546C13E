@@ -1,0 +1,245 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation Pédagogique : L'Amplificateur</title>
+<style>
+  :root {
+    --bg: #f6f8fb; --card: #ffffff; --accent: #a855f7; 
+    --wave-in: #60a5fa; --wave-out: #a855f7; --clip-line: #ef4444;
+    --text-main: #1e293b; --text-muted: #64748b;
+    --meter-bg: #e2e8f0;
+  }
+  body { font-family: 'Segoe UI', system-ui, Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text-main); }
+  .wrap { max-width: 1000px; margin: 20px auto; padding: 24px; background: var(--card); border-radius: 12px; box-shadow: 0 8px 30px rgba(15,30,60,0.06); }
+  h1 { margin: 0 0 16px; font-size: 22px; color: #0f172a; }
+  
+  .controls { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; }
+  .control-group { flex: 1; min-width: 200px; }
+  label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
+  span.val { color: var(--accent); font-weight: bold; }
+  input[type=range] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+  input[type=range].blue { accent-color: var(--wave-in); }
+  input[type=range].red { accent-color: var(--clip-line); }
+
+  .stage { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; }
+  .panel { flex: 1; min-width: 300px; padding: 16px; border-radius: 10px; background: #ffffff; border: 1px solid #e2e8f0; position: relative; display: flex; flex-direction: column;}
+  .panel.highlight { border-color: #e9d5ff; background: #faf5ff; box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.05); }
+  
+  .title { font-weight: 700; font-size: 12px; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between;}
+  
+  svg { width: 100%; height: 160px; display: block; overflow: visible; flex-grow: 1; }
+  
+  /* Vu-mètres de Puissance */
+  .power-meter { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+  .meter-label { font-size: 12px; font-weight: bold; color: var(--text-muted); width: 80px; }
+  .meter-track { flex: 1; height: 12px; background: var(--meter-bg); border-radius: 6px; overflow: hidden; position: relative; }
+  .meter-fill { height: 100%; background: var(--wave-in); width: 0%; transition: width 0.1s, background-color 0.2s; }
+  .meter-value { font-family: monospace; font-size: 12px; font-weight: bold; width: 40px; text-align: right; }
+
+  /* Symbole Amplificateur central */
+  .amp-symbol-container { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 80px; }
+  .amp-triangle { width: 60px; height: 60px; fill: #f3e8ff; stroke: var(--accent); stroke-width: 3; stroke-linejoin: round; }
+  .amp-gain-text { font-weight: bold; font-size: 14px; color: var(--accent); margin-top: 8px; text-align: center; }
+
+  footer { font-size: 13px; color: var(--text-muted); margin-top: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div style="max-width:1450px;margin:16px auto 0;padding:0 24px;">
+  <a href="index.html" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;background:#ffffff;border:1px solid #e2e8f0;color:#0f172a;box-shadow:0 4px 14px rgba(15,23,42,0.06);">← Accueil du laboratoire</a>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : Amplificateur & Répéteur</h1>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>1. Amplitude d'Entrée (Source) <span class="val" style="color:var(--wave-in)"><span id="inVal">20</span> mV</span></label>
+      <input id="inInput" class="blue" type="range" min="5" max="50" step="1" value="20">
+    </div>
+    <div class="control-group">
+      <label>2. Gain de l'Amplificateur (Multiplicateur) <span class="val">x<span id="gainVal">3</span></span></label>
+      <input id="gainInput" type="range" min="1" max="10" step="0.5" value="3">
+    </div>
+    <div class="control-group">
+      <label>3. Limite d'Alimentation (Vcc) <span class="val" style="color:var(--clip-line)">±<span id="clipVal">100</span> mV</span></label>
+      <input id="clipInput" class="red" type="range" min="30" max="150" step="5" value="100">
+    </div>
+  </div>
+
+  
+
+  <div class="stage">
+    <!-- Panneau 1 : Signal d'entrée -->
+    <div class="panel">
+      <div class="title">1. Signal d'Entrée (Atténué)</div>
+      <svg id="svgIn" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      
+      <div class="power-meter">
+        <div class="meter-label">P. Entrée</div>
+        <div class="meter-track"><div id="meterIn" class="meter-fill" style="background: var(--wave-in)"></div></div>
+        <div id="textPowerIn" class="meter-value">0W</div>
+      </div>
+    </div>
+
+    <!-- Symbole schématique -->
+    <div class="amp-symbol-container">
+      <svg viewBox="0 0 100 100" style="height: 60px; overflow: visible;">
+        <!-- Triangle de l'ampli opérationnel -->
+        <polygon points="10,10 90,50 10,90" class="amp-triangle" />
+        <line x1="0" y1="50" x2="10" y2="50" stroke="var(--accent)" stroke-width="3"/>
+        <line x1="90" y1="50" x2="100" y2="50" stroke="var(--accent)" stroke-width="3"/>
+      </svg>
+      <div class="amp-gain-text">Gain<br>x<span id="displayGain">3</span></div>
+    </div>
+
+    <!-- Panneau 2 : Signal de sortie -->
+    <div class="panel highlight">
+      <div class="title" style="color: var(--accent)">2. Signal de Sortie (Amplifié)</div>
+      <svg id="svgOut" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      
+      <div class="power-meter">
+        <div class="meter-label">P. Sortie</div>
+        <div class="meter-track"><div id="meterOut" class="meter-fill" style="background: var(--accent)"></div></div>
+        <div id="textPowerOut" class="meter-value">0W</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>La puissance (l'énergie) est proportionnelle au carré de l'amplitude. Poussez le gain trop haut, et l'amplificateur "sature" car il manque d'énergie électrique (Vcc).</footer>
+</div>
+
+<script>
+// Récupération des éléments
+const svgIn = document.getElementById('svgIn');
+const svgOut = document.getElementById('svgOut');
+
+const inInput = document.getElementById('inInput');
+const gainInput = document.getElementById('gainInput');
+const clipInput = document.getElementById('clipInput');
+
+const inVal = document.getElementById('inVal');
+const gainVal = document.getElementById('gainVal');
+const clipVal = document.getElementById('clipVal');
+const displayGain = document.getElementById('displayGain');
+
+const meterIn = document.getElementById('meterIn');
+const meterOut = document.getElementById('meterOut');
+const textPowerIn = document.getElementById('textPowerIn');
+const textPowerOut = document.getElementById('textPowerOut');
+
+const w = 400, h = 160;
+const yCenter = h / 2;
+let timeOffset = 0;
+const freq = 3; // Fréquence visuelle fixe
+
+function draw() {
+  const ampIn = +inInput.value;
+  const gain = +gainInput.value;
+  const clipLimit = +clipInput.value;
+  
+  // Mise à jour de l'UI textuelle
+  inVal.textContent = Math.round(ampIn);
+  gainVal.textContent = gain.toFixed(1);
+  displayGain.textContent = gain.toFixed(1);
+  clipVal.textContent = clipLimit;
+
+  timeOffset += 0.005; 
+
+  let pathIn = `M 0 ${yCenter}`;
+  let pathOutIdeal = `M 0 ${yCenter}`; // Trace fantôme si on dépasse la saturation
+  let pathOutReal = `M 0 ${yCenter}`;
+
+  // Calcul visuel (échelle pour que l'onde tienne dans le SVG)
+  // On considère que 150 mV = 70 pixels (quasi le bord du SVG)
+  const scale = 70 / 150; 
+  
+  let currentPowerOutRaw = 0;
+
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+    const sineVal = Math.sin(2 * Math.PI * freq * t);
+    
+    // Signal d'entrée
+    const vIn = sineVal * ampIn;
+    const yIn = yCenter - (vIn * scale);
+    pathIn += ` L ${x} ${yIn}`;
+
+    // Signal de sortie idéal (sans limite)
+    const vOutIdeal = vIn * gain;
+    const yOutIdeal = yCenter - (vOutIdeal * scale);
+    pathOutIdeal += ` L ${x} ${yOutIdeal}`;
+
+    // Signal de sortie réel (avec écrêtage / saturation)
+    let vOutReal = vOutIdeal;
+    if (vOutReal > clipLimit) vOutReal = clipLimit;
+    if (vOutReal < -clipLimit) vOutReal = -clipLimit;
+    
+    const yOutReal = yCenter - (vOutReal * scale);
+    pathOutReal += ` L ${x} ${yOutReal}`;
+
+    // On récupère la valeur absolue max pour calculer la puissance
+    if (Math.abs(vOutReal) > currentPowerOutRaw) {
+        currentPowerOutRaw = Math.abs(vOutReal);
+    }
+  }
+
+  // Rendu SVG Entrée
+  svgIn.innerHTML = `<path d="${pathIn}" stroke="var(--wave-in)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  // Rendu SVG Sortie (Incluant les lignes de limites Vcc)
+  const clipYTop = yCenter - (clipLimit * scale);
+  const clipYBot = yCenter + (clipLimit * scale);
+  
+  let outHTML = `
+    <!-- Lignes de saturation (Alimentation) -->
+    <line x1="0" y1="${clipYTop}" x2="${w}" y2="${clipYTop}" stroke="var(--clip-line)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <line x1="0" y1="${clipYBot}" x2="${w}" y2="${clipYBot}" stroke="var(--clip-line)" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+    <text x="5" y="${clipYTop - 5}" fill="var(--clip-line)" font-size="10" font-weight="bold">+Vcc</text>
+    <text x="5" y="${clipYBot + 12}" fill="var(--clip-line)" font-size="10" font-weight="bold">-Vcc</text>
+  `;
+
+  // Si on sature, on affiche le signal idéal en arrière-plan (pointillés clairs)
+  if (ampIn * gain > clipLimit) {
+    outHTML += `<path d="${pathOutIdeal}" stroke="var(--wave-out)" stroke-width="1.5" stroke-dasharray="4 4" fill="none" opacity="0.3"/>`;
+  }
+
+  // Onde de sortie réelle
+  outHTML += `<path d="${pathOutReal}" stroke="var(--wave-out)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  svgOut.innerHTML = outHTML;
+
+  // Calcul et mise à jour des Vu-mètres de puissance
+  // P = V^2 / R (On simplifie en disant P est proportionnel à V^2)
+  const maxPowerTheoretical = Math.pow(150, 2); // basé sur le max possible (150mV)
+  
+  const powerIn = Math.pow(ampIn, 2);
+  const powerOut = Math.pow(currentPowerOutRaw, 2);
+
+  const percentIn = Math.min(100, (powerIn / maxPowerTheoretical) * 100);
+  const percentOut = Math.min(100, (powerOut / maxPowerTheoretical) * 100);
+
+  meterIn.style.width = `${percentIn}%`;
+  meterOut.style.width = `${percentOut}%`;
+
+  // Changement de couleur si ça sature
+  if (currentPowerOutRaw >= clipLimit && clipLimit < (ampIn * gain)) {
+      meterOut.style.backgroundColor = "var(--clip-line)"; // Devient rouge
+  } else {
+      meterOut.style.backgroundColor = "var(--wave-out)"; // Reste violet
+  }
+
+  // Valeurs fictives arbitraires pour l'affichage (ex: microWatts)
+  textPowerIn.textContent = Math.round(powerIn / 100) + 'uW';
+  textPowerOut.textContent = Math.round(powerOut / 100) + 'uW';
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

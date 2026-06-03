@@ -1,0 +1,67 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Animation Pédagogique : Le Récepteur</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/recepteur.css" />
+</head>
+<body>
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Chaîne analogique • réception et démodulation</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Animation Pédagogique : Le Récepteur (Démodulation)</h1>
+  
+  <div class="controls">
+    <div class="control-group">
+      <label>1. Bruit capté (Parasites) <span class="val" style="color:var(--text-muted)"><span id="noiseVal">10</span>%</span></label>
+      <input id="noiseInput" type="range" min="0" max="40" step="1" value="10">
+    </div>
+    <div class="control-group">
+      <label>2. Lissage du Filtre (Condensateur) <span class="val"><span id="filterVal">Optimal</span></span></label>
+      <input id="filterInput" type="range" min="1" max="50" step="1" value="12">
+    </div>
+  </div>
+
+  <div class="stage">
+    <!-- Panneau 1 : Signal capté -->
+    <div class="panel">
+      <div class="title">1. Signal Capté (Antenne) <span>Haute Fréquence + Bruit</span></div>
+      <svg id="svgRaw" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 2 : Traitement interne -->
+    <div class="panel">
+      <div class="title">2. Traitement (Redressement & Filtrage Passe-Bas) <span>Extraction de l'enveloppe</span></div>
+      <div class="icon-abs">| x |</div>
+      <svg id="svgProcess" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+
+    <!-- Panneau 3 : Signal restitué -->
+    <div class="panel highlight">
+      <div class="title" style="color: var(--accent)">3. Signal Restitué (Basse Fréquence) <span>Envoyé au Haut-Parleur</span></div>
+      <svg class="speaker" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <svg id="svgClean" viewBox="0 0 800 120" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <footer>Le redresseur "coupe" le bas du signal. Le condensateur se charge et se décharge pour "lisser" les crêtes et retrouver le message.</footer>
+</div>
+
+<script src="assets/js/lab-common.js"></script>
+<script src="assets/js/recepteur.js"></script>
+</body>
+</html>

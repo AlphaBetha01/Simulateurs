@@ -1,0 +1,95 @@
+﻿LabCommon.initHeader({ bodySection: 'analogique-emetteur', pageId: 'analogique-emetteur' });
+// RÃ©cupÃ©ration des Ã©lÃ©ments
+const svgInfo = document.getElementById('svgInfo');
+const svgCarrier = document.getElementById('svgCarrier');
+const svgMod = document.getElementById('svgMod');
+
+const fInfoInput = document.getElementById('fInfo');
+const fPortInput = document.getElementById('fPort');
+const modRadios = document.getElementsByName('modType');
+
+const fInfoVal = document.getElementById('fInfoVal');
+const fPortVal = document.getElementById('fPortVal');
+
+// Variables de configuration
+const w = 800, h = 120;
+const yCenter = h / 2;
+let timeOffset = 0; // Pour faire dÃ©filer les ondes (animation continue)
+
+function draw() {
+  const fInfo = +fInfoInput.value;
+  const fPort = +fPortInput.value;
+  
+  // Mise Ã  jour de l'affichage des valeurs
+  fInfoVal.textContent = fInfo.toFixed(1);
+  fPortVal.textContent = fPort;
+
+  // Quel type de modulation est sÃ©lectionnÃ© ?
+  let isAM = true;
+  for (const radio of modRadios) {
+    if (radio.checked) { isAM = (radio.value === 'AM'); break; }
+  }
+
+  // Avancement du temps pour faire dÃ©filer l'onde (scroll vers la gauche)
+  timeOffset += 0.003; 
+
+  let pathInfo = `M 0 ${yCenter}`;
+  let pathCarrier = `M 0 ${yCenter}`;
+  let pathMod = `M 0 ${yCenter}`;
+  let envTop = `M 0 ${yCenter}`; // Enveloppe AM (haut)
+  let envBot = `M 0 ${yCenter}`; // Enveloppe AM (bas)
+
+  // Boucle de calcul pour chaque pixel X
+  for(let x = 0; x <= w; x += 2) {
+    // Le temps virtuel (on simule une fenÃªtre de 2 secondes)
+    const t = (x / w) * 2 + timeOffset;
+
+    // 1. Calcul du Signal d'Information (sinusoÃ¯de simple)
+    const valInfo = Math.sin(2 * Math.PI * fInfo * t);
+    const yInfo = yCenter - valInfo * (h * 0.4);
+    pathInfo += ` L ${x} ${yInfo}`;
+
+    // 2. Calcul de l'Onde Porteuse (sinusoÃ¯de rapide)
+    const valCarrier = Math.sin(2 * Math.PI * fPort * t);
+    const yCarrier = yCenter - valCarrier * (h * 0.4);
+    pathCarrier += ` L ${x} ${yCarrier}`;
+
+    // 3. Calcul du Signal ModulÃ©
+    let yMod;
+    if (isAM) {
+      // Modulation d'Amplitude : S(t) = (1 + m * Info) * Porteuse
+      const m = 0.8; // Indice de modulation (80%)
+      const amplitudeMod = (1 + m * valInfo);
+      yMod = yCenter - (amplitudeMod * valCarrier * (h * 0.25));
+      
+      // Dessin de l'enveloppe pointillÃ©e pour l'AM (aide pÃ©dagogique)
+      envTop += ` L ${x} ${yCenter - (amplitudeMod * (h * 0.25))}`;
+      envBot += ` L ${x} ${yCenter + (amplitudeMod * (h * 0.25))}`;
+    } else {
+      // Modulation de FrÃ©quence : S(t) = sin(2*pi*fC*t + beta * sin(2*pi*fI*t))
+      const beta = 3.0; // Indice de modulation FM
+      const phaseFM = 2 * Math.PI * fPort * t + beta * Math.sin(2 * Math.PI * fInfo * t);
+      yMod = yCenter - Math.sin(phaseFM) * (h * 0.4);
+    }
+    pathMod += ` L ${x} ${yMod}`;
+  }
+
+  // Rendu SVG
+  svgInfo.innerHTML = `<path d="${pathInfo}" stroke="var(--wave-info)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  
+  svgCarrier.innerHTML = `<path d="${pathCarrier}" stroke="var(--wave-carrier)" stroke-width="2" fill="none" opacity="0.6"/>`;
+  
+  let modHTML = `<path d="${pathMod}" stroke="var(--wave-mod)" stroke-width="2" fill="none"/>`;
+  // Ajouter les enveloppes pointillÃ©es si on est en AM
+  if (isAM) {
+    modHTML += `<path d="${envTop}" stroke="var(--wave-info)" stroke-width="1.5" stroke-dasharray="4 4" fill="none" opacity="0.5"/>`;
+    modHTML += `<path d="${envBot}" stroke="var(--wave-info)" stroke-width="1.5" stroke-dasharray="4 4" fill="none" opacity="0.5"/>`;
+  }
+  svgMod.innerHTML = modHTML;
+
+  // Boucle d'animation optimisÃ©e
+  requestAnimationFrame(draw);
+}
+
+// Lancement de l'animation
+requestAnimationFrame(draw);

@@ -1,0 +1,180 @@
+﻿<!doctype html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire Expert : PCM, Trames & Hiérarchies Internationales</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/mux-main.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>PCM, TDM, E1/T1, PDH, SDH et transport optique</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1 id="pageTitle">Laboratoire Intégral : De la Voix à la Fibre Optique</h1>
+  <div class="subtitle" id="pageSubtitle">Ce simulateur modélise la chaîne complète : 1. Numérisation (PCM) ➔ 2. Multiplexage Temporel (TDM) ➔ 3. Hiérarchie PDH/SDH.</div>
+  <div class="focus-banner" id="focusBanner"></div>
+  <div class="jump-bar">
+    <a class="jump-link" href="#pcmSection">PCM</a>
+    <a class="jump-link" href="#trameSection">Trame TDM</a>
+    <a class="jump-link" href="#hierarchieSection">Hiérarchie</a>
+    <a class="jump-link" href="#theorieSection">Théorie</a>
+  </div>
+
+  <div class="stage">
+    
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <div class="panel">
+        <h3>1. Standard de Multiplexage</h3>
+        <div class="panel-desc">
+          Le réseau téléphonique diffère selon les continents. Choisissez la norme pour adapter l'architecture de la trame et les règles de signalisation.
+        </div>
+        <select id="stdSelect">
+          <option value="E1">Europe/Intl (Norme E1) - 2.048 Mbps</option>
+          <option value="T1">US/Japon (Norme T1) - 1.544 Mbps</option>
+        </select>
+        <button id="btnPlay">▶ Lancer le Scanner (Émission)</button>
+        <div style="font-size: 11px; color: var(--muted); text-align: center; margin-top: 5px;">
+          Ralenti visuel : <span id="speedVal">150</span> ms / intervalle
+        </div>
+        <input type="range" id="speedRange" min="10" max="500" value="150" step="10">
+      </div>
+
+      <div class="panel c-audio-panel" id="pcmSection">
+        <h3 style="color: var(--audio-ch); border-color: #bae6fd;">2. Convertisseur PCM (Voie 1)</h3>
+        <div class="panel-desc">
+          Générez une onde analogique. L'oscilloscope effectue la conversion (échantillonnage + quantification) et génère l'octet binaire en temps réel.
+        </div>
+        <button id="btnAudio" class="btn-audio">Activer le Son (Oscillateur)</button>
+        <select id="freqSelect" disabled>
+          <option value="150">Basse Fréq. (150 Hz)</option>
+          <option value="440" selected>Médium (440 Hz)</option>
+          <option value="880">Haute Fréq. (880 Hz)</option>
+        </select>
+        <div class="oscilloscope-container">
+          <canvas id="oscCanvas"></canvas>
+          <div class="live-bin-display" id="liveAudioBin">-- AUDIO OFF --</div>
+        </div>
+        <div style="font-size: 11px; color: #475569; text-align: center; font-style: italic;">
+          Ce flux est injecté exclusivement dans la <strong style="color: var(--audio-ch);">Voie 1</strong>. Les autres cases sont remplies par les appels aléatoires d'autres utilisateurs.
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-container" id="trameSection">
+      <div class="grid-header">
+        <strong style="color: #0f172a; font-size: 14px;" id="gridTitle">Niveau 1 : Trame Spatiale E1</strong>
+        <span style="font-size: 11px; color: var(--muted); background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">1 Case = 8 bits (1 octet)</span>
+      </div>
+      <div class="grid-matrix" id="grid"></div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Analyseur de Trame</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">Survolez la grille</div>
+      <div class="panel-desc" style="background: white; border: none; padding: 0; margin-bottom: 0;">
+        Connectez l'inspecteur à une cellule pour décoder sa <strong>logique mathématique</strong>.
+      </div>
+      <div class="info-detail" id="insp-desc">En attente...</div>
+      <div class="info-binary" id="insp-bin">--------</div>
+    </div>
+  </div>
+
+  <div class="mux-section" id="hierarchieSection">
+    <div class="mux-title">
+      3. Hiérarchie du Multiplexage : Transporter des milliers d'appels
+      <span class="mux-std-badge" id="muxBadge">Réseau PDH Européen</span>
+    </div>
+    <div class="panel-desc" style="margin-bottom: 15px; border: none; background: transparent; padding: 0;">
+      Une trame primaire (E1 ou T1) ne transporte qu'une poignée d'appels. Pour connecter des villes, le réseau regroupe ces flux dans des liens de capacité supérieure. Explorez les étages ci-dessous :
+    </div>
+
+    <div class="mux-container">
+      <div class="mux-controls">
+        <button class="mux-btn active" id="btnMuxL2" onclick="setMuxLevel('L2')">Niveau 2</button>
+        <button class="mux-btn" id="btnMuxL3" onclick="setMuxLevel('L3')">Niveau 3</button>
+        <button class="mux-btn" id="btnMuxL4" onclick="setMuxLevel('L4')">Niveau 4</button>
+        <button class="mux-btn" id="btnMuxOPT" onclick="setMuxLevel('OPT')" style="border-color:#10b981; color:#059669;">Réseau Optique</button>
+      </div>
+
+      <div style="flex-grow: 1;">
+        <div class="mux-diagram">
+          <div class="mux-inputs" id="muxInputs">
+            </div>
+          
+          <div class="mux-device" id="muxDevice">MUX</div>
+          
+          <div style="display: flex; flex-direction: column; gap: 5px; align-items: center;">
+            <div class="mux-output" id="muxOutput">--</div>
+            <div style="font-size: 12px; font-weight: bold; color: var(--muted);" id="muxCapacity">--</div>
+          </div>
+        </div>
+
+        <div class="mux-details" id="muxDetails">
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theory-section" id="theorieSection">
+    <h2>Guide Théorique : Comprendre la Logique Réseau</h2>
+    <div class="theory-grid">
+      
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">1️⃣</span> Échantillonnage (La Source PCM)</h4>
+        <p>Le convertisseur PCM simule la numérisation de la voix, basée sur le théorème de Shannon-Nyquist :</p>
+        <ul>
+          <li><strong>Le filtre :</strong> La voix téléphonique utile est limitée entre 300 et 3400 Hz (Arrondi à 4000 Hz).</li>
+          <li><strong>L'échantillonnage :</strong> On mesure l'onde 8000 fois par seconde (le double de 4000 Hz).</li>
+          <li><strong>La quantification :</strong> Chaque mesure est codée sur 8 bits (1 octet).</li>
+        </ul>
+        <p><em>Logique mathématique :</em> Un seul appel génère donc 8000 octets/seconde, ce qui donne le débit universel de <strong>64 kbps par voie</strong>.</p>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">2️⃣</span> Multiplexage Temporel (TDM)</h4>
+        <p>Tirer un câble par conversation est physiquement et financièrement impossible. Le Multiplexage Temporel (TDM) permet de partager un seul câble entre plusieurs utilisateurs.</p>
+        <ul>
+          <li><strong>Principe :</strong> Le réseau alloue un "Intervalle de Temps" (IT) ou "Slot" à chaque utilisateur. Le scanner lit la matrice à tour de rôle très rapidement (125 µs par trame).</li>
+          <li><strong>Isolation :</strong> L'utilisateur de la Voie 1 (notre canal audio) ne remarquera jamais les 29 autres appels qui voyagent sur le même fil, car ils sont séparés par le temps.</li>
+        </ul>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">3️⃣</span> La Signalisation : Europe vs USA</h4>
+        <p>Le réseau a besoin de savoir quand un téléphone sonne, décroche ou raccroche. C'est le rôle de la <strong>Signalisation</strong>.</p>
+        <ul>
+          <li><strong>L'élégance Européenne (E1) :</strong> L'Europe dédie des canaux entiers (IT0 pour la synchro, IT16 pour la signalisation CAS). La voix est pure, sans interférence (Clear Channel).</li>
+          <li><strong>L'économie Américaine (T1) :</strong> Les USA n'ont pas de canal dédié. Toutes les 6 trames, le réseau <strong>vole le 8ème bit</strong> de la voix de l'utilisateur pour transmettre la signalisation (Robbed Bit Signaling). La voix se dégrade infimement à ces instants (passe de 64 à 56 kbps).</li>
+        </ul>
+      </div>
+
+      <div class="theory-card">
+        <h4><span style="font-size: 20px;">4️⃣</span> PDH vs SDH (Les Hiérarchies)</h4>
+        <p>Pour regrouper des milliers d'appels, les équipements multiplexent les trames primaires entre elles. C'est l'étage 3 du simulateur.</p>
+        <ul>
+          <li><strong>Plésiochrone (PDH) :</strong> Les horloges des équipements sont imparfaites. Lors de la fusion, le MUX doit insérer des bits vides (Bourrage/Justification) pour compenser les retards. $4 \times E1$ ne donne pas $4 \times 2.048$, mais $8.448$ Mbps à cause de cet "Overhead".</li>
+          <li><strong>Synchrone (SDH / SONET) :</strong> Les horloges mondiales sont synchronisées au laser atomique. Il n'y a plus de bourrage aléatoire. Des pointeurs permettent d'extraire un seul appel de 64 kbps directement d'une fibre à 155 Mbps !</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/mux.js"></script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur Ultime (Bac+5) : Traitement du Signal & Télécoms</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<style>
+  :root {
+    --bg: #0b1120; --card: #1e293b; --card-alt: #334155;
+    --tx: #38bdf8; --rx: #10b981; --warn: #fbbf24; --err: #ef4444;
+    --text: #f8fafc; --muted: #94a3b8; --border: #475569;
+  }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; font-size: 13px; }
+  .wrap { max-width: 1500px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+  h1 { font-size: 22px; margin: 0; color: #e2e8f0; border-bottom: 2px solid var(--card-alt); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+  
+  .control-panel { background: var(--card); padding: 15px; border-radius: 8px; display: flex; gap: 20px; border: 1px solid var(--border); flex-wrap: wrap; align-items: stretch;}
+  .ctrl-group { flex: 1; min-width: 180px; display: flex; flex-direction: column; justify-content: space-between;}
+  label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+  span.val { color: var(--tx); font-weight: bold; }
+  input[type=range] { width: 100%; cursor: pointer; accent-color: var(--tx); margin-bottom: 5px; }
+  select { width: 100%; padding: 6px; background: #0f172a; color: white; border: 1px solid var(--muted); border-radius: 4px; outline: none; font-size: 12px;}
+  button { padding: 6px 12px; background: var(--tx); color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+  button:hover { filter: brightness(1.2); }
+  button.paused { background: var(--err); color: white;}
+
+  .stats-board { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #020617; padding: 10px; border-radius: 6px; border: 1px solid var(--card-alt);}
+  .stat-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 4px;}
+  .stat-title { font-size: 10px; color: var(--muted); text-transform: uppercase; text-align: center;}
+  .stat-val { font-size: 16px; font-weight: 800; font-family: monospace; margin-top: 4px;}
+
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+  .block { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .block-title { font-weight: 800; text-transform: uppercase; border-bottom: 1px solid var(--card-alt); padding-bottom: 6px; font-size: 13px; color: var(--text);}
+  
+  .scope-container { background: #000; border: 1px solid #475569; border-radius: 4px; position: relative; overflow: hidden; height: 260px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);}
+  canvas { width: 100%; height: 100%; display: block; position: absolute; z-index: 1;}
+  .scope-label { position: absolute; top: 6px; left: 8px; font-size: 11px; color: rgba(255,255,255,0.7); z-index: 2; font-family: monospace; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 3px;}
+  
+  .grid-bg::before { content:''; position:absolute; top:0; left:0; right:0; bottom:0; background: linear-gradient(0deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,0.05) 75%, rgba(255,255,255,0.05) 76%, transparent 77%, transparent); background-size: 40px 40px; pointer-events: none; z-index: 0;}
+</style>
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>DSP avancé • I/Q, spectre, œil et bruit AWGN</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>
+    Laboratoire d'Ingénierie Télécom : Modulation I/Q & Filtrage
+    <button id="btnPlayPause">⏸️ Pause / Mesures</button>
+  </h1>
+  
+  <div class="control-panel">
+    <div class="ctrl-group">
+      <div>
+        <label>Canal Physique (AWGN)</label>
+        <select id="mediaType">
+          <option value="fibre">Fibre Optique (Bruit très faible)</option>
+          <option value="cuivre" selected>Câble / ADSL (Bruit moyen)</option>
+          <option value="radio">Radio Terrestre (Bruit fort)</option>
+          <option value="sat">Satellite GEO (Distance extrême)</option>
+        </select>
+      </div>
+      <div>
+        <label>Distance de Transmission <span class="val" id="valDist">20 km</span></label>
+        <input type="range" id="dist" min="0" max="100" value="20">
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Modulation (Constellation) <span class="val" id="valModName">16-QAM</span></label>
+        <select id="modType">
+          <option value="2">BPSK (1 bit/symb)</option>
+          <option value="4">QPSK (2 bits/symb)</option>
+          <option value="16" selected>16-QAM (4 bits/symb)</option>
+          <option value="64">64-QAM (6 bits/symb)</option>
+        </select>
+      </div>
+      <div>
+        <label>Débit Symbole (Bauds) <span class="val" id="valBaud">10 kBd</span></label>
+        <input type="range" id="baudRate" min="5" max="25" value="10">
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Filtre de Mise en Forme</label>
+        <select id="filterType">
+          <option value="rect">Rectangulaire (Fort ISI)</option>
+          <option value="rrc" selected>Cosinus Surélevé (Nyquist RRC)</option>
+        </select>
+      </div>
+      <div>
+        <label>Roll-off Factor (α) <span class="val" id="valAlpha">0.3</span></label>
+        <input type="range" id="alpha" min="0" max="1" step="0.1" value="0.3">
+      </div>
+    </div>
+
+    <div class="stats-board">
+      <div class="stat-item">
+        <div class="stat-title">Rapport Signal/Bruit (SNR)</div>
+        <div class="stat-val" id="valSNR" style="color:var(--tx)">25.0 dB</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Taux d'Erreur (SER)</div>
+        <div class="stat-val" id="valSER" style="color:var(--err)">0.00 %</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Efficacité Spectrale</div>
+        <div class="stat-val" id="valSpecEff" style="color:var(--rx)">3.08 b/s/Hz</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Débit Binaire (Rb)</div>
+        <div class="stat-val" id="valRb">40.0 kbps</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    
+    <!-- 1. Constellation -->
+    <div class="block">
+      <div class="block-title">1. Diagramme de Constellation (I/Q)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">Réception I/Q + Bruit Gaussien (AWGN)</div>
+        <canvas id="constCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 2. Spectre -->
+    <div class="block">
+      <div class="block-title">2. Analyseur de Spectre (Densité Spectrale)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">PSD (dB) vs Fréquence</div>
+        <canvas id="specCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. Eye Diagram -->
+    <div class="block">
+      <div class="block-title">3. Diagramme de l'Œil (Canal I - Baseband)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">Visualisation de l'ISI et du Bruit</div>
+        <canvas id="eyeCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 4. Time Domain -->
+    <div class="block">
+      <div class="block-title">4. Signal Temporel (Bande de Base)</div>
+      <div class="scope-container">
+        <div class="scope-label">Composante I (Bleu) et Q (Vert)</div>
+        <canvas id="timeCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// --- ÉTAT ET PHYSIQUE ---
+const state = { isPaused: false, time: 0 };
+const phys = {
+  cuivre: { attBase: 10, attKm: 0.5 },
+  fibre:  { attBase: 2, attKm: 0.05 },
+  radio:  { attBase: 20, attKm: 1.2 },
+  sat:    { attBase: 35, attKm: 0.01 }
+};
+
+// --- DOM ELEMENTS ---
+const $ = id => document.getElementById(id);
+const ui = {
+  dist: $('dist'), media: $('mediaType'), mod: $('modType'), baud: $('baudRate'),
+  filter: $('filterType'), alpha: $('alpha'), btnPause: $('btnPlayPause'),
+  vDist: $('valDist'), vSNR: $('valSNR'), vSER: $('valSER'), vSpecEff: $('valSpecEff'), vRb: $('valRb'), vAlpha: $('valAlpha'), vBaud: $('valBaud')
+};
+
+// --- CANVAS CONTEXTS ---
+const ctxConst = $('constCanvas').getContext('2d');
+const ctxSpec = $('specCanvas').getContext('2d');
+const ctxEye = $('eyeCanvas').getContext('2d');
+const ctxTime = $('timeCanvas').getContext('2d');
+
+// --- MATHS & UTILS ---
+function randn_bm() {
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random();
+    while(v === 0) v = Math.random();
+    return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+}
+
+function sinc(x) {
+    if (Math.abs(x) < 1e-6) return 1.0;
+    const piX = Math.PI * x;
+    return Math.sin(piX) / piX;
+}
+
+function rrc(t, alpha, Ts) {
+    if (alpha === 0) return sinc(t/Ts);
+    const t_norm = t / Ts;
+    if (Math.abs(Math.abs(t_norm) - 1 / (4 * alpha)) < 1e-4) {
+        return (alpha / Math.SQRT2) * ((1 + 2 / Math.PI) * Math.sin(Math.PI / (4 * alpha)) + (1 - 2 / Math.PI) * Math.cos(Math.PI / (4 * alpha)));
+    }
+    const num = Math.sin(Math.PI * t_norm * (1 - alpha)) + 4 * alpha * t_norm * Math.cos(Math.PI * t_norm * (1 + alpha));
+    const den = Math.PI * t_norm * (1 - Math.pow(4 * alpha * t_norm, 2));
+    return num / den;
+}
+
+// Global Mapped Symbols cache
+let idealSymbols = [];
+
+// Générateur pseudo-aléatoire fluide pour garder une forme d'onde cohérente qui défile
+function getSym(idx, M) {
+    let seed = Math.abs(Math.sin(idx * 12345.6789));
+    return idealSymbols[Math.floor(seed * M)] || idealSymbols[0];
+}
+
+ui.btnPause.addEventListener('click', () => {
+    state.isPaused = !state.isPaused;
+    ui.btnPause.textContent = state.isPaused ? "▶️ Reprendre" : "⏸️ Pause / Mesures";
+    if(state.isPaused) ui.btnPause.classList.add('paused');
+    else ui.btnPause.classList.remove('paused');
+});
+
+function render() {
+    if (!state.isPaused) state.time += 0.05;
+
+    const dist = +ui.dist.value;
+    const media = phys[ui.media.value];
+    const M = +ui.mod.value; 
+    const Rs = +ui.baud.value; 
+    const filterType = ui.filter.value;
+    const alpha = +ui.alpha.value;
+
+    const bitsPerSym = Math.log2(M);
+    const Rb = Rs * bitsPerSym; 
+
+    const attenuation = media.attBase + (dist * media.attKm);
+    const SNR_dB = Math.max(0, 45 - attenuation);
+    const SNR_linear = Math.pow(10, SNR_dB / 10);
+    const noiseStdDev = Math.sqrt((1 / SNR_linear) / 2); 
+
+    const bandwidth = filterType === 'rrc' ? Rs * (1 + alpha) : Rs * 10; 
+    const specEff = Rb / bandwidth;
+
+    ui.vDist.textContent = (ui.media.value==='sat'? dist*700+35000 : dist) + " km";
+    ui.vBaud.textContent = Rs + " kBd";
+    ui.vAlpha.textContent = alpha.toFixed(1);
+    ui.vSNR.textContent = SNR_dB.toFixed(1) + " dB";
+    ui.vRb.textContent = Rb.toFixed(1) + " kbps";
+    ui.vSpecEff.textContent = (filterType==='rect' ? '< ' : '') + specEff.toFixed(2) + " b/s/Hz";
+
+    const wC = 700, hC = 260;
+    
+    // Seulement effacer l'écran constellation quand ça bouge (pour effet cumulatif stylé)
+    if (!state.isPaused) {
+        ctxConst.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctxConst.fillRect(0, 0, wC, hC);
+    }
+    
+    ctxConst.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctxConst.beginPath(); ctxConst.moveTo(0, hC/2); ctxConst.lineTo(wC, hC/2); ctxConst.moveTo(wC/2, 0); ctxConst.lineTo(wC/2, hC); ctxConst.stroke();
+
+    idealSymbols = [];
+    let scale = 1;
+    if (M === 2) scale = 1; 
+    else if (M === 4) scale = Math.sqrt(1/2); 
+    else if (M === 16) scale = Math.sqrt(1/10); 
+    else if (M === 64) scale = Math.sqrt(1/42); 
+
+    const levels = Math.sqrt(M);
+    for (let i = 0; i < levels; i++) {
+        for (let j = 0; j < (M===2 ? 1 : levels); j++) {
+            let I = (M===2) ? (i===0?-1:1) : (2 * i - levels + 1) * scale;
+            let Q = (M===2) ? 0 : (2 * j - levels + 1) * scale;
+            idealSymbols.push({I, Q});
+            ctxConst.fillStyle = 'rgba(255,255,255,0.8)';
+            ctxConst.fillRect(wC/2 + I*100 - 2, hC/2 - Q*100 - 2, 4, 4);
+        }
+    }
+
+    let errors = 0;
+    const numSymbols = state.isPaused ? 0 : 200; // Ne pas dessiner de nouveaux points si en pause
+    ctxConst.fillStyle = SNR_dB > 15 ? 'rgba(56, 189, 248, 0.7)' : 'rgba(251, 191, 36, 0.7)'; 
+
+    for(let k=0; k<numSymbols; k++) {
+        const sym = idealSymbols[Math.floor(Math.random() * M)];
+        const rx_I = sym.I + randn_bm() * noiseStdDev;
+        const rx_Q = sym.Q + randn_bm() * noiseStdDev;
+        ctxConst.fillRect(wC/2 + rx_I*100, hC/2 - rx_Q*100, 2, 2);
+
+        if (M > 2) {
+            if (Math.abs(rx_I - sym.I) > scale || Math.abs(rx_Q - sym.Q) > scale) errors++;
+        } else {
+            if (Math.sign(rx_I) !== Math.sign(sym.I)) errors++;
+        }
+    }
+    
+    // Lissage du SER pour l'affichage
+    const instantSER = (errors / Math.max(1, numSymbols)) * 100;
+    ui.vSER.textContent = (state.isPaused ? ui.vSER.textContent : instantSER.toFixed(2) + " %");
+    ui.vSER.style.color = instantSER > 0 ? "var(--err)" : "var(--rx)";
+
+    // --- SPECTRE ---
+    const wS = 700, hS = 260;
+    ctxSpec.clearRect(0, 0, wS, hS);
+    
+    ctxSpec.strokeStyle = 'rgba(255,255,255,0.1)';
+    for(let i=0; i<10; i++) {
+        ctxSpec.beginPath(); ctxSpec.moveTo(0, i*(hS/10)); ctxSpec.lineTo(wS, i*(hS/10)); ctxSpec.stroke();
+    }
+
+    ctxSpec.beginPath();
+    ctxSpec.strokeStyle = '#38bdf8'; // Couleur HEX explicite (--tx)
+    ctxSpec.lineWidth = 2;
+    
+    const noiseFloorDB = -Math.max(10, SNR_dB + 10); 
+
+    for(let x=0; x<wS; x++) {
+        const f_norm = (x - wS/2) / (wS/4); 
+        let psd = 0;
+
+        if (filterType === 'rect') {
+            const s = sinc(f_norm);
+            psd = 10 * Math.log10(s * s + 1e-10); 
+        } else {
+            const absF = Math.abs(f_norm);
+            if (absF <= (1 - alpha)/2) psd = 0; 
+            else if (absF <= (1 + alpha)/2) {
+                const val = 0.5 * (1 + Math.cos( (Math.PI / alpha) * (absF - (1-alpha)/2) ));
+                psd = 10 * Math.log10(val + 1e-10);
+            } else {
+                psd = -100; 
+            }
+        }
+        psd = Math.max(psd, noiseFloorDB + (Math.random()*2));
+        const y = 20 - (psd / 60) * (hS - 40); 
+        
+        if (x===0) ctxSpec.moveTo(x, y);
+        else ctxSpec.lineTo(x, y);
+    }
+    ctxSpec.stroke();
+
+    // --- TIME DOMAIN & EYE DIAGRAM ---
+    const wT = 700, hT = 260;
+    ctxTime.clearRect(0, 0, wT, hT);
+    
+    ctxTime.beginPath(); 
+    ctxTime.strokeStyle = '#38bdf8'; // Couleur HEX explicite I
+    const pathQ = new Path2D(); 
+    
+    if (!state.isPaused) {
+        ctxEye.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctxEye.fillRect(0, 0, wT, hT);
+    }
+
+    const pixelsPerSym = 40;
+    const scrollOffset = state.time * 50; 
+
+    for (let x = 0; x < wT; x+=2) {
+        let val_I = 0, val_Q = 0;
+        const t_sym = (x + scrollOffset) / pixelsPerSym;
+
+        if (filterType === 'rect') {
+            const symIdx = Math.floor(t_sym);
+            const sym = getSym(symIdx, M);
+            val_I = sym.I;
+            val_Q = sym.Q;
+        } else {
+            for(let i= -4; i <= 4; i++) {
+                const symIdx = Math.floor(t_sym) + i;
+                const sym = getSym(symIdx, M);
+                const h = rrc(t_sym - symIdx - 0.5, alpha, 1.0);
+                val_I += sym.I * h;
+                val_Q += sym.Q * h;
+            }
+        }
+
+        val_I += randn_bm() * noiseStdDev;
+        val_Q += randn_bm() * noiseStdDev;
+
+        const yI = hT/2 - val_I * 40;
+        const yQ = hT/2 - val_Q * 40;
+        
+        if (x===0) { ctxTime.moveTo(x, yI); pathQ.moveTo(x, yQ); }
+        else { ctxTime.lineTo(x, yI); pathQ.lineTo(x, yQ); }
+
+        if (!state.isPaused) {
+            const eyeX = (t_sym % 2) * (wT / 2);
+            if (eyeX <= 2 || x === 0) {
+                ctxEye.beginPath(); ctxEye.moveTo(eyeX, yI);
+            } else {
+                ctxEye.lineTo(eyeX, yI);
+                ctxEye.strokeStyle = SNR_dB > 20 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+                ctxEye.stroke();
+                ctxEye.beginPath(); ctxEye.moveTo(eyeX, yI);
+            }
+        }
+    }
+    ctxTime.stroke();
+    ctxTime.strokeStyle = '#10b981'; // Vert pour Q
+    ctxTime.stroke(pathQ);
+
+    requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

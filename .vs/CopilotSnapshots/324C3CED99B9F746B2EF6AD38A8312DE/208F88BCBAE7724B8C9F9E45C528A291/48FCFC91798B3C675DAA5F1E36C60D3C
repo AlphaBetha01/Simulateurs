@@ -1,0 +1,116 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire MIC E1 - Multitrame</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/simulateur-e1.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>PCM 30/32 • structure détaillée de la multitrame E1</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Laboratoire : Structure de la Multitrame E1 (PCM 30/32)</h1>
+  <div class="subtitle">Survolez les intervalles de temps (IT) pour analyser leur fonction ou lancez la simulation de transmission.</div>
+
+  <div class="controls">
+    <button id="btnPlay">▶ Lancer la Transmission</button>
+    <div class="speed-ctrl">
+      Vitesse d'horloge : 
+      <input type="range" id="speedRange" min="1" max="50" value="10">
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Exploration multitrame E1">
+    <button class="lab-preset-btn" type="button" data-e1-focus="fas">Focus synchro trame</button>
+    <button class="lab-preset-btn" type="button" data-e1-focus="cas">Focus signalisation CAS</button>
+    <button class="lab-preset-btn" type="button" data-e1-focus="voice">Focus voie utile</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures multitrame E1">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Efficacité utile</div>
+      <div id="e1PayloadEff" class="lab-kpi-value">93.75 %</div>
+      <div class="lab-kpi-note">30 voies utiles sur 32 intervalles par trame, avant signalisation détaillée.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Cadence d'échantillonnage</div>
+      <div id="e1FrameRate" class="lab-kpi-value">8000 tr/s</div>
+      <div class="lab-kpi-note">Une trame E1 est émise toutes les 125 µs.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Zone observée</div>
+      <div id="e1FocusValue" class="lab-kpi-value">IT0</div>
+      <div id="e1FocusNote" class="lab-kpi-note">La lecture courante explique la fonction réseau de la cellule inspectée.</div>
+    </article>
+  </div>
+
+  <div class="stage">
+    
+    <div class="grid-container">
+      <div class="multiframe-grid" id="grid">
+        </div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Inspecteur d'IT</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">Survolez une case</div>
+      <div class="info-detail" id="insp-desc">
+        Passez votre souris sur la matrice à gauche pour décoder le rôle mathématique de chaque octet dans la hiérarchie PDH.
+      </div>
+      <div class="info-binary" id="insp-bin" style="display: none;"></div>
+      
+      <div style="margin-top: auto; padding-top:15px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: var(--muted);">
+        <strong>Rappel Théorique :</strong><br>
+        1 IT (Intervalle de Temps) = 1 Échantillon de 8 bits.<br>
+        Durée d'une trame entière (32 IT) = 125 µs.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-stats">
+    <div class="legend">
+      <div class="leg-item"><div class="leg-box" style="background: var(--fas)"></div> IT0 (Pair) : Synchro Trame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--nfas)"></div> IT0 (Impair) : Alarmes</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--vmt)"></div> IT16 (T0) : Synchro Multitrame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--cas)"></div> IT16 (T1-T15) : Signalisation Voix</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> IT 1-15 & 17-31 : Voies Utiles (Voix/Data)</div>
+    </div>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-val">2.048 Mbps</div>
+        <div class="stat-label">Débit Brut (E1)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">1.920 Mbps</div>
+        <div class="stat-label">Débit Utile (30 voies)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">2 ms</div>
+        <div class="stat-label">Durée Multitrame</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">4096</div>
+        <div class="stat-label">Bits totaux</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/simulateur-e1.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur Expert 4.0 : Télécommunications Avancées</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/transmission-pedagogique.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Transmission numérique • chaîne complète TX / canal / RX</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>
+    Labo Virtuel 4.0 : Paramètres Avancés
+    <div>
+      <button id="btnPlayPause">⏸️ Pause / Mesures</button>
+      <button id="btnAudio">🔇 Son</button>
+    </div>
+  </h1>
+  
+  <!-- PANNEAU CENTRAL : LE CANAL PHYSIQUE -->
+  <div class="control-panel">
+    <div class="ctrl-group" style="flex: 1.5">
+      <label>Média Physique <span class="val" id="valNoise">Atténuation: 10 dB</span></label>
+      <select id="mediaType">
+        <option value="fibre">Fibre Optique (Très faible atténuation)</option>
+        <option value="cuivre" selected>Câble Cuivre (Atténuation moyenne)</option>
+        <option value="radio">Radio Terrestre (Forte atténuation)</option>
+        <option value="sat">Satellite GEO (Distance extrême)</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Distance de transmission <span class="val" id="valDist">20 km</span></label>
+      <input type="range" id="dist" min="0" max="100" value="20">
+    </div>
+
+    <div class="ctrl-group">
+      <label>Gigue Temporelle (Jitter) <span class="val" id="valJitter" style="color:var(--warn)">0 %</span></label>
+      <input type="range" id="jitter" min="0" max="40" step="1" value="0">
+    </div>
+
+    <div class="ctrl-group shannon-gauge" style="flex: 1.5">
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:#cbd5e1; font-weight:bold;">
+        <span>Débit (Rb)</span>
+        <span>Limite Théorique (C)</span>
+      </div>
+      <div style="font-family:monospace; font-size:13px; margin-top:4px;">
+        <span id="valRb" style="color:#38bdf8">12 kbps</span> / <span id="valC" style="color:#10b981">40 kbps</span>
+      </div>
+      <div class="shannon-bar"><div id="shannonFill" class="shannon-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Scénarios de transmission">
+    <button class="lab-preset-btn" type="button" data-link-preset="fibre">Fibre propre</button>
+    <button class="lab-preset-btn" type="button" data-link-preset="cuivre">Cuivre nominal</button>
+    <button class="lab-preset-btn" type="button" data-link-preset="radio">Radio bruitée</button>
+    <button class="lab-preset-btn" type="button" data-link-preset="sat">Satellite critique</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures de transmission">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">SNR de liaison</div>
+      <div id="linkSnr" class="lab-kpi-value">35.0 dB</div>
+      <div class="lab-kpi-note">Rapport signal/bruit après atténuation et gain TX.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Marge de capacité</div>
+      <div id="linkMargin" class="lab-kpi-value">+28.0 kbps</div>
+      <div class="lab-kpi-note">Écart entre le débit demandé et la limite utile du canal.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">État du lien</div>
+      <div id="linkState" class="lab-kpi-value">Stable</div>
+      <div id="linkStateNote" class="lab-kpi-note">La récupération d'horloge et la décision restent robustes.</div>
+    </article>
+  </div>
+
+  <div class="stage">
+    
+    <!-- 1. ÉMETTEUR -->
+    <div class="block" style="border-top: 3px solid var(--tx);">
+      <div class="block-title" style="color:var(--tx)">Émetteur (TX)</div>
+      
+      <div class="sub-controls">
+        <label>Débit d'Échantillonnage (Rb) <span class="val" id="valFe">12 bits</span></label>
+        <input type="range" id="fe" min="4" max="32" step="2" value="12">
+        <label>Gain d'Émission (Amplitude) <span class="val" id="valGain">x1.0</span></label>
+        <input type="range" id="txGain" min="0.2" max="2.0" step="0.1" value="1.0">
+      </div>
+      
+      <div class="scope">
+        <div class="scope-label">1. Source Analogique (Baseband)</div>
+        <svg id="svgSource" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="sub-controls" style="display: flex; gap: 10px;">
+        <div style="flex: 1">
+            <label>Codage Ligne</label>
+            <select id="lineCode" style="padding: 2px; font-size: 11px;">
+            <option value="nrz">NRZ</option>
+            <option value="manchester">Manchester</option>
+            </select>
+        </div>
+        <div style="flex: 1">
+            <label>Fréq. Porteuse (fc) <span class="val" id="valFc">30 Hz</span></label>
+            <input type="range" id="fc" min="10" max="60" step="1" value="30" style="margin:0;">
+        </div>
+      </div>
+
+      <div class="scope">
+        <div class="scope-label">2. Porteuse Modulée (BPSK)</div>
+        <svg id="svgMod" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="bits" id="txBits" style="color:var(--tx)"></div>
+    </div>
+
+    <!-- 2. CANAL -->
+    <div class="block" style="border-top: 3px solid var(--muted); background: #020617;">
+      <div class="block-title" style="color:var(--muted)">Canal Physique (AWGN)</div>
+      
+      <div style="text-align:center; font-size:11px; color:var(--muted); padding: 5px;">
+        Atténuation, Bruit Thermique & Gigue d'Horloge.
+      </div>
+
+      <div class="scope" style="height: 160px;">
+        <div class="scope-label">3. Signal Reçu (Atténué + Bruité)</div>
+        <svg id="svgChannel" viewBox="0 0 400 160" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="scope" style="height: 150px; background: #001;">
+        <div class="scope-label" style="color:#0ea5e9">4. Diagramme de l'Œil (Sync)</div>
+        <canvas id="eyeCanvas" width="400" height="150"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. RÉCEPTEUR -->
+    <div class="block" style="border-top: 3px solid var(--rx);">
+      <div class="block-title" style="color:var(--rx)">
+        Récepteur (RX) 
+        <span style="float:right;" class="ber-counter">BER: <span id="valBER">0.00</span>%</span>
+      </div>
+
+      <div class="sub-controls">
+        <label>Seuil de Décision (Comparateur) <span class="val" id="valThresh" style="color:var(--warn)">0.0 V</span></label>
+        <input type="range" id="threshold" min="-1" max="1" step="0.05" value="0">
+        <label>Correction d'Erreur (FEC) <span id="valFec" class="val" style="color:#a855f7">OFF</span></label>
+        <input type="range" id="fec" min="0" max="1" step="1" value="0">
+      </div>
+
+      <div class="bits" id="rxBits" style="color:var(--rx)"></div>
+      
+      <div class="scope">
+        <div class="scope-label">5. Décision Logique & Régénération</div>
+        <svg id="svgDemod" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="sub-controls">
+        <label>Filtre Passe-Bas (Lissage CNA) <span id="valFilter" class="val">ON</span></label>
+        <input type="range" id="filter" min="0" max="1" step="1" value="1" style="margin-bottom:0;">
+      </div>
+
+      <div class="scope">
+        <div class="scope-label">6. Signal Restitué</div>
+        <svg id="svgOut" viewBox="0 0 400 100" preserveAspectRatio="none"></svg>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../../assets/js/lab-common.js"></script>
+<script src="../../assets/js/transmission.js"></script>
+</body>
+</html>

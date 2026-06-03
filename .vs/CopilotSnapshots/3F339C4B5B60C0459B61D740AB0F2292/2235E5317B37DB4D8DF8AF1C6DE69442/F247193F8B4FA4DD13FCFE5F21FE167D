@@ -1,0 +1,133 @@
+﻿LabCommon.initHeader({ bodySection: 'analogique-recepteur', pageId: 'analogique-recepteur' });
+// RÃ©cupÃ©ration des Ã©lÃ©ments
+const svgRaw = document.getElementById('svgRaw');
+const svgProcess = document.getElementById('svgProcess');
+const svgClean = document.getElementById('svgClean');
+
+const noiseInput = document.getElementById('noiseInput');
+const filterInput = document.getElementById('filterInput');
+
+const noiseVal = document.getElementById('noiseVal');
+const filterVal = document.getElementById('filterVal');
+
+const w = 800, h = 120;
+const yCenter = h / 2;
+let timeOffset = 0;
+
+// Constantes du signal (simulÃ©es)
+const fInfo = 2; // FrÃ©quence du message
+const fPort = 40; // FrÃ©quence de la porteuse (vÃ©hicule)
+const m = 0.8; // Indice de modulation
+
+// GÃ©nÃ©rateur de bruit (pseudo-alÃ©atoire fluide)
+function getNoise(t, amount) {
+  return (Math.sin(t * 1234) * Math.cos(t * 4321) + Math.sin(t * 888)) * 0.33 * amount;
+}
+
+function draw() {
+  const noiseLevel = +noiseInput.value / 100;
+  const filterTau = +filterInput.value; // Constante de dÃ©charge du condensateur
+  
+  // Mise Ã  jour de l'UI
+  noiseVal.textContent = Math.round(noiseLevel * 100);
+  if (filterTau < 5) filterVal.textContent = "Trop faible (GrÃ©sillements)";
+  else if (filterTau > 25) filterVal.textContent = "Trop fort (Ã‰touffÃ©)";
+  else filterVal.textContent = "Optimal (Net)";
+
+  timeOffset += 0.003; 
+
+  let pathRaw = `M 0 ${yCenter}`;
+  let pathRect = `M 0 ${yCenter}`; // Signal redressÃ© (positif uniquement)
+  let pathEnv = `M 0 ${yCenter}`; // Enveloppe dÃ©tectÃ©e (filtre)
+  let pathClean = `M 0 ${yCenter}`; // Signal final restituÃ©
+
+  let lastEnvY = yCenter; // MÃ©moire du condensateur
+  let dcOffsetSum = 0; // Pour centrer le signal final
+  let pointsCount = 0;
+
+  // 1Ã¨re passe : Calcul du signal complet
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+
+    // A. Onde Ã©mise d'origine (AM)
+    const valInfo = Math.sin(2 * Math.PI * fInfo * t);
+    const valCarrier = Math.sin(2 * Math.PI * fPort * t);
+    const amplitudeMod = (1 + m * valInfo);
+    let valRaw = amplitudeMod * valCarrier;
+
+    // Ajout du bruit de l'air
+    valRaw += getNoise(t, noiseLevel * 5); 
+
+    const yRaw = yCenter - valRaw * (h * 0.25);
+    pathRaw += ` L ${x} ${yRaw}`;
+
+    // B. Ã‰tape 1 du rÃ©cepteur : Redressement (Diode)
+    // On ne garde que la partie positive (valeur absolue grossiÃ¨re)
+    let yRect = yCenter - Math.max(0, valRaw) * (h * 0.25);
+    pathRect += ` L ${x} ${yRect}`;
+
+    // C. Ã‰tape 2 du rÃ©cepteur : Filtrage (Condensateur)
+    // Le condensateur se charge instantanÃ©ment sur la crÃªte, et se dÃ©charge lentement
+    let dischargeRate = (filterTau / 1000) * h;
+    
+    // Si la crÃªte est plus haute que la charge actuelle du condensateur -> charge rapide
+    if (yRect < lastEnvY) {
+      lastEnvY = yRect;
+    } else {
+      // Sinon -> dÃ©charge lente
+      lastEnvY += dischargeRate; 
+      // On s'assure qu'il ne descend pas sous la ligne mÃ©diane
+      if (lastEnvY > yCenter) lastEnvY = yCenter; 
+    }
+    
+    pathEnv += ` L ${x} ${lastEnvY}`;
+    
+    dcOffsetSum += lastEnvY;
+    pointsCount++;
+  }
+
+  // Calcul de la composante continue (DC Offset) pour recentrer le son
+  const dcOffset = dcOffsetSum / pointsCount;
+
+  // 2Ã¨me passe : Dessin du signal restituÃ© (DÃ©barrassÃ© du courant continu)
+  lastEnvY = yCenter;
+  for(let x = 0; x <= w; x += 2) {
+    const t = (x / w) * 2 + timeOffset;
+    
+    const valInfo = Math.sin(2 * Math.PI * fInfo * t);
+    const valCarrier = Math.sin(2 * Math.PI * fPort * t);
+    const amplitudeMod = (1 + m * valInfo);
+    let valRaw = amplitudeMod * valCarrier + getNoise(t, noiseLevel * 5);
+    let yRect = yCenter - Math.max(0, valRaw) * (h * 0.25);
+    let dischargeRate = (filterTau / 1000) * h;
+    
+    if (yRect < lastEnvY) lastEnvY = yRect;
+    else { lastEnvY += dischargeRate; if(lastEnvY > yCenter) lastEnvY = yCenter; }
+
+    // Le signal restituÃ© est l'enveloppe recentrÃ©e et amplifiÃ©e
+    // On amplifie lÃ©gÃ¨rement pour retrouver la taille d'origine du panneau 1
+    let yClean = yCenter + (lastEnvY - dcOffset) * 2.5; 
+    
+    // Limiteur matÃ©riel (Ã©crÃªtage si Ã§a dÃ©passe)
+    if (yClean < 10) yClean = 10;
+    if (yClean > h - 10) yClean = h - 10;
+
+    pathClean += ` L ${x} ${yClean}`;
+  }
+
+  // Rendu SVG
+  svgRaw.innerHTML = `<path d="${pathRaw}" stroke="var(--wave-raw)" stroke-width="1.5" fill="none" opacity="0.8"/>`;
+  
+  // Dans le panneau de traitement, on montre le signal redressÃ© ET le lissage au dessus
+  svgProcess.innerHTML = `
+    <path d="${pathRect}" stroke="var(--wave-raw)" stroke-width="1" fill="none" opacity="0.3"/>
+    <path d="${pathEnv}" stroke="var(--wave-rect)" stroke-width="3" fill="none" stroke-linejoin="round"/>
+  `;
+  
+  // Panneau final
+  svgClean.innerHTML = `<path d="${pathClean}" stroke="var(--wave-clean)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);

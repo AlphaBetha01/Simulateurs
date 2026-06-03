@@ -1,0 +1,162 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Simulateur Ultime (Bac+5) : Traitement du Signal & Télécoms</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/transmission-dsp.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>DSP avancé • I/Q, spectre, œil et bruit AWGN</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>
+    Laboratoire d'Ingénierie Télécom : Modulation I/Q & Filtrage
+    <button id="btnPlayPause">⏸️ Pause / Mesures</button>
+  </h1>
+  
+  <div class="control-panel">
+    <div class="ctrl-group">
+      <div>
+        <label>Canal Physique (AWGN)</label>
+        <select id="mediaType">
+          <option value="fibre">Fibre Optique (Bruit très faible)</option>
+          <option value="cuivre" selected>Câble / ADSL (Bruit moyen)</option>
+          <option value="radio">Radio Terrestre (Bruit fort)</option>
+          <option value="sat">Satellite GEO (Distance extrême)</option>
+        </select>
+      </div>
+      <div>
+        <label>Distance de Transmission <span class="val" id="valDist">20 km</span></label>
+        <input type="range" id="dist" min="0" max="100" value="20">
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Modulation (Constellation) <span class="val" id="valModName">16-QAM</span></label>
+        <select id="modType">
+          <option value="2">BPSK (1 bit/symb)</option>
+          <option value="4">QPSK (2 bits/symb)</option>
+          <option value="16" selected>16-QAM (4 bits/symb)</option>
+          <option value="64">64-QAM (6 bits/symb)</option>
+        </select>
+      </div>
+      <div>
+        <label>Débit Symbole (Bauds) <span class="val" id="valBaud">10 kBd</span></label>
+        <input type="range" id="baudRate" min="5" max="25" value="10">
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Filtre de Mise en Forme</label>
+        <select id="filterType">
+          <option value="rect">Rectangulaire (Fort ISI)</option>
+          <option value="rrc" selected>Cosinus Surélevé (Nyquist RRC)</option>
+        </select>
+      </div>
+      <div>
+        <label>Roll-off Factor (α) <span class="val" id="valAlpha">0.3</span></label>
+        <input type="range" id="alpha" min="0" max="1" step="0.1" value="0.3">
+      </div>
+    </div>
+
+    <div class="stats-board">
+      <div class="stat-item">
+        <div class="stat-title">Rapport Signal/Bruit (SNR)</div>
+        <div class="stat-val" id="valSNR" style="color:var(--tx)">25.0 dB</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Taux d'Erreur (SER)</div>
+        <div class="stat-val" id="valSER" style="color:var(--err)">0.00 %</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Efficacité Spectrale</div>
+        <div class="stat-val" id="valSpecEff" style="color:var(--rx)">3.08 b/s/Hz</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">Débit Binaire (Rb)</div>
+        <div class="stat-val" id="valRb">40.0 kbps</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lab-preset-bar" aria-label="Scénarios DSP">
+    <button class="lab-preset-btn" type="button" data-dsp-preset="robust">BPSK robuste</button>
+    <button class="lab-preset-btn" type="button" data-dsp-preset="nominal">16-QAM nominal</button>
+    <button class="lab-preset-btn" type="button" data-dsp-preset="dense">64-QAM limite</button>
+  </div>
+
+  <div class="lab-kpi-grid" aria-label="Mesures DSP">
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Eb/N0 estimé</div>
+      <div id="dspEbN0" class="lab-kpi-value">18.0 dB</div>
+      <div class="lab-kpi-note">Référence utile pour comparer la robustesse des modulations.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Bande occupée</div>
+      <div id="dspBandwidth" class="lab-kpi-value">13.0 kHz</div>
+      <div class="lab-kpi-note">Largeur de bande dépendante du filtre et du roll-off.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Lecture canal</div>
+      <div id="dspChannelState" class="lab-kpi-value">Confortable</div>
+      <div id="dspChannelNote" class="lab-kpi-note">Constellation nette et œil largement ouvert.</div>
+    </article>
+  </div>
+
+  <div class="stage">
+    
+    <!-- 1. Constellation -->
+    <div class="block">
+      <div class="block-title">1. Diagramme de Constellation (I/Q)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">Réception I/Q + Bruit Gaussien (AWGN)</div>
+        <canvas id="constCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 2. Spectre -->
+    <div class="block">
+      <div class="block-title">2. Analyseur de Spectre (Densité Spectrale)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">PSD (dB) vs Fréquence</div>
+        <canvas id="specCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 3. Eye Diagram -->
+    <div class="block">
+      <div class="block-title">3. Diagramme de l'Œil (Canal I - Baseband)</div>
+      <div class="scope-container grid-bg">
+        <div class="scope-label">Visualisation de l'ISI et du Bruit</div>
+        <canvas id="eyeCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 4. Time Domain -->
+    <div class="block">
+      <div class="block-title">4. Signal Temporel (Bande de Base)</div>
+      <div class="scope-container">
+        <div class="scope-label">Composante I (Bleu) et Q (Vert)</div>
+        <canvas id="timeCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script charset="utf-8" src="../../assets/js/lab-common.js"></script>
+<script charset="utf-8" src="../../assets/js/transmission-dsp.js"></script>
+</body>
+</html>

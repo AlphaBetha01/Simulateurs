@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Laboratoire MIC E1 - Multitrame</title>
+<link rel="stylesheet" href="assets/css/lab-common.css" />
+<link rel="stylesheet" href="assets/css/simulateur-e1.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="index.html">← Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>PCM 30/32 • structure détaillée de la multitrame E1</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Laboratoire : Structure de la Multitrame E1 (PCM 30/32)</h1>
+  <div class="subtitle">Survolez les intervalles de temps (IT) pour analyser leur fonction ou lancez la simulation de transmission.</div>
+
+  <div class="controls">
+    <button id="btnPlay">▶ Lancer la Transmission</button>
+    <div class="speed-ctrl">
+      Vitesse d'horloge : 
+      <input type="range" id="speedRange" min="1" max="50" value="10">
+    </div>
+  </div>
+
+  <div class="stage">
+    
+    <div class="grid-container">
+      <div class="multiframe-grid" id="grid">
+        </div>
+    </div>
+
+    <div class="info-panel" id="inspector">
+      <h2 class="info-title" id="insp-title">Inspecteur d'IT</h2>
+      <div id="insp-badge" class="info-badge" style="background: var(--muted);">Survolez une case</div>
+      <div class="info-detail" id="insp-desc">
+        Passez votre souris sur la matrice à gauche pour décoder le rôle mathématique de chaque octet dans la hiérarchie PDH.
+      </div>
+      <div class="info-binary" id="insp-bin" style="display: none;"></div>
+      
+      <div style="margin-top: auto; padding-top:15px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: var(--muted);">
+        <strong>Rappel Théorique :</strong><br>
+        1 IT (Intervalle de Temps) = 1 Échantillon de 8 bits.<br>
+        Durée d'une trame entière (32 IT) = 125 µs.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-stats">
+    <div class="legend">
+      <div class="leg-item"><div class="leg-box" style="background: var(--fas)"></div> IT0 (Pair) : Synchro Trame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--nfas)"></div> IT0 (Impair) : Alarmes</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--vmt)"></div> IT16 (T0) : Synchro Multitrame</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--cas)"></div> IT16 (T1-T15) : Signalisation Voix</div>
+      <div class="leg-item"><div class="leg-box" style="background: var(--voice)"></div> IT 1-15 & 17-31 : Voies Utiles (Voix/Data)</div>
+    </div>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-val">2.048 Mbps</div>
+        <div class="stat-label">Débit Brut (E1)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">1.920 Mbps</div>
+        <div class="stat-label">Débit Utile (30 voies)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">2 ms</div>
+        <div class="stat-label">Durée Multitrame</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">4096</div>
+        <div class="stat-label">Bits totaux</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/js/lab-common.js"></script>
+<script>
+  LabCommon.initHeader({ bodySection: 'multiplexage-e1' });
+  const grid = document.getElementById('grid');
+  const inspTitle = document.getElementById('insp-title');
+  const inspBadge = document.getElementById('insp-badge');
+  const inspDesc = document.getElementById('insp-desc');
+  const inspBin = document.getElementById('insp-bin');
+  
+  let cells = [];
+  let isScanning = false;
+  let scanIndex = 0;
+  let scanInterval;
+
+  // 1. Initialisation de la Grille (16 Trames x 32 IT)
+  function initGrid() {
+    // Ligne d'en-tête (Colonnes IT)
+    grid.appendChild(document.createElement('div')); // Coin vide
+    for (let c = 0; c < 32; c++) {
+      const colHead = document.createElement('div');
+      colHead.className = 'col-header';
+      colHead.textContent = c;
+      grid.appendChild(colHead);
+    }
+
+    // Génération des 16 Trames
+    for (let r = 0; r < 16; r++) {
+      // En-tête de ligne
+      const rowHead = document.createElement('div');
+      rowHead.className = 'row-header';
+      rowHead.textContent = `T${r}`;
+      grid.appendChild(rowHead);
+
+      for (let c = 0; c < 32; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        
+        // Détermination du type de l'IT
+        let type = 'voice';
+        if (c === 0) {
+          type = (r % 2 === 0) ? 'fas' : 'nfas';
+        } else if (c === 16) {
+          type = (r === 0) ? 'vmt' : 'cas';
+        }
+
+        cell.classList.add(`c-${type}`);
+        cell.dataset.trame = r;
+        cell.dataset.it = c;
+        cell.dataset.type = type;
+
+        // Interaction Hover
+        cell.addEventListener('mouseenter', () => updateInspector(cell));
+
+        grid.appendChild(cell);
+        cells.push(cell); // Stockage pour l'animation
+      }
+    }
+  }
+
+  // 2. Moteur d'Inspection (Mise à jour du panneau latéral)
+  function updateInspector(cell) {
+    if(isScanning) return; // Ne pas perturber l'affichage si l'animation tourne
+
+    const trame = parseInt(cell.dataset.trame);
+    const it = parseInt(cell.dataset.it);
+    const type = cell.dataset.type;
+
+    inspTitle.textContent = `Trame ${trame} - IT ${it}`;
+    inspBin.style.display = 'block';
+
+    switch (type) {
+      case 'fas':
+        inspBadge.textContent = "FAS (Frame Alignment Signal)";
+        inspBadge.style.background = "var(--fas)";
+        inspDesc.innerHTML = `<strong>Mot de Verrouillage de Trame.</strong><br>Cet octet est émis sur les trames paires. Il permet au récepteur de repérer le début exact d'une trame de 125 µs au milieu du flux continu de bits.`;
+        inspBin.textContent = "x 0 0 1 1 0 1 1"; // x = bit international
+        break;
+      case 'nfas':
+        inspBadge.textContent = "NFAS (Non-FAS & Alarmes)";
+        inspBadge.style.background = "var(--nfas)";
+        inspDesc.innerHTML = `<strong>Mot de supervision.</strong><br>Émis sur les trames impaires. Le bit n°2 est toujours à '1' (pour éviter d'être confondu avec le FAS). Il contient aussi le bit 'A' pour signaler une alarme distante.`;
+        inspBin.textContent = "x 1 A S S S S S";
+        break;
+      case 'vmt':
+        inspBadge.textContent = "VMT (Verrouillage Multitrame)";
+        inspBadge.style.background = "var(--vmt)";
+        inspDesc.innerHTML = `<strong>Super-synchronisation.</strong><br>Uniquement dans l'IT16 de la Trame 0. Permet au récepteur de savoir que le cycle des 16 trames (Multitrame) commence, indispensable pour décoder correctement la signalisation des voies.`;
+        inspBin.textContent = "0 0 0 0 x y x x"; // y = alarme multitrame
+        break;
+      case 'cas':
+        inspBadge.textContent = "CAS (Signalisation hors bande)";
+        inspBadge.style.background = "var(--cas)";
+        // Calcul des voies associées (IT16 de la trame K signale la voie K et K+15)
+        const voie1 = trame; 
+        const voie2 = trame + 15;
+        inspDesc.innerHTML = `<strong>Signalisation Voie par Voie.</strong><br>Cet octet ne contient pas de voix, mais l'état des téléphones (Raccroché, Sonnerie...).<br>Il gère 2 voies simultanément :<br>- 4 bits (a,b,c,d) pour la <b>Voie ${voie1} (IT${voie1})</b><br>- 4 bits (a,b,c,d) pour la <b>Voie ${voie2} (IT${voie2+1})</b>.`;
+        inspBin.textContent = "a b c d  a b c d";
+        break;
+      case 'voice':
+        inspBadge.textContent = "Voie Utile (Payload)";
+        inspBadge.style.background = "var(--muted)";
+        // Calcul du numéro de la voie téléphonique (IT1->Voie1, IT17->Voie16...)
+        const numVoie = it < 16 ? it : it - 1; 
+        inspDesc.innerHTML = `<strong>Échantillon de données.</strong><br>Contient 8 bits de voix numérisée (loi A) ou de données informatiques pour la <b>Voie Téléphonique n°${numVoie}</b>.<br>Étant émis 8000 fois par seconde, son débit est de 8000 x 8 = 64 kbit/s.`;
+        
+        // Générer un octet aléatoire visuel
+        let randBin = "";
+        for(let i=0; i<8; i++) randBin += Math.random() > 0.5 ? "1 " : "0 ";
+        inspBin.textContent = randBin.trim();
+        break;
+    }
+  }
+
+  // 3. Animation du "Scanner" de transmission
+  const btnPlay = document.getElementById('btnPlay');
+  const speedRange = document.getElementById('speedRange');
+
+  btnPlay.addEventListener('click', () => {
+    if (isScanning) {
+      stopScanner();
+    } else {
+      startScanner();
+    }
+  });
+
+  function startScanner() {
+    isScanning = true;
+    btnPlay.textContent = "⏸ Arrêter la Transmission";
+    btnPlay.classList.add('active');
+    scanIndex = 0;
+    runScannerLoop();
+  }
+
+  function stopScanner() {
+    isScanning = false;
+    btnPlay.textContent = "▶ Lancer la Transmission";
+    btnPlay.classList.remove('active');
+    clearTimeout(scanInterval);
+    cells.forEach(c => c.classList.remove('scanning'));
+  }
+
+  function runScannerLoop() {
+    if(!isScanning) return;
+
+    // Nettoyer la case précédente
+    if (scanIndex > 0) {
+      cells[scanIndex - 1].classList.remove('scanning');
+    } else if (scanIndex === 0 && cells.length > 0) {
+      cells[cells.length - 1].classList.remove('scanning'); // Boucle
+    }
+
+    // Activer la nouvelle case
+    const currentCell = cells[scanIndex];
+    currentCell.classList.add('scanning');
+    
+    // Mettre à jour l'inspecteur pour suivre l'animation
+    updateInspector(currentCell);
+
+    // Incrémenter
+    scanIndex++;
+    if (scanIndex >= cells.length) {
+      scanIndex = 0; // Reboucler la multitrame
+    }
+
+    // Calcul de la vitesse (inversé : + slider haut = + délai bas = + rapide)
+    const delay = 500 - (speedRange.value * 9); 
+    scanInterval = setTimeout(runScannerLoop, delay);
+  }
+
+  // Lancement initial
+  initGrid();
+  updateInspector(cells[0]); // Afficher les infos de la première case par défaut
+
+</script>
+</body>
+</html>

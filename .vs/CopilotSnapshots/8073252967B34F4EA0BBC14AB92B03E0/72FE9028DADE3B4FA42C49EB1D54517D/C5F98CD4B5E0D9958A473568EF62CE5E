@@ -1,0 +1,29 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="refresh" content="0; url=MUX.html?mode=pcm" />
+<title>Redirection : PCM + TDM</title>
+<link rel="stylesheet" href="assets/css/redirect-page.css" />
+</head>
+<body>
+<div class="wrap">
+  <div class="home-row">
+    <a class="home-link" href="index.html">← Accueil du laboratoire</a>
+  </div>
+
+  <script>
+    window.location.replace('MUX.html?mode=pcm');
+  </script>
+
+  <div class="notice">
+    Cette page a été fusionnée dans <strong>`MUX.html`</strong>.
+    <br />
+    Le mode compatible ouvre directement le laboratoire principal avec un focus sur le bloc <strong>PCM + TDM + audio</strong>.
+    <br /><br />
+    <a href="MUX.html?mode=pcm">Ouvrir le mode PCM unifié</a>
+  </div>
+</div>
+</body>
+</html>
