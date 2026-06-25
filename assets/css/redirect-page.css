@@ -24,14 +24,13 @@
   text-decoration: none;
   font-weight: 700;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #1e293b;
-  transition: border-color 0.18s, color 0.18s;
+  border: 1.5px solid #16a34a;
+  color: #16a34a;
+  transition: background 0.18s;
 }
 
 .home-link:hover {
-  border-color: #16a34a;
-  color: #16a34a;
+  background: #f0fdf4;
 }
 
 .notice {
