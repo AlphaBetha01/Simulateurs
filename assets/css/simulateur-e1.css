@@ -4,13 +4,13 @@
   --text: #1e293b;
   --muted: #64748b;
   --border: #e2e8f0;
-  --fas: #10b981;
-  --nfas: #f59e0b;
-  --vmt: #8b5cf6;
-  --cas: #3b82f6;
+  --fas: #16a34a;
+  --nfas: #ca8a04;
+  --vmt: #ca8a04;
+  --cas: #22c55e;
   --voice: #e2e8f0;
   --voice-hover: #cbd5e1;
-  --active-scan: #ef4444;
+  --active-scan: #dc2626;
 }
 
 body {
@@ -57,7 +57,7 @@ h1 {
 }
 
 button {
-  background: #0f172a;
+  background: #16a34a;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -68,7 +68,7 @@ button {
 }
 
 button:hover {
-  background: #334155;
+  background: #15803d;
 }
 
 button.active {
@@ -84,7 +84,7 @@ button.active {
 }
 
 input[type=range] {
-  accent-color: #0f172a;
+  accent-color: #16a34a;
   cursor: pointer;
 }
 
@@ -192,7 +192,7 @@ input[type=range] {
 .info-binary {
   font-family: monospace;
   background: #1e293b;
-  color: #10b981;
+  color: #22c55e;
   padding: 10px;
   border-radius: 6px;
   font-size: 16px;

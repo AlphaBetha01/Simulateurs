@@ -67,17 +67,359 @@
     }
   };
 
-  function getPageGuideOverrides() {
-    const overrides = {};
-    Object.keys(LAB_STRUCTURE).forEach(function (moduleKey) {
-      (LAB_STRUCTURE[moduleKey].pages || []).forEach(function (page) {
-        if (page && page.id && LAB_GUIDE_DEFAULTS[page.id]) {
-          overrides[page.id] = LAB_GUIDE_DEFAULTS[page.id];
+  const LAB_PAGE_GUIDE_SUPPLEMENTS = {
+    'analogique-emetteur': {
+      exercises: [
+        {
+          title: 'Comparer robustesse et coût spectral',
+          prompt: 'Expliquez dans quel contexte télécom vous choisiriez l’AM plutôt que la FM, puis l’inverse.',
+          correction: [
+            'L’AM reste simple à générer et à démoduler dans des montages pédagogiques ou à faible complexité.',
+            'La FM devient pertinente quand on cherche une meilleure robustesse aux parasites d’amplitude.',
+            'Le choix final doit comparer simplicité d’architecture, robustesse attendue et bande disponible.'
+          ]
         }
-      });
-    });
-    return overrides;
-  }
+      ],
+      quiz: [
+        {
+          question: 'En AM, si la fréquence du message augmente à porteuse fixe, que deviennent les bandes latérales ? ',
+          options: ['Elles s’éloignent de la porteuse', 'Elles disparaissent', 'Elles deviennent du bruit'],
+          answer: 0,
+          explanation: 'Les bandes latérales se placent autour de la porteuse à ± fm.'
+        },
+        {
+          question: 'Quel inconvénient principal de la FM accepte-t-on souvent pour gagner en robustesse ? ',
+          options: ['Une bande plus large', 'Une disparition de la porteuse', 'Une baisse obligatoire de la fréquence message'],
+          answer: 0,
+          explanation: 'La FM consomme en général davantage de bande pour une meilleure tolérance au bruit d’amplitude.'
+        }
+      ]
+    },
+    'analogique-amplificateur': {
+      exercises: [
+        {
+          title: 'Relier distorsion et spectre',
+          prompt: 'Expliquez pourquoi un sinus écrêté ne reste pas un sinus pur du point de vue spectral.',
+          correction: [
+            'Une non-linéarité déforme la forme temporelle originale.',
+            'Cette déformation introduit des composantes harmoniques supplémentaires.',
+            'La saturation dégrade donc à la fois la fidélité temporelle et le contenu spectral.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel paramètre fixe souvent la limite maximale de sortie d’un amplificateur simple ? ',
+          options: ['La tension d’alimentation', 'Le nombre de bits', 'Le multiplexage'],
+          answer: 0,
+          explanation: 'La sortie ne peut pas dépasser indéfiniment les limites imposées par l’alimentation.'
+        },
+        {
+          question: 'Un amplificateur saturé dégrade surtout : ',
+          options: ['La fidélité de restitution', 'La définition de la porteuse FM seule', 'La structure de trame E1'],
+          answer: 0,
+          explanation: 'La saturation introduit une distorsion qui altère le signal utile.'
+        }
+      ]
+    },
+    'analogique-recepteur': {
+      exercises: [
+        {
+          title: 'Analyser un compromis de réglage',
+          prompt: 'Décrivez une procédure expérimentale courte pour trouver la meilleure zone de réglage de τ à bruit donné.',
+          correction: [
+            'Fixer un niveau de bruit puis faire varier τ par paliers.',
+            'Comparer la stabilité de l’enveloppe et la fidélité du message restitué.',
+            'Retenir la zone où le message reste lisible tout en rejetant la HF et les fluctuations rapides.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel compromis cherche-t-on en réglant τ ? ',
+          options: ['Suivre le message sans suivre la HF', 'Supprimer toute porteuse du laboratoire', 'Augmenter le nombre de symboles'],
+          answer: 0,
+          explanation: 'Le filtrage doit lisser la HF tout en conservant les variations utiles du message.'
+        },
+        {
+          question: 'Si le bruit augmente à filtrage constant, la qualité restituée : ',
+          options: ['A tendance à diminuer', 'Devient parfaite', 'Reste strictement identique'],
+          answer: 0,
+          explanation: 'Une hausse du bruit dégrade généralement la restitution du message.'
+        }
+      ]
+    },
+    'numerisation-can': {
+      exercises: [
+        {
+          title: 'Évaluer le coût numérique',
+          prompt: 'Expliquez pourquoi augmenter simultanément Fe et B améliore la qualité mais alourdit aussi le système numérique.',
+          correction: [
+            'Fe plus élevée et B plus grand améliorent la fidélité temporelle et d’amplitude.',
+            'Le débit produit augmente alors comme Fe × B.',
+            'Le dimensionnement final doit donc équilibrer qualité, stockage et transport de données.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Le nombre de niveaux de quantification vaut en première approximation : ',
+          options: ['2^B', 'B^2', '2B'],
+          answer: 0,
+          explanation: 'Un convertisseur codé sur B bits possède 2^B niveaux.'
+        },
+        {
+          question: 'Augmenter Fe sans changer B agit d’abord sur : ',
+          options: ['La fidélité temporelle', 'Le pas de quantification', 'Le nombre de niveaux'],
+          answer: 0,
+          explanation: 'Fe agit sur l’échantillonnage, pas directement sur la résolution en amplitude.'
+        }
+      ]
+    },
+    'modulations-symbol': {
+      exercises: [
+        {
+          title: 'Comparer deux familles sur un même mot',
+          prompt: 'Expliquez pourquoi un même mot binaire n’a pas nécessairement la même interprétation géométrique en PSK et en QAM.',
+          correction: [
+            'Le mot binaire indexe un symbole dans un alphabet dépendant de la famille choisie.',
+            'En PSK, l’angle est la grandeur dominante, alors qu’en QAM amplitude et angle coexistent.',
+            'La signification géométrique dépend donc du schéma de modulation retenu.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Dans le plan I/Q, l’angle d’un point renseigne surtout sur : ',
+          options: ['La phase', 'Le débit E1', 'Le nombre de lignes de code'],
+          answer: 0,
+          explanation: 'L’angle d’un point I/Q est directement lié à la phase du symbole.'
+        },
+        {
+          question: 'Pourquoi la QAM est-elle plus riche qu’une modulation ne jouant que sur la phase ? ',
+          options: ['Elle combine amplitude et phase', 'Elle supprime le bruit thermique', 'Elle évite toute porteuse'],
+          answer: 0,
+          explanation: 'La QAM exploite deux degrés de liberté pour coder davantage d’information.'
+        }
+      ]
+    },
+    'modulations-sequence': {
+      exercises: [
+        {
+          title: 'Lire les transitions critiques',
+          prompt: 'Expliquez pourquoi certaines transitions successives sont plus exigeantes à suivre que d’autres dans une séquence symbolique.',
+          correction: [
+            'Certaines transitions imposent un déplacement plus important dans le plan I/Q.',
+            'La variation temporelle associée peut devenir plus rapide ou plus marquée.',
+            'La séquence révèle ainsi la difficulté dynamique du signal au-delà de la constellation seule.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Ce qui change entre deux séquences de même famille est surtout : ',
+          options: ['L’ordre temporel des symboles', 'Le principe physique de la modulation', 'Le nombre de pages du laboratoire'],
+          answer: 0,
+          explanation: 'Le schéma de modulation reste le même, mais l’ordre d’enchaînement des symboles change.'
+        },
+        {
+          question: 'La trajectoire I/Q sert particulièrement à visualiser : ',
+          options: ['Les transitions entre symboles', 'Le nombre de bits d’un CAN', 'La tension d’alimentation RF'],
+          answer: 0,
+          explanation: 'Elle met en évidence le chemin parcouru d’un symbole au suivant.'
+        }
+      ]
+    },
+    'modulations-dashboard': {
+      exercises: [
+        {
+          title: 'Choisir une modulation selon le service',
+          prompt: 'Comparez un service très robuste et un service à forte capacité, puis proposez une modulation plausible pour chacun.',
+          correction: [
+            'Un service robuste privilégiera un ordre faible pour garder de la marge de décision.',
+            'Un service à forte capacité acceptera un ordre plus élevé si Eb/N0 reste suffisant.',
+            'Le choix doit toujours être justifié par le compromis efficacité spectrale / robustesse.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'À Eb/N0 donné, une modulation plus dense présente généralement : ',
+          options: ['Une marge de décision plus faible', 'Une immunité absolue au bruit', 'Un roll-off forcément nul'],
+          answer: 0,
+          explanation: 'Des points plus rapprochés rendent la décision plus sensible.'
+        },
+        {
+          question: 'L’efficacité spectrale augmente principalement quand : ',
+          options: ['Le nombre de bits par symbole augmente', 'Le bruit augmente', 'La trame E1 est activée'],
+          answer: 0,
+          explanation: 'Plus de bits par symbole augmentent la quantité d’information transportée pour une même cadence symbole.'
+        }
+      ]
+    },
+    'transmission-base': {
+      exercises: [
+        {
+          title: 'Comparer deux dégradations',
+          prompt: 'Expliquez comment différencier expérimentalement une dégradation dominée par le bruit d’une dégradation dominée par le jitter.',
+          correction: [
+            'Le bruit dégrade surtout l’amplitude reçue et augmente l’incertitude verticale.',
+            'Le jitter agit davantage sur le placement temporel des transitions et ferme l’œil horizontalement.',
+            'L’analyse doit donc croiser SNR, BER et lecture visuelle de l’œil.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel couple d’indicateurs aide le plus à juger la qualité d’une liaison ? ',
+          options: ['SNR et BER', 'Couleur et résolution écran', 'Nom du module et du fichier'],
+          answer: 0,
+          explanation: 'SNR renseigne la réserve de bruit et BER matérialise l’effet final sur la transmission.'
+        },
+        {
+          question: 'Quand la marge devient trop faible, une action cohérente peut être : ',
+          options: ['Réduire l’exigence de modulation ou ajouter de la correction', 'Supprimer tous les indicateurs', 'Changer le titre de la page'],
+          answer: 0,
+          explanation: 'On restaure de la robustesse soit en réduisant l’exigence du lien, soit en renforçant la protection.'
+        }
+      ]
+    },
+    'transmission-dsp': {
+      exercises: [
+        {
+          title: 'Comparer trois vues du canal',
+          prompt: 'Expliquez comment utiliser simultanément le spectre, la constellation et l’œil pour poser un diagnostic cohérent sur le canal.',
+          correction: [
+            'Le spectre renseigne sur l’occupation fréquentielle et le filtrage.',
+            'La constellation renseigne sur la marge de décision symbole.',
+            'L’œil renseigne sur la qualité temporelle de l’échantillonnage.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Une fermeture verticale de l’œil traduit surtout : ',
+          options: ['Une dégradation d’amplitude et de bruit', 'Une hiérarchie PDH', 'Un codage PCM parfait'],
+          answer: 0,
+          explanation: 'L’ouverture verticale renseigne sur la marge d’amplitude disponible à la décision.'
+        },
+        {
+          question: 'Le spectre aide particulièrement à juger : ',
+          options: ['La bande occupée et le filtrage', 'Le numéro de groupe étudiant', 'La structure CAS'],
+          answer: 0,
+          explanation: 'Le domaine fréquentiel donne une lecture directe de l’occupation de bande et du façonnage du signal.'
+        }
+      ]
+    },
+    'multiplexage-e1': {
+      exercises: [
+        {
+          title: 'Séparer charge utile et signalisation',
+          prompt: 'Expliquez pourquoi une bonne lecture de la trame impose de distinguer fonction binaire et utilité télécom de chaque champ.',
+          correction: [
+            'Deux champs peuvent transporter des bits sans transporter la même fonction réseau.',
+            'Certains bits servent à cadrer ou signaler, d’autres à porter la voix utile.',
+            'Le bon diagnostic demande donc une lecture fonctionnelle, pas seulement binaire.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Pourquoi IT0 n’est-il pas une voie utile ordinaire ? ',
+          options: ['Parce qu’il sert au cadrage et à la supervision', 'Parce qu’il transporte la FM', 'Parce qu’il augmente Eb/N0'],
+          answer: 0,
+          explanation: 'IT0 a une fonction de structure et non de transport utile voix.'
+        },
+        {
+          question: 'Quel calcul simple permet de retrouver 64 kbit/s par voie ? ',
+          options: ['8 bits × 8000 trames/s', '16 bits × 32 voies', '2 Mbit/s ÷ 8'],
+          answer: 0,
+          explanation: 'Une voie utile transporte 8 bits à chaque trame de 8 kHz.'
+        }
+      ]
+    },
+    'multiplexage-compare': {
+      exercises: [
+        {
+          title: 'Argumenter un choix de norme',
+          prompt: 'Proposez un critère de choix entre E1 et T1 pour un usage moderne orienté données plutôt que voix traditionnelle.',
+          correction: [
+            'Il faut privilégier la transparence binaire de la charge utile.',
+            'La lisibilité de la structure et la séparation de la signalisation deviennent des atouts.',
+            'L’architecture la plus favorable aux données modernes n’est donc pas seulement celle du débit brut.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Comparer E1 et T1 demande surtout d’étudier : ',
+          options: ['Charge utile, overhead et signalisation', 'Uniquement la couleur de l’interface', 'Le nom du fabricant'],
+          answer: 0,
+          explanation: 'La comparaison pertinente porte sur la structure fonctionnelle complète.'
+        },
+        {
+          question: 'Le robbed bit signaling est surtout problématique pour : ',
+          options: ['Les données exigeant une bonne transparence binaire', 'Les graphes BER', 'La FM analogique'],
+          answer: 0,
+          explanation: 'L’intrusion dans les bits utiles pénalise davantage les usages de données.'
+        }
+      ]
+    },
+    'multiplexage-pcm': {
+      exercises: [
+        {
+          title: 'Relier échantillon et position de trame',
+          prompt: 'Expliquez pourquoi la position temporelle d’un échantillon dans la trame est aussi importante que sa valeur binaire.',
+          correction: [
+            'La valeur binaire seule ne suffit pas si on ne sait pas à quelle voie elle appartient.',
+            'La position dans la trame identifie le canal de destination.',
+            'Le multiplexage nécessite donc à la fois codage et synchronisation temporelle.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Pourquoi la position dans la trame est-elle essentielle ? ',
+          options: ['Parce qu’elle identifie la voie concernée', 'Parce qu’elle change l’amplitude analogique passée', 'Parce qu’elle remplace le codage PCM'],
+          answer: 0,
+          explanation: 'L’intervalle de temps permet d’associer le mot binaire à la bonne voie.'
+        },
+        {
+          question: 'La chaîne correcte est : ',
+          options: ['Signal analogique → échantillonnage → quantification → mot binaire', 'Mot binaire → porteuse FM → IT16', 'Bruit → signalisation → PCM'],
+          answer: 0,
+          explanation: 'La PCM suit d’abord la chaîne de numérisation avant l’insertion temporelle.'
+        }
+      ]
+    },
+    'multiplexage-complet': {
+      exercises: [
+        {
+          title: 'Lire une chaîne d’agrégation',
+          prompt: 'Expliquez ce qu’un ingénieur doit regarder en priorité quand il suit un flux depuis la voie source jusqu’à la hiérarchie réseau.',
+          correction: [
+            'Il doit identifier le débit ou tribut élémentaire de départ.',
+            'Il doit repérer comment ce flux est inséré, agrégé puis accompagné d’overhead.',
+            'Il doit enfin comparer capacité utile et débit global de sortie.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Dans une chaîne complète de multiplexage, on suit principalement : ',
+          options: ['Le passage d’un flux élémentaire à une capacité agrégée', 'Une simple modulation AM', 'La température ambiante'],
+          answer: 0,
+          explanation: 'L’objectif est de suivre un tribut élémentaire jusqu’au niveau réseau supérieur.'
+        },
+        {
+          question: 'Pourquoi distinguer capacité utile et débit de sortie ? ',
+          options: ['Parce que l’overhead consomme une partie du débit', 'Parce qu’ils sont toujours identiques', 'Parce que cela dépend de la couleur du câble'],
+          answer: 0,
+          explanation: 'Le débit global inclut aussi la structure, la synchronisation et la supervision.'
+        }
+      ]
+    }
+  };
 
   const LAB_TP_PAGE_DEFAULTS = {
     'analogique-emetteur': [{
@@ -889,6 +1231,646 @@
     }
   };
 
+  const LAB_PAGE_GUIDE_OVERRIDES = {
+    'analogique-emetteur': {
+      title: 'Émetteur AM / FM',
+      subtitle: 'Comparez précisément les grandeurs modulées, l’occupation spectrale et la robustesse associées à l’AM et à la FM.',
+      expectedAnswers: [
+        'En AM, l’information suit principalement l’enveloppe de la porteuse.',
+        'En FM, l’amplitude reste presque constante et l’information se lit sur la fréquence instantanée.',
+        'La bande FM augmente avec la déviation et la fréquence du message, alors que l’AM se lit d’abord via ses bandes latérales.'
+      ],
+      exercises: [
+        {
+          title: 'Comparer enveloppe et fréquence instantanée',
+          prompt: 'Expliquez comment distinguer expérimentalement un signal AM d’un signal FM lorsque le message modulant reste identique.',
+          correction: [
+            'En AM, l’enveloppe suit directement le message et varie visiblement.',
+            'En FM, l’enveloppe reste quasi constante alors que l’espacement des oscillations varie.',
+            'La différence de lecture doit être reliée à la grandeur réellement modulée.'
+          ]
+        },
+        {
+          title: 'Justifier la bande occupée',
+          prompt: 'Montrez comment relier les réglages de fréquence message et de déviation à la bande observée sur l’émetteur.',
+          correction: [
+            'En AM, les bandes latérales s’écartent de la porteuse quand la fréquence du message augmente.',
+            'En FM, la bande augmente avec la déviation et avec la composante fréquentielle du message.',
+            'La conclusion doit comparer explicitement le coût spectral des deux solutions.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Dans quel cas l’enveloppe du signal transmis est-elle directement porteuse de l’information ? ',
+          options: ['AM', 'FM', 'PCM'],
+          answer: 0,
+          explanation: 'En AM, le message est lu sur l’enveloppe de la porteuse.'
+        },
+        {
+          question: 'Quel réglage accroît le plus directement la bande occupée en FM ? ',
+          options: ['La déviation fréquentielle', 'La couleur du tracé', 'Le nombre de bits'],
+          answer: 0,
+          explanation: 'La déviation fréquentielle élargit directement la bande occupée en FM.'
+        },
+        {
+          question: 'Quelle propriété rend la FM plus tolérante aux variations d’amplitude parasites ? ',
+          options: ['Son enveloppe reste presque constante', 'Elle n’utilise pas de porteuse', 'Elle supprime le bruit thermique'],
+          answer: 0,
+          explanation: 'La FM code surtout l’information sur la fréquence instantanée, pas sur l’amplitude.'
+        }
+      ]
+    },
+    'analogique-amplificateur': {
+      title: 'Amplificateur et saturation',
+      subtitle: 'Déterminez la zone de linéarité utile, repérez l’écrêtage et reliez-le à la fidélité de transmission.',
+      expectedAnswers: [
+        'La zone linéaire conserve la proportionnalité entrée/sortie.',
+        'La saturation apparaît quand la sortie atteint ses limites d’alimentation et se traduit par un écrêtage.',
+        'Au-delà du seuil, augmenter le gain dégrade surtout la fidélité au lieu d’augmenter le signal utile.'
+      ],
+      exercises: [
+        {
+          title: 'Identifier le seuil de saturation',
+          prompt: 'Décrivez la méthode de relevé la plus fiable pour identifier expérimentalement le début de saturation d’un amplificateur.',
+          correction: [
+            'Fixer l’entrée puis augmenter progressivement le gain.',
+            'Comparer la croissance attendue de la sortie au comportement réellement observé.',
+            'Repérer le premier point où la sortie cesse d’être proportionnelle et où l’écrêtage apparaît.'
+          ]
+        },
+        {
+          title: 'Interpréter la fidélité',
+          prompt: 'Expliquez pourquoi la puissance de sortie ne suffit pas à juger la qualité d’un amplificateur en régime saturé.',
+          correction: [
+            'La sortie peut rester forte tout en étant déformée.',
+            'L’énergie supplémentaire se convertit en distorsion et en composantes harmoniques.',
+            'La fidélité doit donc être jugée avec la forme d’onde et non avec la seule amplitude.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel symptôme visuel signale le plus directement la saturation ? ',
+          options: ['L’écrêtage des crêtes', 'La disparition du temps', 'L’augmentation du nombre de bits'],
+          answer: 0,
+          explanation: 'Les crêtes aplaties indiquent que la sortie atteint ses limites physiques.'
+        },
+        {
+          question: 'En régime linéaire, la sortie doit être principalement : ',
+          options: ['Proportionnelle à l’entrée', 'Indépendante du gain', 'Toujours égale à Vcc'],
+          answer: 0,
+          explanation: 'La propriété clé d’un régime linéaire est la proportionnalité entrée/sortie.'
+        },
+        {
+          question: 'Quand l’amplificateur sature, augmenter le gain produit surtout : ',
+          options: ['Plus de distorsion', 'Moins de bande passante utile sans déformation', 'Une modulation FM'],
+          answer: 0,
+          explanation: 'Au-delà du seuil, le gain supplémentaire se traduit surtout par de la distorsion.'
+        }
+      ]
+    },
+    'analogique-recepteur': {
+      title: 'Récepteur et démodulation d’enveloppe',
+      subtitle: 'Étudiez comment bruit et filtrage déterminent la qualité de restitution du message démodulé.',
+      expectedAnswers: [
+        'Un filtre trop rapide laisse passer trop de fluctuations parasites.',
+        'Un filtre trop lent lisse aussi l’enveloppe utile du message.',
+        'Le compromis se juge à partir du SNR restitué et de la qualité temporelle du message final.'
+      ],
+      exercises: [
+        {
+          title: 'Choisir la constante de temps',
+          prompt: 'Expliquez comment choisir la constante de temps du filtre d’enveloppe pour suivre le message sans laisser passer la HF.',
+          correction: [
+            'La constante doit rester supérieure à la période de la porteuse pour lisser la HF.',
+            'Elle doit rester suffisamment faible pour suivre les variations utiles du message.',
+            'Le meilleur réglage est donc un compromis temporel et non une valeur arbitraire.'
+          ]
+        },
+        {
+          title: 'Relier SNR et qualité perçue',
+          prompt: 'Montrez pourquoi un bon SNR ne suffit pas si le filtrage de détection d’enveloppe reste mal réglé.',
+          correction: [
+            'Un bon SNR améliore la propreté du signal reçu mais ne corrige pas un mauvais filtrage.',
+            'Un filtre mal choisi peut déformer le message même avec peu de bruit.',
+            'Il faut donc analyser simultanément bruit et dynamique du filtre.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel réglage laisse le plus facilement passer les fluctuations rapides parasites ? ',
+          options: ['Une constante de temps trop faible', 'Une constante de temps trop élevée', 'Un groupe PCM'],
+          answer: 0,
+          explanation: 'Un filtre trop rapide suit aussi les variations non désirées.'
+        },
+        {
+          question: 'Quel effet d’un filtre trop lent observe-t-on en démodulation d’enveloppe ? ',
+          options: ['Le message est trop lissé', 'Le SNR devient infini', 'La modulation devient QAM'],
+          answer: 0,
+          explanation: 'Un filtre trop lent étouffe les variations utiles du message.'
+        },
+        {
+          question: 'Pour juger la restitution, il faut croiser principalement : ',
+          options: ['SNR et forme du message restitué', 'Couleur et police du graphe', 'Nombre de pages du module'],
+          answer: 0,
+          explanation: 'La qualité perçue dépend à la fois du bruit et du filtrage.'
+        }
+      ]
+    },
+    'numerisation-can': {
+      title: 'Convertisseur CAN',
+      subtitle: 'Distinguez clairement aliasing, quantification et coût de conversion dans un raisonnement d’ingénierie.',
+      expectedAnswers: [
+        'Le critère de Nyquist impose de choisir Fe au moins supérieure à deux fois la fréquence maximale utile.',
+        'Le nombre de bits agit sur le pas de quantification et donc sur l’erreur d’amplitude.',
+        'L’aliasing et la quantification sont deux défauts distincts qui se corrigent par des paramètres différents.'
+      ],
+      exercises: [
+        {
+          title: 'Séparer deux familles d’erreurs',
+          prompt: 'Expliquez comment montrer expérimentalement qu’un signal mal échantillonné et un signal mal quantifié ne présentent pas la même dégradation.',
+          correction: [
+            'L’aliasing modifie la fréquence apparente du signal reconstruit.',
+            'La quantification conserve la dynamique globale mais crée des paliers et une erreur d’amplitude.',
+            'Le diagnostic doit donc croiser fréquence apparente et finesse des niveaux.'
+          ]
+        },
+        {
+          title: 'Dimensionner Fe et B',
+          prompt: 'Proposez une méthode simple pour choisir Fe et B quand la bande utile et la précision cible sont connues.',
+          correction: [
+            'Choisir d’abord Fe à partir de la fréquence maximale utile avec une marge pratique.',
+            'Choisir ensuite B à partir de l’erreur d’amplitude admissible ou du SQNR visé.',
+            'Vérifier enfin l’impact de Fe × B sur le débit numérique produit.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel réglage combat directement l’aliasing ? ',
+          options: ['Augmenter Fe', 'Augmenter seulement B', 'Modifier la couleur du tracé'],
+          answer: 0,
+          explanation: 'L’aliasing est un défaut d’échantillonnage, donc Fe est le paramètre critique.'
+        },
+        {
+          question: 'Que réduit principalement l’augmentation du nombre de bits ? ',
+          options: ['L’erreur de quantification', 'La fréquence du message', 'Le jitter de canal'],
+          answer: 0,
+          explanation: 'Plus de bits signifie plus de niveaux et donc un pas de quantification plus fin.'
+        },
+        {
+          question: 'Un cas sous-Nyquist se reconnaît surtout par : ',
+          options: ['Un repliement spectral apparent', 'Une hausse automatique du SQNR', 'Une modulation de phase'],
+          answer: 0,
+          explanation: 'Le signal semble changer de fréquence apparente quand Fe est insuffisante.'
+        }
+      ]
+    },
+    'modulations-symbol': {
+      title: 'Analyse d’un symbole',
+      subtitle: 'Reliez mot binaire, point I/Q et équation temporelle dans une lecture symbolique précise.',
+      expectedAnswers: [
+        'Chaque mot binaire valide sélectionne un symbole unique dans la constellation.',
+        'En PSK, la lecture se fait surtout sur l’angle ; en QAM, sur l’angle et la distance à l’origine.',
+        'La forme d’onde s(t) découle directement des coordonnées ou paramètres du symbole choisi.'
+      ],
+      exercises: [
+        {
+          title: 'Du bit au point I/Q',
+          prompt: 'Expliquez le chemin complet qui permet de passer d’un mot binaire saisi à un point géométrique dans le plan I/Q.',
+          correction: [
+            'Le mot binaire est interprété comme un symbole de l’alphabet choisi.',
+            'Ce symbole est associé à des coordonnées I/Q ou à une grandeur équivalente.',
+            'Le plan I/Q offre ensuite une représentation géométrique de la décision symbole.'
+          ]
+        },
+        {
+          title: 'Lire la grandeur dominante',
+          prompt: 'Montrez comment distinguer visuellement si l’information est portée surtout par la phase, l’amplitude ou la fréquence relative.',
+          correction: [
+            'La PSK privilégie les angles des points.',
+            'La QAM combine distance à l’origine et angle.',
+            'La FSK se lit plutôt par un décalage fréquentiel que par une constellation I/Q classique.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'En PSK, la grandeur informative principale est : ',
+          options: ['La phase', 'La température du support', 'Le nombre de trames E1'],
+          answer: 0,
+          explanation: 'La PSK code les symboles principalement par l’angle.'
+        },
+        {
+          question: 'En QAM, la distance à l’origine est surtout liée à : ',
+          options: ['L’amplitude du symbole', 'La longueur du câble', 'Le jitter'],
+          answer: 0,
+          explanation: 'En QAM, l’amplitude contribue directement à la position du point.'
+        },
+        {
+          question: 'Un mot binaire valide doit conduire à : ',
+          options: ['Un seul symbole', 'Deux symboles simultanés', 'Aucune représentation'],
+          answer: 0,
+          explanation: 'Chaque mot de longueur correcte sélectionne un unique symbole de l’alphabet.'
+        }
+      ]
+    },
+    'modulations-sequence': {
+      title: 'Séquence de symboles',
+      subtitle: 'Analysez les transitions symboliques et leur impact sur la trajectoire I/Q et l’onde temporelle.',
+      expectedAnswers: [
+        'L’ordre des symboles modifie la trajectoire sans changer l’alphabet de départ.',
+        'Deux séquences de même modulation peuvent générer des tracés I/Q différents.',
+        'La lecture dynamique complète la lecture statique de la constellation.'
+      ],
+      exercises: [
+        {
+          title: 'Comparer deux séquences',
+          prompt: 'Expliquez pourquoi deux séquences construites avec les mêmes symboles peuvent donner des trajectoires I/Q différentes.',
+          correction: [
+            'L’ordre temporel des symboles change les segments reliant les points.',
+            'La constellation reste la même mais la trajectoire dépend des transitions successives.',
+            'Il faut donc distinguer alphabet disponible et chemin effectivement parcouru.'
+          ]
+        },
+        {
+          title: 'Lire l’onde temporelle',
+          prompt: 'Montrez ce que la forme d’onde apporte de plus par rapport à la seule constellation.',
+          correction: [
+            'La forme d’onde met en évidence la succession temporelle des symboles.',
+            'Elle aide à lire les transitions et les changements rapides.',
+            'Elle permet d’articuler la vue géométrique I/Q et la réalisation physique dans le temps.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Deux séquences de même famille peuvent-elles produire des trajectoires différentes ? ',
+          options: ['Oui, si l’ordre des symboles change', 'Non, jamais', 'Seulement en PCM'],
+          answer: 0,
+          explanation: 'La trajectoire dépend de la succession temporelle des symboles.'
+        },
+        {
+          question: 'La constellation seule décrit surtout : ',
+          options: ['Les positions symboliques possibles', 'Le bruit thermique du câble', 'La structure E1'],
+          answer: 0,
+          explanation: 'Elle présente l’alphabet disponible, pas la dynamique complète des transitions.'
+        },
+        {
+          question: 'La lecture temporelle complète l’I/Q parce qu’elle montre : ',
+          options: ['L’enchaînement des symboles', 'La température du processeur', 'Le débit du routeur'],
+          answer: 0,
+          explanation: 'La vue temporelle matérialise les transitions successives dans le temps.'
+        }
+      ]
+    },
+    'modulations-dashboard': {
+      title: 'Tableau de bord des modulations',
+      subtitle: 'Comparez BER, efficacité spectrale et densité de modulation pour choisir une solution adaptée au canal.',
+      expectedAnswers: [
+        'Quand M augmente, l’efficacité spectrale augmente mais la robustesse diminue à Eb/N0 donné.',
+        'Le roll-off augmente la bande occupée et réduit l’efficacité spectrale à débit identique.',
+        'Le choix de modulation dépend d’un compromis entre capacité visée et marge de bruit disponible.'
+      ],
+      exercises: [
+        {
+          title: 'Comparer deux ordres de modulation',
+          prompt: 'Expliquez comment justifier le choix entre une modulation robuste et une modulation dense à Eb/N0 voisin.',
+          correction: [
+            'La modulation robuste présente une meilleure marge de décision.',
+            'La modulation dense transporte davantage de bits par symbole.',
+            'Le choix final dépend de la qualité cible et de la capacité utile recherchée.'
+          ]
+        },
+        {
+          title: 'Lire l’effet du roll-off',
+          prompt: 'Montrez pourquoi le roll-off doit être lu en même temps que l’efficacité spectrale affichée.',
+          correction: [
+            'Un roll-off plus élevé élargit la bande occupée.',
+            'À débit symbole identique, l’efficacité spectrale apparente diminue.',
+            'Le bon réglage dépend donc de la compacité fréquentielle recherchée.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Que se passe-t-il en général quand l’ordre M augmente à Eb/N0 constant ? ',
+          options: ['Le BER/TEB devient plus exigeant', 'Le bruit disparaît', 'Le roll-off devient nul automatiquement'],
+          answer: 0,
+          explanation: 'Des points plus rapprochés rendent la décision plus sensible aux perturbations.'
+        },
+        {
+          question: 'Quel paramètre agit directement sur l’efficacité spectrale affichée sans modifier la famille de modulation ? ',
+          options: ['Le roll-off', 'Le nom du symbole', 'Le fond de page'],
+          answer: 0,
+          explanation: 'Le roll-off influe sur la bande occupée et donc sur l’efficacité spectrale.'
+        },
+        {
+          question: 'Pour un canal très bruité, on choisira plutôt : ',
+          options: ['Une modulation d’ordre plus faible', 'La modulation la plus dense possible', 'Une hiérarchie SONET'],
+          answer: 0,
+          explanation: 'Un ordre plus faible laisse davantage de marge de décision.'
+        }
+      ]
+    },
+    'transmission-base': {
+      title: 'Transmission pédagogique complète',
+      subtitle: 'Établissez un bilan de liaison simplifié en reliant SNR, marge, BER et lecture de l’œil.',
+      expectedAnswers: [
+        'Le lien se juge d’abord par le SNR, la marge de capacité et l’état de décision binaire.',
+        'La gigue agit surtout sur le timing de décision, alors que le bruit agit davantage sur l’amplitude utile.',
+        'Une action corrective doit être choisie en fonction de la cause dominante de dégradation.'
+      ],
+      exercises: [
+        {
+          title: 'Choisir les KPI principaux',
+          prompt: 'Expliquez pourquoi un bilan de liaison ne peut pas se limiter à un seul indicateur comme le débit brut.',
+          correction: [
+            'Le débit brut ne renseigne pas sur la marge réelle du canal.',
+            'Le SNR et la marge de capacité relient la demande au support physique.',
+            'Le BER et l’œil montrent ensuite l’impact pratique sur la décision reçue.'
+          ]
+        },
+        {
+          title: 'Justifier une action corrective',
+          prompt: 'Montrez comment choisir entre FEC, filtrage, gain TX ou baisse d’ordre de modulation selon le scénario observé.',
+          correction: [
+            'Le FEC aide quand le lien reste récupérable mais trop juste.',
+            'Le filtrage aide si l’ISI ou la forme d’onde dominent.',
+            'Le gain TX ou la baisse d’ordre agissent quand la marge physique devient insuffisante.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel indicateur relie directement le débit demandé à la limite du canal ? ',
+          options: ['La marge de capacité', 'La couleur du graphe', 'Le nombre de curseurs'],
+          answer: 0,
+          explanation: 'La marge de capacité compare directement besoin et capacité théorique.'
+        },
+        {
+          question: 'Quel phénomène ferme surtout l’œil horizontalement ? ',
+          options: ['Le jitter', 'Le nombre de bits', 'Le PCM'],
+          answer: 0,
+          explanation: 'Le jitter agit principalement sur l’instant d’échantillonnage.'
+        },
+        {
+          question: 'Le FEC améliore surtout : ',
+          options: ['La robustesse globale du système', 'La fréquence porteuse physique', 'La structure mécanique du câble'],
+          answer: 0,
+          explanation: 'Le FEC augmente la tolérance aux erreurs sans changer le canal lui-même.'
+        }
+      ]
+    },
+    'transmission-dsp': {
+      title: 'Traitement du signal avancé',
+      subtitle: 'Croisez constellation, spectre, œil et SER pour lire le canal numérique comme un ingénieur système.',
+      expectedAnswers: [
+        'Une constellation plus diffuse annonce une hausse des erreurs de symbole.',
+        'Le filtrage RRC agit à la fois sur l’occupation spectrale et sur l’ISI.',
+        'La qualité de canal doit être lue simultanément sur les vues temporelles, fréquentielles et géométriques.'
+      ],
+      exercises: [
+        {
+          title: 'Relier SER et constellation',
+          prompt: 'Expliquez pourquoi la lecture de la constellation permet souvent d’anticiper la dégradation du SER.',
+          correction: [
+            'Quand les nuages sont bien séparés, la marge de décision reste confortable.',
+            'Quand ils s’élargissent ou se rapprochent, les erreurs de symbole augmentent.',
+            'La géométrie complète donc utilement la mesure numérique du SER.'
+          ]
+        },
+        {
+          title: 'Lire le rôle du filtre RRC',
+          prompt: 'Montrez comment le filtrage RRC peut améliorer l’échantillonnage utile tout en modelant la bande occupée.',
+          correction: [
+            'Le RRC limite l’ISI au bon instant d’échantillonnage.',
+            'Il façonne aussi la bande occupée en fonction du roll-off.',
+            'Le compromis se lit donc à la fois dans le spectre et dans l’œil.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Une constellation qui se diffuse indique généralement : ',
+          options: ['Une hausse probable du SER', 'Une baisse automatique du débit', 'Une conversion E1'],
+          answer: 0,
+          explanation: 'Des nuages plus diffus réduisent la marge de décision symbole.'
+        },
+        {
+          question: 'Le rôle du filtre RRC est principalement de : ',
+          options: ['Limiter l’ISI et modeler le spectre', 'Créer une modulation analogique', 'Remplacer le canal'],
+          answer: 0,
+          explanation: 'Le filtrage RRC agit conjointement sur le domaine temporel et fréquentiel.'
+        },
+        {
+          question: 'Quel indicateur facilite la comparaison entre modulations d’ordres différents ? ',
+          options: ['Eb/N0', 'La couleur des points', 'Le numéro de page'],
+          answer: 0,
+          explanation: 'Eb/N0 normalise l’analyse énergétique par bit utile.'
+        }
+      ]
+    },
+    'multiplexage-e1': {
+      title: 'Multitrame E1',
+      subtitle: 'Décodez la structure PCM 30/32 en distinguant cadrage, signalisation et charge utile.',
+      expectedAnswers: [
+        'IT0 sert au cadrage et à la supervision de trame.',
+        'IT16 sert à la logique de multitrame et à la signalisation CAS.',
+        'Une voie utile E1 correspond à 64 kbit/s lorsqu’elle transporte 8 bits sur 8000 trames/s.'
+      ],
+      exercises: [
+        {
+          title: 'Identifier les champs réservés',
+          prompt: 'Expliquez comment distinguer rapidement, à l’écran, un champ de structure d’un intervalle de temps utile.',
+          correction: [
+            'Un champ de structure porte une fonction de cadrage ou de signalisation.',
+            'Une voie utile transporte au contraire une charge binaire associée à un canal.',
+            'La comparaison fonctionnelle permet de séparer overhead et charge utile.'
+          ]
+        },
+        {
+          title: 'Justifier le 64 kbit/s',
+          prompt: 'Montrez comment retrouver numériquement le débit élémentaire d’une voie utile E1.',
+          correction: [
+            'Une trame E1 revient toutes les 125 µs, soit 8000 fois par seconde.',
+            'Chaque voie utile apporte 8 bits par trame.',
+            'Le débit est donc 8 × 8000 = 64 kbit/s.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quel intervalle de temps porte principalement la signalisation CAS dans l’E1 ? ',
+          options: ['IT16', 'IT0', 'Toutes les voies utiles'],
+          answer: 0,
+          explanation: 'IT16 est dédié à la logique de signalisation de multitrame.'
+        },
+        {
+          question: 'Quel champ sert au cadrage de trame ? ',
+          options: ['IT0', 'IT16', 'Une voie utile quelconque'],
+          answer: 0,
+          explanation: 'IT0 porte les informations de structure et de supervision.'
+        },
+        {
+          question: 'Le débit élémentaire d’une voie utile E1 vaut : ',
+          options: ['64 kbit/s', '2 Mbit/s', '8 kbit/s'],
+          answer: 0,
+          explanation: 'Chaque voie transporte 8 bits à 8000 trames/s.'
+        }
+      ]
+    },
+    'multiplexage-compare': {
+      title: 'Comparatif E1 / T1',
+      subtitle: 'Mettez en regard deux philosophies historiques de transport téléphonique numérique et leurs compromis utiles.',
+      expectedAnswers: [
+        'L’E1 sépare mieux les ressources utiles et la signalisation que le T1 historique.',
+        'Le robbed bit signaling prélève périodiquement une partie du flux utile.',
+        'La meilleure architecture pour des données modernes est celle qui préserve la transparence binaire du canal.'
+      ],
+      exercises: [
+        {
+          title: 'Comparer deux philosophies de trame',
+          prompt: 'Expliquez pourquoi E1 et T1 ne peuvent pas être comparés uniquement par leur débit ligne brut.',
+          correction: [
+            'Le débit brut ne dit rien de la place prise par la structure et la signalisation.',
+            'Il faut comparer simultanément charge utile, overhead et méthode de signalisation.',
+            'L’efficacité utile peut donc différer malgré des débits ligne connus.'
+          ]
+        },
+        {
+          title: 'Évaluer la transparence binaire',
+          prompt: 'Montrez pourquoi le robbed bit signaling peut être acceptable pour la voix historique mais moins pour les données modernes.',
+          correction: [
+            'La voix tolère certaines altérations périodiques limitées.',
+            'Les données numériques exigent une meilleure transparence binaire.',
+            'Prélever des bits utiles pour la signalisation devient alors plus pénalisant.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Quelle architecture est souvent dite plus “clear channel” ? ',
+          options: ['E1', 'T1 avec robbed bit', 'FM'],
+          answer: 0,
+          explanation: 'L’E1 sépare plus explicitement les ressources utiles et la signalisation.'
+        },
+        {
+          question: 'Le robbed bit signaling consiste à : ',
+          options: ['Prélever périodiquement une partie du flux utile', 'Ajouter du bruit RF', 'Multiplier les symboles QAM'],
+          answer: 0,
+          explanation: 'Une partie de l’information utile est réutilisée à des fins de signalisation.'
+        },
+        {
+          question: 'Pour des données modernes, on privilégie généralement : ',
+          options: ['La meilleure transparence binaire possible', 'Le plus grand nombre de voyants', 'Le plus petit écran'],
+          answer: 0,
+          explanation: 'Les données modernes supportent mal une intrusion de la signalisation dans l’utile.'
+        }
+      ]
+    },
+    'multiplexage-pcm': {
+      title: 'PCM + TDM avec audio',
+      subtitle: 'Suivez un échantillon audio, son codage PCM puis son insertion dans la trame temporelle.',
+      expectedAnswers: [
+        'Le signal analogique est d’abord échantillonné puis quantifié.',
+        'La valeur quantifiée devient un mot binaire inséré dans un intervalle de temps.',
+        'Le multiplexage temporel permet à plusieurs voies de partager le même support sans se superposer simultanément.'
+      ],
+      exercises: [
+        {
+          title: 'Du signal à l’octet',
+          prompt: 'Expliquez comment un échantillon audio instantané se transforme en octet PCM visible dans l’interface.',
+          correction: [
+            'Le signal est prélevé à un instant donné par échantillonnage.',
+            'La valeur est quantifiée puis codée sur un mot binaire.',
+            'Cet octet devient alors la représentation numérique d’un échantillon de voie.'
+          ]
+        },
+        {
+          title: 'Justifier le partage temporel',
+          prompt: 'Montrez pourquoi plusieurs canaux peuvent être transportés sans se mélanger quand le multiplexage est temporel.',
+          correction: [
+            'Chaque voie possède un intervalle de temps réservé dans la trame.',
+            'Les utilisateurs se succèdent dans le temps au lieu de se superposer.',
+            'La synchronisation permet de restituer chaque tribut à la bonne voie.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Dans un multiplexage temporel, plusieurs voies partagent le support principalement : ',
+          options: ['Par alternance dans le temps', 'Par variation de couleur', 'Par modulation FM obligatoire'],
+          answer: 0,
+          explanation: 'Le TDM sépare les canaux par intervalles temporels réservés.'
+        },
+        {
+          question: 'Un octet PCM représente principalement : ',
+          options: ['La valeur codée d’un échantillon', 'Une porteuse radio', 'Un bruit parasite'],
+          answer: 0,
+          explanation: 'Le mot PCM code numériquement un échantillon analogique quantifié.'
+        },
+        {
+          question: 'Pour retrouver la bonne voie à la réception, il faut surtout : ',
+          options: ['La synchronisation de trame', 'Supprimer toutes les autres voies', 'Changer de modulation à chaque octet'],
+          answer: 0,
+          explanation: 'La synchronisation permet d’associer chaque intervalle temporel à la bonne voie.'
+        }
+      ]
+    },
+    'multiplexage-complet': {
+      title: 'Laboratoire réseau complet',
+      subtitle: 'Reliez source PCM, trame primaire et hiérarchie d’agrégation dans une lecture réseau cohérente.',
+      expectedAnswers: [
+        'La chaîne complète relie un échantillon source à un tribut de transport hiérarchique.',
+        'Chaque niveau ajoute sa logique propre d’agrégation et d’overhead.',
+        'La capacité utile ne se confond jamais exactement avec le débit ligne brut.'
+      ],
+      exercises: [
+        {
+          title: 'Suivre un tribut de bout en bout',
+          prompt: 'Expliquez comment un même flux peut être suivi depuis sa création PCM jusqu’à son insertion dans un niveau hiérarchique supérieur.',
+          correction: [
+            'Le flux est d’abord produit comme mot PCM élémentaire.',
+            'Il prend ensuite place dans une trame primaire TDM.',
+            'Cette trame devient enfin un tribut d’un niveau de transport supérieur.'
+          ]
+        },
+        {
+          title: 'Comparer utile et overhead',
+          prompt: 'Montrez pourquoi la capacité d’un niveau supérieur ne se résume pas à la simple somme des flux utiles en entrée.',
+          correction: [
+            'Chaque niveau ajoute des informations de structure, synchronisation ou supervision.',
+            'Le débit de sortie inclut donc utile et overhead.',
+            'Il faut distinguer capacité ligne, capacité utile et rendement global.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'Dans une hiérarchie réseau, un tribut est : ',
+          options: ['Un flux de niveau inférieur intégré dans un niveau supérieur', 'Une modulation analogique', 'Un simple voyant d’interface'],
+          answer: 0,
+          explanation: 'Un tribut correspond à un flux élémentaire agrégé par un niveau supérieur.'
+        },
+        {
+          question: 'Pourquoi le débit ligne brut dépasse-t-il souvent la seule charge utile ? ',
+          options: ['À cause de l’overhead', 'Parce que la voix devient FM', 'Parce que les symboles sont rouges'],
+          answer: 0,
+          explanation: 'Le débit ligne inclut aussi les informations de structure et de supervision.'
+        },
+        {
+          question: 'L’intérêt d’une hiérarchie synchrone est notamment de : ',
+          options: ['Faciliter l’exploitation et l’agrégation', 'Supprimer toute structure de trame', 'Rendre inutile la synchronisation'],
+          answer: 0,
+          explanation: 'Une hiérarchie synchrone simplifie l’accès, l’agrégation et l’exploitation réseau.'
+        }
+      ]
+    }
+  };
+
   function getParams() {
     return new URLSearchParams(global.location.search);
   }
@@ -1386,11 +2368,13 @@
 
   function getGuideDefinition(section, pageId) {
     const moduleKey = pageId === 'home' || section === 'home' ? 'home' : getActiveModule(section);
-    const pageGuideOverrides = getPageGuideOverrides();
     const baseGuide = LAB_GUIDE_DEFAULTS[moduleKey] || LAB_GUIDE_DEFAULTS.home || {};
-    const directGuide = pageGuideOverrides[pageId] || pageGuideOverrides[section] || {};
+    const directGuide = LAB_PAGE_GUIDE_OVERRIDES[pageId] || LAB_PAGE_GUIDE_OVERRIDES[section] || {};
+    const supplementGuide = LAB_PAGE_GUIDE_SUPPLEMENTS[pageId] || LAB_PAGE_GUIDE_SUPPLEMENTS[section] || {};
     const evalGuide = LAB_EVAL_DEFAULTS[moduleKey] || LAB_EVAL_DEFAULTS.home || {};
     const practiceGuide = LAB_PRACTICE_DEFAULTS[moduleKey] || LAB_PRACTICE_DEFAULTS.home || {};
+    const exercises = decorateDifficulty((directGuide.exercises || practiceGuide.exercises || []).concat(supplementGuide.exercises || []));
+    const quiz = decorateDifficulty((directGuide.quiz || evalGuide.quiz || []).concat(supplementGuide.quiz || []));
 
     return {
       title: directGuide.title || baseGuide.title || '',
@@ -1400,11 +2384,130 @@
       questions: directGuide.questions || baseGuide.questions || [],
       tpSteps: directGuide.tpSteps || baseGuide.tpSteps || [],
       expectedAnswers: directGuide.expectedAnswers || evalGuide.expectedAnswers || [],
-      quiz: directGuide.quiz || evalGuide.quiz || [],
-      exercises: directGuide.exercises || practiceGuide.exercises || [],
+      quiz: quiz,
+      exercises: exercises,
       manipulations: directGuide.manipulations || practiceGuide.manipulations || [],
       measurementHints: directGuide.measurementHints || practiceGuide.measurementHints || []
     };
+  }
+
+  function inferDifficulty(index, total) {
+    if (total <= 1) {
+      return 'intermediate';
+    }
+
+  const DIFFICULTY_SEQUENCE = ['fundamental', 'intermediate', 'advanced'];
+
+  function getDifficultyIndex(level) {
+    const value = level === 'fundamental' || level === 'intermediate' || level === 'advanced'
+      ? level
+      : 'intermediate';
+    return Math.max(0, DIFFICULTY_SEQUENCE.indexOf(value));
+  }
+
+  function getNextDifficultyLevel(level) {
+    const index = getDifficultyIndex(level);
+    return DIFFICULTY_SEQUENCE[Math.min(index + 1, DIFFICULTY_SEQUENCE.length - 1)];
+  }
+
+    if (total === 2) {
+      return index === 0 ? 'fundamental' : 'intermediate';
+    }
+
+    if (total === 3) {
+      return ['fundamental', 'intermediate', 'advanced'][index] || 'advanced';
+    }
+
+    if (index === 0) {
+      return 'fundamental';
+    }
+
+    if (index === total - 1) {
+      return 'advanced';
+    }
+
+    return 'intermediate';
+  }
+
+  function getDifficultyMeta(level) {
+    const value = level === 'fundamental' || level === 'advanced' || level === 'intermediate'
+      ? level
+      : 'intermediate';
+    return {
+      key: value,
+      label: value === 'fundamental'
+        ? 'Fondamental'
+        : (value === 'advanced' ? 'Approfondissement' : 'Intermédiaire')
+    };
+  }
+
+  function decorateDifficulty(items) {
+    const list = Array.isArray(items) ? items : [];
+    return list.map(function (item, index) {
+      const difficulty = getDifficultyMeta(item && item.difficulty ? item.difficulty : inferDifficulty(index, list.length));
+      const clone = {};
+      Object.keys(item || {}).forEach(function (key) {
+        clone[key] = item[key];
+      });
+      clone.difficulty = difficulty.key;
+      clone.difficultyLabel = difficulty.label;
+      return clone;
+    });
+  }
+
+  function isExerciseAnswerComplete(value) {
+    return (value || '').trim().length >= 24;
+  }
+
+  function computeUnlockedExerciseDifficulty(exercises, answers) {
+    let unlockedIndex = 0;
+    DIFFICULTY_SEQUENCE.forEach(function (level, index) {
+      if (index >= DIFFICULTY_SEQUENCE.length - 1 || index > unlockedIndex) {
+        return;
+      }
+
+      const requiredIndexes = (exercises || []).map(function (exercise, exerciseIndex) {
+        return exercise && exercise.difficulty === level ? exerciseIndex : -1;
+      }).filter(function (value) {
+        return value >= 0;
+      });
+
+      if (!requiredIndexes.length) {
+        unlockedIndex = Math.min(index + 1, DIFFICULTY_SEQUENCE.length - 1);
+        return;
+      }
+
+      const completed = requiredIndexes.every(function (exerciseIndex) {
+        return isExerciseAnswerComplete((answers || {})[exerciseIndex]);
+      });
+
+      if (completed) {
+        unlockedIndex = Math.min(index + 1, DIFFICULTY_SEQUENCE.length - 1);
+      }
+    });
+
+    return DIFFICULTY_SEQUENCE[unlockedIndex];
+  }
+
+  function getAdaptiveProgress(pageKey) {
+    return getNotebookPage(pageKey).adaptiveProgress || {};
+  }
+
+  function getUnlockedQuizDifficulty(pageKey) {
+    const progress = getAdaptiveProgress(pageKey);
+    const level = progress.quizLevel || 'fundamental';
+    return getDifficultyMeta(level).key;
+  }
+
+  function setUnlockedQuizDifficulty(pageKey, level) {
+    const nextLevel = getDifficultyMeta(level).key;
+    updateNotebookPage(pageKey, function (pageState) {
+      pageState.adaptiveProgress = pageState.adaptiveProgress || {};
+      const currentLevel = getDifficultyMeta(pageState.adaptiveProgress.quizLevel || 'fundamental').key;
+      if (getDifficultyIndex(nextLevel) > getDifficultyIndex(currentLevel)) {
+        pageState.adaptiveProgress.quizLevel = nextLevel;
+      }
+    });
   }
 
   function createItemsList(tagName, items, className) {
@@ -1765,6 +2868,36 @@
       ensurePedagogyPanel('help', '.lab-learning-sheet');
     }));
 
+    const levelBox = document.createElement('div');
+    levelBox.className = 'lab-pedagogy-level';
+    const levelLabel = document.createElement('div');
+    levelLabel.className = 'lab-pedagogy-level__label';
+    const levelValue = document.createElement('div');
+    levelValue.className = 'lab-pedagogy-level__value';
+    const levelDetail = document.createElement('div');
+    levelDetail.className = 'lab-pedagogy-level__detail';
+
+    function renderLevelIndicator() {
+      const notebook = getNotebookPage(pageKey);
+      const exerciseLevel = computeUnlockedExerciseDifficulty(guide.exercises || [], notebook.exercises || {});
+      const quizLevel = getUnlockedQuizDifficulty(pageKey);
+      const exerciseMeta = getDifficultyMeta(exerciseLevel);
+      const quizMeta = getDifficultyMeta(quizLevel);
+      const globalLevel = DIFFICULTY_SEQUENCE[Math.min(getDifficultyIndex(exerciseLevel), getDifficultyIndex(quizLevel))] || 'fundamental';
+      const globalMeta = getDifficultyMeta(globalLevel);
+
+      levelLabel.textContent = 'Niveau débloqué global';
+      levelValue.textContent = globalMeta.label;
+      levelValue.className = 'lab-pedagogy-level__value lab-difficulty-badge lab-difficulty-badge--' + globalMeta.key;
+      levelDetail.textContent = 'Exercices : ' + exerciseMeta.label + ' • Quiz : ' + quizMeta.label;
+    }
+
+    levelBox.appendChild(levelLabel);
+    levelBox.appendChild(levelValue);
+    levelBox.appendChild(levelDetail);
+    renderLevelIndicator();
+    bar.appendChild(levelBox);
+
     if (steps.length) {
       const stepper = document.createElement('div');
       stepper.className = 'lab-pedagogy-stepper';
@@ -1805,8 +2938,18 @@
         if (!detail.pageKey || detail.pageKey === pageKey || detail.tpStep === undefined) {
           renderStepper();
         }
+        if (!detail.pageKey || detail.pageKey === pageKey || detail.notebook || detail.tpStep !== undefined) {
+          renderLevelIndicator();
+        }
       });
       bar.appendChild(stepper);
+    } else {
+      global.addEventListener('lab-progress-updated', function (event) {
+        const detail = event && event.detail ? event.detail : {};
+        if (!detail.pageKey || detail.pageKey === pageKey || detail.notebook) {
+          renderLevelIndicator();
+        }
+      });
     }
 
     bar.appendChild(title);
@@ -1977,18 +3120,31 @@
     const subtitle = document.createElement('p');
     subtitle.className = 'lab-exercise-sheet__subtitle';
     subtitle.textContent = 'Rédigez votre réponse d’ingénieur, puis comparez-la au corrigé raisonné.';
+    const progressionNote = document.createElement('div');
+    progressionNote.className = 'lab-guide-note';
     section.appendChild(title);
     section.appendChild(subtitle);
+    section.appendChild(progressionNote);
+
+    const exerciseCards = [];
 
     guide.exercises.forEach(function (exercise, index) {
       const card = document.createElement('article');
       card.className = 'lab-exercise-card';
+      const cardHead = document.createElement('div');
+      cardHead.className = 'lab-difficulty-head';
       const cardTitle = document.createElement('h3');
       cardTitle.className = 'lab-exercise-card__title';
       cardTitle.textContent = (index + 1) + '. ' + exercise.title;
+      const badge = document.createElement('span');
+      badge.className = 'lab-difficulty-badge lab-difficulty-badge--' + (exercise.difficulty || 'intermediate');
+      badge.textContent = exercise.difficultyLabel || 'Intermédiaire';
       const prompt = document.createElement('p');
       prompt.className = 'lab-exercise-card__prompt';
       prompt.textContent = exercise.prompt;
+      const lockNote = document.createElement('div');
+      lockNote.className = 'lab-card-lock-note';
+      lockNote.hidden = true;
       const answer = document.createElement('textarea');
       answer.className = 'lab-exercise-card__answer';
       answer.rows = 5;
@@ -1999,6 +3155,7 @@
           pageState.exercises = pageState.exercises || {};
           pageState.exercises[index] = answer.value;
         });
+        refreshExerciseLocks();
       });
 
       const actions = document.createElement('div');
@@ -2016,18 +3173,48 @@
       correction.appendChild(correctionTitle);
       correction.appendChild(createItemsList('ul', exercise.correction || [], 'lab-guide-panel__list'));
       toggle.addEventListener('click', function () {
+        if (toggle.disabled) {
+          return;
+        }
         correction.hidden = !correction.hidden;
         toggle.textContent = correction.hidden ? 'Afficher le corrigé' : 'Masquer le corrigé';
       });
       actions.appendChild(toggle);
 
-      card.appendChild(cardTitle);
+      cardHead.appendChild(cardTitle);
+      cardHead.appendChild(badge);
+      card.appendChild(cardHead);
       card.appendChild(prompt);
+      card.appendChild(lockNote);
       card.appendChild(answer);
       card.appendChild(actions);
       card.appendChild(correction);
       section.appendChild(card);
+      exerciseCards.push({ card: card, answer: answer, toggle: toggle, correction: correction, lockNote: lockNote, exercise: exercise });
     });
+
+    function refreshExerciseLocks() {
+      const unlockedLevel = computeUnlockedExerciseDifficulty(guide.exercises || [], getNotebookPage(pageKey).exercises || {});
+      const unlockedMeta = getDifficultyMeta(unlockedLevel);
+      progressionNote.textContent = 'Progression adaptative : niveau actuellement ouvert — ' + unlockedMeta.label + '. Complétez les exercices du niveau courant pour débloquer le suivant.';
+
+      exerciseCards.forEach(function (entry) {
+        const isLocked = getDifficultyIndex(entry.exercise.difficulty) > getDifficultyIndex(unlockedLevel);
+        entry.card.classList.toggle('is-locked', isLocked);
+        entry.answer.disabled = isLocked;
+        entry.toggle.disabled = isLocked;
+        entry.lockNote.hidden = !isLocked;
+        if (isLocked) {
+          entry.correction.hidden = true;
+          entry.toggle.textContent = 'Corrigé verrouillé';
+          entry.lockNote.textContent = 'Débloquez d’abord le niveau ' + unlockedMeta.label + ' pour accéder à cet exercice.';
+        } else if (entry.toggle.textContent === 'Corrigé verrouillé') {
+          entry.toggle.textContent = 'Afficher le corrigé';
+        }
+      });
+    }
+
+    refreshExerciseLocks();
 
     host.appendChild(section);
   }
@@ -2499,11 +3686,20 @@
     guide.quiz.forEach(function (item, index) {
       const card = document.createElement('article');
       card.className = 'lab-quiz-question';
+      const cardHead = document.createElement('div');
+      cardHead.className = 'lab-difficulty-head';
       const cardTitle = document.createElement('h3');
       cardTitle.className = 'lab-quiz-question__title';
       cardTitle.textContent = (index + 1) + '. ' + item.question;
+      const badge = document.createElement('span');
+      badge.className = 'lab-difficulty-badge lab-difficulty-badge--' + (item.difficulty || 'intermediate');
+      badge.textContent = item.difficultyLabel || 'Intermédiaire';
+      const lockNote = document.createElement('div');
+      lockNote.className = 'lab-card-lock-note';
+      lockNote.hidden = true;
       const options = document.createElement('div');
       options.className = 'lab-quiz-options';
+      const inputs = [];
 
       (item.options || []).forEach(function (option, optionIndex) {
         const label = document.createElement('label');
@@ -2515,11 +3711,16 @@
         label.appendChild(input);
         label.appendChild(document.createTextNode(option));
         options.appendChild(label);
+        inputs.push(input);
       });
 
-      card.appendChild(cardTitle);
+      cardHead.appendChild(cardTitle);
+      cardHead.appendChild(badge);
+      card.appendChild(cardHead);
+      card.appendChild(lockNote);
       card.appendChild(options);
       section.appendChild(card);
+      quizCards.push({ card: card, item: item, inputs: inputs, lockNote: lockNote, index: index });
     });
 
     const actions = document.createElement('div');
@@ -2543,11 +3744,16 @@
     }
 
     submit.addEventListener('click', function () {
+      const unlockedLevel = getUnlockedQuizDifficulty(pageKey);
+      const visibleQuestions = guide.quiz.filter(function (item) {
+        return getDifficultyIndex(item.difficulty) <= getDifficultyIndex(unlockedLevel);
+      });
       let answered = 0;
       let score = 0;
       const lines = [];
 
-      guide.quiz.forEach(function (item, index) {
+      visibleQuestions.forEach(function (item, visibleIndex) {
+        const index = guide.quiz.indexOf(item);
         const checked = section.querySelector('input[name="labQuiz-' + pageKey + '-' + index + '"]:checked');
         if (checked) {
           answered += 1;

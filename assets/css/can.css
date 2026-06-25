@@ -1,17 +1,17 @@
 ﻿:root {
   --bg: #f6f8fb;
   --card: #ffffff;
-  --accent: #5c8aff;
-  --wave: #7aa2ff;
-  --quant: #ff9b6b;
-  --muted: #7b8aa3;
+  --accent: #16a34a;
+  --wave: #22c55e;
+  --quant: #ca8a04;
+  --muted: #64748b;
 }
 
 body {
   font-family: 'Segoe UI', system-ui, Arial, sans-serif;
   background: var(--bg);
   margin: 0;
-  color: #123;
+  color: #1e293b;
 }
 
 .wrap {
@@ -26,7 +26,7 @@ body {
 h1 {
   margin: 0 0 16px;
   font-size: 22px;
-  color: #0b3a66;
+  color: #1e293b;
 }
 
 .controls {
@@ -42,6 +42,7 @@ h1 {
   border-radius: 8px;
   flex: 1;
   min-width: 200px;
+  border: 1px solid #e2e8f0;
 }
 
 label {
@@ -49,7 +50,7 @@ label {
   justify-content: space-between;
   font-size: 13px;
   font-weight: 600;
-  color: #344767;
+  color: #334155;
   margin-bottom: 8px;
 }
 
@@ -118,7 +119,7 @@ svg {
   color: white;
   border-color: var(--accent);
   transform: scale(1.1);
-  box-shadow: 0 4px 10px rgba(92, 138, 255, 0.3);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
   z-index: 10;
 }
 

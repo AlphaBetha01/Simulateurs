@@ -1,14 +1,14 @@
 ﻿:root {
-  --bg: #0b1120;
-  --card: #1e293b;
-  --card-alt: #334155;
-  --tx: #38bdf8;
-  --rx: #10b981;
-  --warn: #fbbf24;
-  --err: #ef4444;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --border: #475569;
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --card-alt: #f0f4f8;
+  --tx: #16a34a;
+  --rx: #22c55e;
+  --warn: #ca8a04;
+  --err: #dc2626;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
 }
 
 body {
@@ -84,9 +84,9 @@ input[type=range] {
 select {
   width: 100%;
   padding: 6px;
-  background: #0f172a;
-  color: white;
-  border: 1px solid var(--muted);
+  background: #f8fafc;
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 4px;
   outline: none;
   font-size: 12px;
@@ -116,7 +116,7 @@ button.paused {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  background: #020617;
+  background: #f8fafc;
   padding: 10px;
   border-radius: 6px;
   border: 1px solid var(--card-alt);
@@ -127,7 +127,7 @@ button.paused {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
   padding: 8px;
   border-radius: 4px;
 }

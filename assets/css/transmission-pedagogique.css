@@ -1,14 +1,14 @@
 ﻿:root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --card-alt: #334155;
-  --tx: #3b82f6;
-  --rx: #10b981;
-  --warn: #f59e0b;
-  --err: #ef4444;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --grid: #334155;
+  --bg: #f6f8fb;
+  --card: #ffffff;
+  --card-alt: #f0f4f8;
+  --tx: #16a34a;
+  --rx: #22c55e;
+  --warn: #ca8a04;
+  --err: #dc2626;
+  --text: #1e293b;
+  --muted: #64748b;
+  --grid: #e2e8f0;
 }
 
 body {
@@ -31,8 +31,8 @@ body {
 h1 {
   font-size: 22px;
   margin: 0;
-  color: #e2e8f0;
-  border-bottom: 2px solid var(--card-alt);
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 10px;
   display: flex;
   justify-content: space-between;
@@ -66,23 +66,23 @@ label {
 }
 
 span.val {
-  color: #38bdf8;
+  color: #16a34a;
   font-weight: bold;
 }
 
 input[type=range] {
   width: 100%;
   cursor: pointer;
-  accent-color: #38bdf8;
+  accent-color: #16a34a;
   margin-bottom: 8px;
 }
 
 select {
   width: 100%;
   padding: 6px;
-  background: #0f172a;
-  color: white;
-  border: 1px solid var(--muted);
+  background: #f8fafc;
+  color: var(--text);
+  border: 1px solid #e2e8f0;
   border-radius: 4px;
   outline: none;
   font-family: inherit;
@@ -112,8 +112,8 @@ button.active-green {
 }
 
 .shannon-gauge {
-  background: #0f172a;
-  border: 1px solid var(--card-alt);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 4px;
   padding: 8px;
   text-align: center;
@@ -121,7 +121,7 @@ button.active-green {
 
 .shannon-bar {
   height: 6px;
-  background: #334155;
+  background: #e2e8f0;
   border-radius: 4px;
   margin-top: 6px;
   position: relative;
@@ -142,12 +142,13 @@ button.active-green {
 .ber-counter {
   font-family: monospace;
   font-size: 14px;
-  background: #000;
+  background: #f8fafc;
   padding: 4px 8px;
   border-radius: 4px;
-  border: 1px solid #475569;
+  border: 1px solid #e2e8f0;
   display: inline-block;
-  color: var(--warn);
+  color: #ca8a04;
+  font-weight: bold;
 }
 
 .stage {
@@ -184,12 +185,12 @@ button.active-green {
 
 .scope {
   background: #000;
-  border: 1px solid #475569;
+  border: 1px solid var(--card-alt);
   border-radius: 4px;
   position: relative;
   overflow: hidden;
   height: 100px;
-  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.03);
   margin-top: 4px;
 }
 

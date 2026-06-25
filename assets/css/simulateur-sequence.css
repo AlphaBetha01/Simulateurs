@@ -1,12 +1,12 @@
 ﻿:root {
-  --bg: #0f172a;
-  --panel: #1e293b;
-  --border: #334155;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #38bdf8;
-  --ref: #64748b;
-  --err: #ef4444;
+  --bg: #f6f8fb;
+  --panel: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --accent: #16a34a;
+  --ref: #22c55e;
+  --err: #dc2626;
 }
 
 body {
@@ -64,13 +64,14 @@ select,
 input[type="range"] {
   width: 100%;
   padding: 10px;
-  background: #020617;
+  background: #f8fafc;
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 4px;
   outline: none;
   font-size: 14px;
   box-sizing: border-box;
+  accent-color: var(--accent);
 }
 
 select:focus {
@@ -98,7 +99,7 @@ select:focus {
 .sym-input {
   width: 60px;
   padding: 8px;
-  background: #020617;
+  background: #ffffff;
   color: var(--text);
   border: 2px solid var(--border);
   border-radius: 4px;
@@ -122,7 +123,7 @@ select:focus {
 }
 
 .metrics {
-  background: #020617;
+  background: #f8fafc;
   padding: 15px;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -177,14 +178,14 @@ select:focus {
 }
 
 .equation-box {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px dashed var(--accent);
+  background: #f0fdf4;
+  border: 1px dashed #16a34a;
   padding: 10px;
   border-radius: 4px;
   text-align: center;
   font-family: monospace;
   font-size: 14px;
-  color: #e0f2fe;
+  color: #14532d;
   margin-top: auto;
 }
 
@@ -194,7 +195,7 @@ select:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(2, 6, 23, 0.95);
+  background: rgba(246, 248, 251, 0.96);
   display: flex;
   flex-direction: column;
   justify-content: center;

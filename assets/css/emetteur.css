@@ -1,10 +1,10 @@
 ﻿:root {
   --bg: #f6f8fb;
   --card: #ffffff;
-  --accent: #ff764d;
-  --wave-info: #5c8aff;
+  --accent: #16a34a;
+  --wave-info: #22c55e;
   --wave-carrier: #94a3b8;
-  --wave-mod: #ff9b6b;
+  --wave-mod: #ca8a04;
   --text-main: #1e293b;
   --text-muted: #64748b;
 }
@@ -104,9 +104,9 @@ input[type=radio] {
 }
 
 .panel.highlight {
-  border-color: #ffd8cb;
-  background: #fffaf8;
-  box-shadow: inset 0 0 20px rgba(255, 155, 107, 0.05);
+  border-color: #fde68a;
+  background: #fffbeb;
+  box-shadow: inset 0 0 20px rgba(202, 138, 4, 0.05);
 }
 
 .title {

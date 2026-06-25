@@ -1,15 +1,15 @@
 ﻿:root {
-  --bg: #f8fafc;
+  --bg: #f6f8fb;
   --card: #ffffff;
-  --text: #0f172a;
+  --text: #1e293b;
   --muted: #64748b;
   --border: #e2e8f0;
-  --fas: #10b981;
-  --nfas: #f59e0b;
-  --vmt: #8b5cf6;
-  --cas: #3b82f6;
-  --fbit: #ef4444;
-  --robbed: #d946ef;
+  --fas: #16a34a;
+  --nfas: #ca8a04;
+  --vmt: #ca8a04;
+  --cas: #22c55e;
+  --fbit: #dc2626;
+  --robbed: #ef4444;
   --voice: #e2e8f0;
   --voice-hover: #cbd5e1;
   --active-scan: #facc15;
@@ -34,7 +34,7 @@ body {
 h1 {
   margin: 0 0 5px;
   font-size: 24px;
-  color: #0f172a;
+  color: #1e293b;
 }
 
 .subtitle {
@@ -83,7 +83,7 @@ select {
 }
 
 button {
-  background: #0f172a;
+  background: #16a34a;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -97,11 +97,11 @@ button {
 }
 
 button:hover {
-  background: #334155;
+  background: #15803d;
 }
 
 button.active {
-  background: #ef4444;
+  background: #dc2626;
 }
 
 .speed-ctrl {
@@ -216,7 +216,7 @@ button.active {
 .info-binary {
   font-family: monospace;
   background: #1e293b;
-  color: #38bdf8;
+  color: #22c55e;
   padding: 12px;
   border-radius: 6px;
   font-size: 18px;
@@ -284,7 +284,7 @@ button.active {
   font-size: 18px;
   font-weight: 900;
   font-family: monospace;
-  color: #0ea5e9;
+  color: #16a34a;
 }
 
 .stat-label {
