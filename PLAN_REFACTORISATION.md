@@ -1,60 +1,60 @@
 # Plan de refactorisation du laboratoire virtuel
 
 ## Objectif
-Conserver les fonctionnalités du projet tout en réduisant les doublons et en rendant l’ensemble plus lisible.
+Conserver les fonctionnalitÃ©s du projet tout en rÃ©duisant les doublons et en rendant l'ensemble plus lisible.
 
-## 1. Fichiers à conserver comme base principale
+## 1. Fichiers conserver comme base principale
 
 ### Fondamentaux analogiques
 - `Emetteur.html`
 - `Amplificateur.html`
-- `Récepteur.html`
+- `RÃ©cepteur.html`
 
-### Numérisation
+### NumÃ©risation
 - `CAN.html`
 - `Simulateur_E12.html`
 
-### Modulations numériques
+### Modulations numÃ©riques
 - `Simulateur 2.html`
-- `Tableau de Bord Modulations Numériques.html`
+- `Tableau de Bord Modulations NumÃ©riques.html`
 
 ### Transmission
 - `Transmission.html`
 - `Transmission Num et Traite Sgnal.html`
 
-### Réseau téléphonique / multiplexage
+### RÃ©seau tÃ©lÃ©phonique / multiplexage
 - `MUX.html`
 
-## 2. Fichiers à fusionner ou absorber
+## 2. Fichiers fusionner ou absorber
 
-### `Simulateur.html` ? à fusionner dans `Simulateur 2.html`
-Motif : même domaine fonctionnel. `Simulateur 2.html` est une version plus riche.
+### `Simulateur.html` ? fusionner dans `Simulateur 2.html`
+Motif : mÃªme domaine fonctionnel. `Simulateur 2.html` est une version plus riche.
 
-Statut : fusion légère engagée. `Simulateur.html` redirige désormais vers `Simulateur 2.html?mode=symbol&num=1`.
+Statut : fusion lÃ©gÃ©re engagÃ©e. `Simulateur.html` redirige dÃ©sormais vers `Simulateur 2.html?mode=symbol&num=1`.
 
-### `Simulateur_MUX_DMUX.html` ? à intégrer progressivement dans `MUX.html`
-Motif : recouvrement élevé sur PCM, trames et inspection. `MUX.html` est la meilleure base finale.
+### `Simulateur_MUX_DMUX.html` ? intÃ©grer progressivement dans `MUX.html`
+Motif : recouvrement levÃ© sur PCM, trames et inspection. `MUX.html` est la meilleure base finale.
 
-Statut : fusion légère engagée. `Simulateur_MUX_DMUX.html` redirige désormais vers `MUX.html?mode=pcm`.
+Statut : fusion lÃ©gÃ©re engagÃ©e. `Simulateur_MUX_DMUX.html` redirige dÃ©sormais vers `MUX.html?mode=pcm`.
 
-## 3. Fichiers à archiver
+## 3. Fichiers archiver
 
 ### `Simulateur_MUX11.html`
-Motif : doublon très probable de `Simulateur_MUX.html`.
+Motif : doublon trÃ©s probable de `Simulateur_MUX.html`.
 
-Statut : déplacé dans `archive/Simulateur_MUX11.html`.
+Statut : dÃ©placÃ© dans `archive/Simulateur_MUX11.html`.
 
-## 4. Renommages recommandés
+## 4. Renommages recommandÃ©s
 
-Ces renommages sont conseillés mais non appliqués automatiquement ici.
+Ces renommages sont conseillÃ©s mais non appliquÃ©s automatiquement ici.
 
 - `Emetteur.html` ? `emetteur_am_fm.html`
-- `Récepteur.html` ? `recepteur_demodulation.html`
+- `RÃ©cepteur.html` ? `recepteur_demodulation.html`
 - `Amplificateur.html` ? `amplificateur_repetiteur.html`
 - `CAN.html` ? `convertisseur_can.html`
 - `Simulateur.html` ? `modulation_symbole.html`
 - `Simulateur 2.html` ? `modulation_sequence.html`
-- `Tableau de Bord Modulations Numériques.html` ? `modulations_tableau_bord.html`
+- `Tableau de Bord Modulations NumÃ©riques.html` ? `modulations_tableau_bord.html`
 - `Transmission.html` ? `transmission_pedagogique.html`
 - `Transmission Num et Traite Sgnal.html` ? `transmission_dsp_avancee.html`
 - `Simulateur_E12.html` ? `multitrame_e1.html`
@@ -73,29 +73,29 @@ Ces renommages sont conseillés mais non appliqués automatiquement ici.
   /multiplexage
 ```
 
-## 6. Externalisation CSS engagée
+## 6. Externalisation CSS engagÃ©e
 
-- `assets/css/lab-common.css` : header commun partagé
+- `assets/css/lab-common.css` : header commun partagÃ©
 - `assets/css/index.css` : feuille de style de `index.html`
 - `assets/css/amplificateur.css` : feuille de style de `Amplificateur.html`
 - `assets/css/can.css` : feuille de style de `CAN.html`
 - `assets/css/emetteur.css` : feuille de style de `Emetteur.html`
-- `assets/css/recepteur.css` : feuille de style de `Récepteur.html`
+- `assets/css/recepteur.css` : feuille de style de `RÃ©cepteur.html`
 - `assets/css/mux-main.css` : feuille de style principale de `MUX.html`
-- `assets/css/redirect-page.css` : style partagé des pages de compatibilité / redirection
+- `assets/css/redirect-page.css` : style partagÃ© des pages de compatibilitÃ© / redirection
 
-## 7. Base JavaScript commune engagée
+## 7. Base JavaScript commune engagÃ©e
 
-- `assets/js/lab-common.js` : utilitaires partagés pour
-  - initialisation homogène du header
-  - lecture des paramètres d’URL
-  - redirections de compatibilité
-  - gestion simplifiée des modes d’entrée
+- `assets/js/lab-common.js` : utilitaires partagÃ©s pour
+  - initialisation homogÃ©ne du header
+  - lecture des paramÃ©tres d'URL
+  - redirections de compatibilitÃ©
+  - gestion simplifiÃ©e des modes d'entre
 
-## 8. Ordre pédagogique conseillé
+## 8. Ordre pÃ©dagogique conseillÃ©
 1. `Emetteur.html`
 2. `Amplificateur.html`
-3. `Récepteur.html`
+3. `RÃ©cepteur.html`
 4. `CAN.html`
 5. `Simulateur.html` ou `Simulateur 2.html`
 6. `Transmission.html`
@@ -104,25 +104,25 @@ Ces renommages sont conseillés mais non appliqués automatiquement ici.
 9. `Simulateur_MUX.html`
 10. `MUX.html`
 
-## 9. Étapes techniques recommandées
+## 9. Ã©tapes techniques recommandÃ©es
 
-### Étape A — immédiate
-- utiliser `index.html` comme page d’accueil
-- ne déplacer aucun fichier
-- terminée : `Simulateur_MUX11.html` archivé
+### Ã©tape A immÃ©diate
+- utiliser `index.html` comme page d'accueil
+- ne dÃ©placer aucun fichier
+- terminÃ©e : `Simulateur_MUX11.html` archivÃ©
 
-### Étape B — rationalisation
+### Ã©tape B rationalisation
 - fusionner `Simulateur.html` et `Simulateur 2.html`
-- mutualiser les styles communs si souhaité
+- mutualiser les styles communs si souhaitÃ©
 - harmoniser les titres et noms de fichiers
 
-### Étape C — finalisation
-- regrouper les pages dans des dossiers métiers
+### Ã©tape C  finalisation
+- regrouper les pages dans des dossiers mÃ©tiers
 - corriger tous les liens internes
 - ajouter une navigation commune sur toutes les pages
 
 ## 10. Architecture cible minimale
 
 - `index.html` : accueil principal
-- un simulateur principal par thème
-- les variantes ou anciennes versions déplacées dans un dossier `archive/`
+- un simulateur principal par thÃ©me
+- les variantes ou anciennes versions dÃ©placÃ©es dans un dossier `archive/`
