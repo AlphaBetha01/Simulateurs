@@ -22,11 +22,13 @@
       title: 'Num\u00e9risation et PCM',
       pages: [
         { id: 'numerisation-can', label: 'Convertisseur CAN', href: 'pages/numerisation/CAN.html' },
+        { id: 'numerisation-codage-ligne', label: 'Codage de Ligne', href: 'pages/numerisation/CodageLigne.html' },
         { id: 'multiplexage-e1', label: 'Multitrame E1', href: 'pages/multiplexage/Simulateur_E12.html' }
       ],
       bridges: [
         { label: 'Poursuivre vers les modulations', href: 'pages/modulations/Simulateur 2.html' },
-        { label: 'Comparer E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' }
+        { label: 'Comparer E1 / T1', href: 'pages/multiplexage/Simulateur_MUX.html' },
+        { label: 'Voir les codes de ligne', href: 'pages/numerisation/CodageLigne.html' }
       ]
     },
     modulations: {

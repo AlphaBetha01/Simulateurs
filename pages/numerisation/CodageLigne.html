@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Simulateur Codage de Ligne</title>
+<link rel="stylesheet" href="../../assets/css/lab-common.css" />
+<link rel="stylesheet" href="../../assets/css/codage-ligne.css" />
+</head>
+<body>
+
+<div class="lab-global-header">
+  <div class="lab-global-header__inner">
+    <a class="lab-global-header__home" href="../../index.html">? Accueil</a>
+    <div class="lab-global-header__brand">
+      <strong>Laboratoire Virtuel de Télécommunication</strong>
+      <span>Numérisation • codage de ligne et mise en forme</span>
+    </div>
+  </div>
+</div>
+
+<div class="cl-wrap">
+
+  <!-- En-tête ???????????????????????????????????????????????? -->
+  <div class="cl-title-row">
+    <div>
+      <h1>Simulateur de Codage de Ligne</h1>
+      <p>Visualisez et comparez les formes d'onde de 9 codes en bande de base : NRZ-L, NRZ-M, NRZ-I, RZ, Manchester, Manchester différentiel, AMI, HDB3 et B8ZS.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+      <a class="cl-btn" href="CAN.html">? CAN / PCM</a>
+      <a class="cl-btn" href="../multiplexage/Simulateur_E12.html">Trame E1 ?</a>
+    </div>
+  </div>
+
+  <!-- Grille principale ?????????????????????????????????????? -->
+  <div class="cl-grid">
+
+    <!-- Panneau de contrôle ???????????????????????????????? -->
+    <aside class="cl-controls">
+      <h2>Paramètres</h2>
+
+      <!-- Saisie de la séquence -->
+      <div class="cl-field">
+        <label for="cl-input">Séquence binaire</label>
+        <input id="cl-input" type="text" maxlength="64"
+               placeholder="Ex. 10110001…" autocomplete="off" spellcheck="false" />
+        <span class="cl-hint">Entre 2 et 64 bits (0 et 1 uniquement)</span>
+        <span id="cl-input-error" class="cl-error"></span>
+      </div>
+
+      <!-- Préréglages -->
+      <div class="cl-field">
+        <label>Préréglages</label>
+        <div id="cl-presets" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+
+      <!-- Sélection des codes -->
+      <div class="cl-field">
+        <label>Codes à afficher</label>
+        <div id="cl-code-grid" class="cl-code-grid"></div>
+      </div>
+
+      <!-- Animation -->
+      <div class="cl-field">
+        <label>Animation bit par bit</label>
+        <div class="cl-btn-row">
+          <button id="cl-btn-anim" class="cl-btn primary" type="button">? Animer</button>
+          <button id="cl-btn-reset" class="cl-btn" type="button">? Réinitialiser</button>
+        </div>
+      </div>
+
+      <!-- Vitesse d'animation -->
+      <div class="cl-field">
+        <label>Vitesse</label>
+        <div class="cl-speed-row">
+          <label for="cl-speed">Lent</label>
+          <input id="cl-speed" type="range" min="0.5" max="8" step="0.5" value="2" />
+          <span id="cl-speed-val" class="cl-speed-val">2 b/s</span>
+        </div>
+      </div>
+
+      <!-- Rappel théorique rapide -->
+      <div class="cl-field" style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+        <label>Aide rapide</label>
+        <div style="font-size:12px;color:#475569;line-height:1.55">
+          <p style="margin:0 0 6px"><strong style="color:var(--accent)">NRZ</strong> — Niveau constant sur toute la durée du bit.</p>
+          <p style="margin:0 0 6px"><strong style="color:#ca8a04">RZ</strong> — Retour à 0 en milieu de bit.</p>
+          <p style="margin:0 0 6px"><strong style="color:#1d4ed8">Manchester</strong> — Transition obligatoire au milieu.</p>
+          <p style="margin:0 0 6px"><strong style="color:#dc2626">AMI / HDB3 / B8ZS</strong> — Codes bipolaires avec règles de substitution.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Zone de visualisation ??????????????????????????????? -->
+    <main class="cl-stage" id="cl-stage">
+      <!-- Contenu généré dynamiquement par codage-ligne.js -->
+    </main>
+
+  </div><!-- /.cl-grid -->
+
+  <!-- Théorie ?????????????????????????????????????????????? -->
+  <section style="margin-top:28px">
+    <h2 style="font-size:16px;font-weight:800;color:#1e293b;margin:0 0 14px;border-left:4px solid var(--accent);padding-left:12px">
+      Rappels théoriques
+    </h2>
+    <div class="cl-theory-grid">
+
+      <div class="cl-theory-card">
+        <h4>Famille NRZ (Non-Retour-à-Zéro)</h4>
+        <ul>
+          <li><strong>NRZ-L :</strong> +V = 1, ?V = 0. Simple mais contient une composante DC.</li>
+          <li><strong>NRZ-M :</strong> transition sur <em>1</em> (marque). Auto-synchronisant sur les longues séquences de 1.</li>
+          <li><strong>NRZ-I :</strong> transition sur <em>0</em>. Inversé du NRZ-M.</li>
+          <li>Bande minimale ? 0,5 × f<sub>b</sub>. Sensible aux longues séries monotones.</li>
+        </ul>
+      </div>
+
+      <div class="cl-theory-card warn">
+        <h4>Codes à Retour-à-Zéro (RZ)</h4>
+        <ul>
+          <li>Signal revient à 0 après chaque bit à 1 (demi-durée).</li>
+          <li>Contient de l'énergie à la fréquence de l'horloge ? auto-synchronisation.</li>
+          <li>Bande occupée double par rapport au NRZ (2 × f<sub>b</sub>).</li>
+        </ul>
+      </div>
+
+      <div class="cl-theory-card info">
+        <h4>Manchester &amp; Manchester Différentiel</h4>
+        <ul>
+          <li><strong>Manchester :</strong> transition au milieu de chaque bit. 1 = ?, 0 = ?. Élimine la DC.</li>
+          <li><strong>Manchester Diff. :</strong> transition au <em>début</em> sur 0, pas de transition sur 1. Insensible à l'inversion de polarité.</li>
+          <li>Bande = 2 × f<sub>b</sub>. Utilisé en Ethernet 10BASE-T.</li>
+        </ul>
+      </div>
+
+      <div class="cl-theory-card err">
+        <h4>AMI — Alternating Mark Inversion</h4>
+        <ul>
+          <li>0 ? 0V ; 1 ? alternance +V / ?V.</li>
+          <li>Sans composante DC. Détection d'erreur par violation de parité.</li>
+          <li>Problème : longues séquences de zéros ? perte de synchro.</li>
+        </ul>
+      </div>
+
+      <div class="cl-theory-card">
+        <h4>HDB3 — High Density Bipolar 3</h4>
+        <ul>
+          <li>Basé sur AMI, remplace chaque groupe de 4 zéros consécutifs.</li>
+          <li>Substitution 000V ou B00V selon parité des marques depuis la dernière violation (V).</li>
+          <li>Utilisé dans <strong>E1 / E3</strong> (Europe). Limite à 3 zéros consécutifs maximum.</li>
+        </ul>
+      </div>
+
+      <div class="cl-theory-card">
+        <h4>B8ZS — Bipolar with 8-Zero Substitution</h4>
+        <ul>
+          <li>Basé sur AMI, remplace chaque groupe de 8 zéros par le motif 000VB0VB.</li>
+          <li>V = violation de parité, B = pulse bipolar conforme.</li>
+          <li>Utilisé dans <strong>T1 / DS1</strong> (Amérique du Nord).</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- /.cl-wrap -->
+
+<script charset="utf-8" src="../../assets/js/lab-common.js"></script>
+<script charset="utf-8" src="../../assets/js/codage-ligne.js"></script>
+</body>
+</html>
