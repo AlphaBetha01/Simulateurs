@@ -5,72 +5,79 @@
            AMI, HDB3, B8ZS
    ================================================================ */
 LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numerisation-codage-ligne' });
+
 (function () {
   'use strict';
 
-  /* ?? Constantes ??????????????????????????????????????????????? */
   const CODES = {
-    'NRZ-L':     { label: 'NRZ-L',        color: '#16a34a', desc: 'Non-Retour-à-Zéro Niveau' },
-    'NRZ-M':     { label: 'NRZ-M',        color: '#15803d', desc: 'NRZ Mark (transition sur 1)' },
-    'NRZ-I':     { label: 'NRZ-I',        color: '#22c55e', desc: 'NRZ Inversé (transition sur 0)' },
-    'RZ':        { label: 'RZ',           color: '#ca8a04', desc: 'Retour-à-Zéro' },
-    'MANCHESTER':{ label: 'Manchester',   color: '#1d4ed8', desc: 'Transition au milieu de bit' },
-    'DIFF-MAN':  { label: 'Manch. Diff.', color: '#7c3aed', desc: 'Manchester Différentiel' },
-    'AMI':       { label: 'AMI',          color: '#dc2626', desc: 'Alternating Mark Inversion' },
-    'HDB3':      { label: 'HDB3',         color: '#b45309', desc: 'High Density Bipolar 3' },
-    'B8ZS':      { label: 'B8ZS',         color: '#0891b2', desc: 'Bipolar with 8-Zero Substitution' }
+    'NRZ-L': { label: 'NRZ-L', color: '#16a34a', desc: 'NRZ niveau' },
+    'NRZ-M': { label: 'NRZ-M', color: '#15803d', desc: 'Transition sur 1' },
+    'NRZ-I': { label: 'NRZ-I', color: '#22c55e', desc: 'Transition sur 0' },
+    'RZ': { label: 'RZ', color: '#ca8a04', desc: 'Retour a zero' },
+    'MANCHESTER': { label: 'Manchester', color: '#1d4ed8', desc: 'Transition au milieu du bit' },
+    'DIFF-MAN': { label: 'Manchester diff.', color: '#7c3aed', desc: 'Differentiel' },
+    'AMI': { label: 'AMI', color: '#dc2626', desc: 'Alternating Mark Inversion' },
+    'HDB3': { label: 'HDB3', color: '#b45309', desc: 'Substitution des 4 zeros' },
+    'B8ZS': { label: 'B8ZS', color: '#0891b2', desc: 'Substitution des 8 zeros' }
   };
 
   const LEVELS = { HIGH: 1, ZERO: 0, LOW: -1 };
   const DEFAULT_BITS = '10110001000010111';
-  const ANIM_STEPS = 40; // frames per bit during animation
+  const PRESETS = [
+    { label: 'Serie de 1', bits: '11111111' },
+    { label: 'Serie de 0', bits: '00000000' },
+    { label: 'Alternance', bits: '10101010' },
+    { label: 'HDB3 test', bits: '10000011000010' },
+    { label: 'B8ZS test', bits: '1000000001000000001' },
+    { label: 'Aleatoire', bits: 'random' }
+  ];
 
-  /* ?? State ???????????????????????????????????????????????????? */
-  let state = {
+  const state = {
     bits: [],
     selectedCodes: ['NRZ-L', 'MANCHESTER', 'AMI', 'HDB3'],
-    encoded: {},        // { codeId: [ {level, half?} ] }
+    encoded: {},
     animFrame: null,
-    animPos: 0,         // animated bit position (float)
-    animSpeed: 1,       // bits per second (animation)
+    animPos: 0,
+    animSpeed: 2,
     isAnimating: false,
-    spectrumCtx: null,
     tooltipEl: null
   };
 
-  /* ?? Encoders ????????????????????????????????????????????????? */
+  function parseBits(str) {
+    return String(str || '')
+      .replace(/\s/g, '')
+      .split('')
+      .filter(function (c) { return c === '0' || c === '1'; })
+      .map(function (c) { return Number(c); });
+  }
+
+  function toggleLevel(level) {
+    return level === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
+  }
 
   function encodeNRZ_L(bits) {
-    // 1?+V, 0?-V  (chaque bit = 1 segment)
-    return bits.map(b => ({ level: b === 1 ? LEVELS.HIGH : LEVELS.LOW }));
+    return bits.map(function (b) { return { level: b === 1 ? LEVELS.HIGH : LEVELS.LOW }; });
   }
 
   function encodeNRZ_M(bits) {
-    // Transition sur 1, pas de transition sur 0
-    let segs = [];
-    let cur = LEVELS.LOW;
-    bits.forEach(b => {
-      if (b === 1) cur = cur === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-      segs.push({ level: cur });
+    var cur = LEVELS.LOW;
+    return bits.map(function (b) {
+      if (b === 1) cur = toggleLevel(cur);
+      return { level: cur };
     });
-    return segs;
   }
 
   function encodeNRZ_I(bits) {
-    // Transition sur 0, pas de transition sur 1
-    let segs = [];
-    let cur = LEVELS.HIGH;
-    bits.forEach(b => {
-      if (b === 0) cur = cur === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-      segs.push({ level: cur });
+    var cur = LEVELS.HIGH;
+    return bits.map(function (b) {
+      if (b === 0) cur = toggleLevel(cur);
+      return { level: cur };
     });
-    return segs;
   }
 
   function encodeRZ(bits) {
-    // Chaque bit = 2 demi-intervalles : premier = signal, second = 0
-    let segs = [];
-    bits.forEach(b => {
+    var segs = [];
+    bits.forEach(function (b) {
       segs.push({ level: b === 1 ? LEVELS.HIGH : LEVELS.LOW, half: true });
       segs.push({ level: LEVELS.ZERO, half: true });
     });
@@ -78,217 +85,194 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
   }
 
   function encodeManchester(bits) {
-    // 1 ? bas?haut (transition ? au milieu), 0 ? haut?bas (transition ? au milieu)
-    let segs = [];
-    bits.forEach(b => {
+    var segs = [];
+    bits.forEach(function (b) {
       if (b === 1) {
-        segs.push({ level: LEVELS.LOW,  half: true });
+        segs.push({ level: LEVELS.LOW, half: true });
         segs.push({ level: LEVELS.HIGH, half: true });
       } else {
         segs.push({ level: LEVELS.HIGH, half: true });
-        segs.push({ level: LEVELS.LOW,  half: true });
+        segs.push({ level: LEVELS.LOW, half: true });
       }
     });
     return segs;
   }
 
   function encodeDiffManchester(bits) {
-    // Transition au début du bit sur 0, pas de transition sur 1
-    // Transition obligatoire au milieu de chaque bit
-    let segs = [];
-    let cur = LEVELS.LOW; // niveau courant au début
-    bits.forEach(b => {
-      if (b === 0) {
-        // Transition au début : inverser cur
-        cur = cur === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-      }
-      // 1ère moitié = cur, 2ème moitié = inverse
+    var segs = [];
+    var cur = LEVELS.LOW;
+    bits.forEach(function (b) {
+      if (b === 0) cur = toggleLevel(cur);
       segs.push({ level: cur, half: true });
-      let mid = cur === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-      segs.push({ level: mid, half: true });
-      cur = mid; // état au début du prochain bit = fin du courant
+      cur = toggleLevel(cur);
+      segs.push({ level: cur, half: true });
     });
     return segs;
   }
 
   function encodeAMI(bits) {
-    // 0 ? 0V, 1 ? alternance +V/-V
-    let segs = [];
-    let lastMark = LEVELS.HIGH; // commence par -V au prochain 1
-    bits.forEach(b => {
+    var segs = [];
+    var lastMark = LEVELS.HIGH;
+    bits.forEach(function (b) {
       if (b === 0) {
         segs.push({ level: LEVELS.ZERO });
       } else {
-        lastMark = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-        segs.push({ level: lastMark });
+        lastMark = toggleLevel(lastMark);
+        segs.push({ level: lastMark, mark: true });
       }
     });
     return segs;
   }
 
   function encodeHDB3(bits) {
-    // AMI avec substitution de toute séquence de 4 zéros consécutifs
-    // Règle : 000V ou B00V selon parité des 1 depuis dernière violation
-    let segs = new Array(bits.length).fill(null).map(() => ({ level: LEVELS.ZERO }));
-    let lastMark = LEVELS.HIGH;  // prochain polarité de 1
-    let violations = 0;          // nb de violations (V) posées
-    let onesCount = 0;           // 1 depuis dernière violation (pour B00V ou 000V)
+    var segs = bits.map(function () { return { level: LEVELS.ZERO }; });
+    var lastMark = LEVELS.HIGH;
+    var onesCount = 0;
+    var i = 0;
 
-    let i = 0;
     while (i < bits.length) {
       if (bits[i] === 1) {
-        lastMark = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
+        lastMark = toggleLevel(lastMark);
         segs[i] = { level: lastMark, mark: true };
         onesCount++;
         i++;
-      } else {
-        // Compter les zéros consécutifs
-        let zStart = i;
-        while (i < bits.length && bits[i] === 0) i++;
-        let zCount = i - zStart;
+        continue;
+      }
 
-        let j = zStart;
-        while (j < zStart + zCount) {
-          let remaining = zStart + zCount - j;
-          if (remaining >= 4) {
-            // Substitution
-            let useB = (onesCount % 2 === 0); // B00V si pair, 000V si impair
-            if (useB) {
-              // B00V : B est de même polarité que prochaine marque normale
-              let Bpol = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-              segs[j]   = { level: Bpol,  b: true };
-              segs[j+1] = { level: LEVELS.ZERO };
-              segs[j+2] = { level: LEVELS.ZERO };
-              segs[j+3] = { level: Bpol,  v: true }; // V = même polarité que B
-              lastMark = Bpol; // V est de même polarité ? prochain mark s'inverse
-            } else {
-              // 000V
-              segs[j]   = { level: LEVELS.ZERO };
-              segs[j+1] = { level: LEVELS.ZERO };
-              segs[j+2] = { level: LEVELS.ZERO };
-              let Vpol = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-              segs[j+3] = { level: Vpol, v: true };
-              lastMark = Vpol;
-            }
-            onesCount = 0;
-            j += 4;
+      var zStart = i;
+      while (i < bits.length && bits[i] === 0) i++;
+      var zCount = i - zStart;
+      var j = zStart;
+
+      while (j < zStart + zCount) {
+        var remaining = zStart + zCount - j;
+        if (remaining >= 4) {
+          var useB = onesCount % 2 === 0;
+          if (useB) {
+            var bPol = toggleLevel(lastMark);
+            segs[j] = { level: bPol, b: true };
+            segs[j + 1] = { level: LEVELS.ZERO };
+            segs[j + 2] = { level: LEVELS.ZERO };
+            segs[j + 3] = { level: bPol, v: true };
+            lastMark = bPol;
           } else {
+            var vPol = toggleLevel(lastMark);
             segs[j] = { level: LEVELS.ZERO };
-            j++;
+            segs[j + 1] = { level: LEVELS.ZERO };
+            segs[j + 2] = { level: LEVELS.ZERO };
+            segs[j + 3] = { level: vPol, v: true };
+            lastMark = vPol;
           }
+          onesCount = 0;
+          j += 4;
+        } else {
+          segs[j] = { level: LEVELS.ZERO };
+          j++;
         }
       }
     }
+
     return segs;
   }
 
   function encodeB8ZS(bits) {
-    // AMI avec substitution de toute séquence de 8 zéros consécutifs
-    // Remplacement par 000VB0VB (V = violation, B = bipolar)
-    let segs = new Array(bits.length).fill(null).map(() => ({ level: LEVELS.ZERO }));
-    let lastMark = LEVELS.HIGH;
+    var segs = bits.map(function () { return { level: LEVELS.ZERO }; });
+    var lastMark = LEVELS.HIGH;
+    var i = 0;
 
-    let i = 0;
     while (i < bits.length) {
       if (bits[i] === 1) {
-        lastMark = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
+        lastMark = toggleLevel(lastMark);
         segs[i] = { level: lastMark, mark: true };
         i++;
-      } else {
-        let zStart = i;
-        while (i < bits.length && bits[i] === 0) i++;
-        let zCount = i - zStart;
+        continue;
+      }
 
-        let j = zStart;
-        while (j < zStart + zCount) {
-          let remaining = zStart + zCount - j;
-          if (remaining >= 8) {
-            // 000VB0VB
-            let V1 = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH; // violation = same as last mark
-            let B  = lastMark; // B = opposite of V1
-            let V2 = lastMark === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-            // pattern: 0 0 0 V1 B 0 V2 B
-            // V1 = same as lastMark (violation)
-            // B after V1 = opposite of V1
-            let pattern = [
-              { level: LEVELS.ZERO },
-              { level: LEVELS.ZERO },
-              { level: LEVELS.ZERO },
-              { level: V1, v: true },
-              { level: V1 === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH, b: true },
-              { level: LEVELS.ZERO },
-              { level: V1, v: true },
-              { level: V1 === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH, b: true }
-            ];
-            pattern.forEach((p, k) => { segs[j + k] = p; });
-            // lastMark stays — B8ZS last pulse is B (opposite of V)
-            lastMark = V1 === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
-            j += 8;
-          } else {
-            segs[j] = { level: LEVELS.ZERO };
-            j++;
-          }
+      var zStart = i;
+      while (i < bits.length && bits[i] === 0) i++;
+      var zCount = i - zStart;
+      var j = zStart;
+
+      while (j < zStart + zCount) {
+        var remaining = zStart + zCount - j;
+        if (remaining >= 8) {
+          var v1 = toggleLevel(lastMark);
+          var b1 = toggleLevel(v1);
+          var pattern = [
+            { level: LEVELS.ZERO },
+            { level: LEVELS.ZERO },
+            { level: LEVELS.ZERO },
+            { level: v1, v: true },
+            { level: b1, b: true },
+            { level: LEVELS.ZERO },
+            { level: v1, v: true },
+            { level: b1, b: true }
+          ];
+          pattern.forEach(function (p, k) { segs[j + k] = p; });
+          lastMark = b1;
+          j += 8;
+        } else {
+          segs[j] = { level: LEVELS.ZERO };
+          j++;
         }
       }
     }
+
     return segs;
   }
 
-  /* ?? Encode dispatcher ???????????????????????????????????????? */
   function encode(codeId, bits) {
     switch (codeId) {
-      case 'NRZ-L':    return encodeNRZ_L(bits);
-      case 'NRZ-M':    return encodeNRZ_M(bits);
-      case 'NRZ-I':    return encodeNRZ_I(bits);
-      case 'RZ':       return encodeRZ(bits);
+      case 'NRZ-L': return encodeNRZ_L(bits);
+      case 'NRZ-M': return encodeNRZ_M(bits);
+      case 'NRZ-I': return encodeNRZ_I(bits);
+      case 'RZ': return encodeRZ(bits);
       case 'MANCHESTER': return encodeManchester(bits);
       case 'DIFF-MAN': return encodeDiffManchester(bits);
-      case 'AMI':      return encodeAMI(bits);
-      case 'HDB3':     return encodeHDB3(bits);
-      case 'B8ZS':     return encodeB8ZS(bits);
-      default:         return [];
+      case 'AMI': return encodeAMI(bits);
+      case 'HDB3': return encodeHDB3(bits);
+      case 'B8ZS': return encodeB8ZS(bits);
+      default: return [];
     }
   }
 
-  /* ?? Statistics ??????????????????????????????????????????????? */
-  function computeStats(segs) {
-    let transitions = 0;
-    let dcBias = 0;
-    let zeros = 0, highs = 0, lows = 0;
-    for (let i = 0; i < segs.length; i++) {
-      const lv = segs[i].level;
-      dcBias += lv;
-      if (lv === LEVELS.ZERO) zeros++;
-      else if (lv === LEVELS.HIGH) highs++;
-      else lows++;
-      if (i > 0 && segs[i].level !== segs[i - 1].level) transitions++;
+  function estimateBandwidth(segs) {
+    var transitions = 0;
+    for (var i = 1; i < segs.length; i++) {
+      if (segs[i].level !== segs[i - 1].level) transitions++;
     }
-    const n = segs.length;
+    var ratio = transitions / Math.max(2 * segs.length, 1);
+    if (ratio <= 0.5) return '0.5 × Tb?¹';
+    if (ratio <= 1) return '1 × Tb?¹';
+    return '2 × Tb?¹';
+  }
+
+  function computeStats(segs) {
+    var transitions = 0;
+    var dcBias = 0;
+    var highs = 0;
+    var lows = 0;
+
+    for (var i = 0; i < segs.length; i++) {
+      var level = segs[i].level;
+      dcBias += level;
+      if (level === LEVELS.HIGH) highs++;
+      if (level === LEVELS.LOW) lows++;
+      if (i > 0 && level !== segs[i - 1].level) transitions++;
+    }
+
     return {
-      transitions,
-      dcBias: (dcBias / n).toFixed(3),
-      density: ((transitions / n) * 100).toFixed(1),
+      transitions: transitions,
+      dcBias: (dcBias / Math.max(segs.length, 1)).toFixed(3),
+      density: ((transitions / Math.max(segs.length, 1)) * 100).toFixed(1),
       balance: (((highs - lows) / Math.max(highs + lows, 1)) * 100).toFixed(1),
       bandwidth: estimateBandwidth(segs)
     };
   }
 
-  function estimateBandwidth(segs) {
-    // Heuristic: min bandwidth ? transitions / (2 * N) × fs
-    let trans = 0;
-    for (let i = 1; i < segs.length; i++) {
-      if (segs[i].level !== segs[i - 1].level) trans++;
-    }
-    const n = segs.length;
-    const ratio = trans / (2 * n);
-    if (ratio <= 0.5)  return '0.5 × Tb?¹';
-    if (ratio <= 1.0)  return '1 × Tb?¹';
-    return '2 × Tb?¹';
-  }
-
   function ensureTooltip() {
     if (state.tooltipEl) return state.tooltipEl;
-    const el = document.createElement('div');
+    var el = document.createElement('div');
     el.style.position = 'fixed';
     el.style.zIndex = '9999';
     el.style.pointerEvents = 'none';
@@ -304,11 +288,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     return el;
   }
 
-  function showTooltip(html, clientX, clientY) {
-    const el = ensureTooltip();
+  function showTooltip(html, x, y) {
+    var el = ensureTooltip();
     el.innerHTML = html;
-    el.style.left = clientX + 14 + 'px';
-    el.style.top = clientY + 14 + 'px';
+    el.style.left = x + 14 + 'px';
+    el.style.top = y + 14 + 'px';
     el.style.display = 'block';
   }
 
@@ -316,107 +300,163 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     if (state.tooltipEl) state.tooltipEl.style.display = 'none';
   }
 
-  function getCanvasSize(canvas) {
+  function resizeCanvas(canvas) {
+    var dpr = window.devicePixelRatio || 1;
+    var width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+    var height = Math.max(1, Math.round(canvas.clientHeight * dpr));
+    canvas.width = width;
+    canvas.height = height;
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return {
-      width: canvas.clientWidth || canvas.width,
-      height: canvas.clientHeight || canvas.height
+      ctx: ctx,
+      width: canvas.clientWidth,
+      height: canvas.clientHeight
     };
   }
 
-  /* ?? Drawing ?????????????????????????????????????????????????? */
-  function drawWaveform(canvas, segs, color, animPos, label) {
-    const ctx = canvas.getContext('2d');
-    const size = getCanvasSize(canvas);
-    const W = size.width;
-    const H = size.height;
-    const PAD = { t: 12, b: 34, l: 56, r: 12 };
-    const drawW = W - PAD.l - PAD.r;
-    const drawH = H - PAD.t - PAD.b;
-    const midY = PAD.t + drawH / 2;
-    const ampY = drawH * 0.38;
+  function drawAxes(ctx, width, height, bitCount, dark) {
+    var pad = { top: 12, right: 12, bottom: 32, left: 56 };
+    var drawW = width - pad.left - pad.right;
+    var drawH = height - pad.top - pad.bottom;
+    var midY = pad.top + drawH / 2;
+    var ampY = drawH * 0.38;
+    var gridColor = dark ? 'rgba(255,255,255,0.10)' : '#e2e8f0';
+    var axisColor = dark ? 'rgba(255,255,255,0.75)' : '#94a3b8';
 
-    ctx.clearRect(0, 0, W, H);
-
-    // Background
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
-
-    if (!segs || segs.length === 0) return;
-
-    const N = segs.length;
-    const segW = drawW / N;
-
-    // Grid lines
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
-    // +V line
-    ctx.beginPath();
-    ctx.moveTo(PAD.l, midY - ampY);
-    ctx.lineTo(W - PAD.r, midY - ampY);
-    ctx.stroke();
-    // 0V line
-    ctx.beginPath();
-    ctx.moveTo(PAD.l, midY);
-    ctx.lineTo(W - PAD.r, midY);
-    ctx.stroke();
-    // -V line
-    ctx.beginPath();
-    ctx.moveTo(PAD.l, midY + ampY);
-    ctx.lineTo(W - PAD.r, midY + ampY);
-    ctx.stroke();
+    [midY - ampY, midY, midY + ampY].forEach(function (y) {
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(width - pad.right, y);
+      ctx.stroke();
+    });
+
+    for (var i = 0; i <= 4; i++) {
+      var x = pad.left + (i / 4) * drawW;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, height - pad.bottom);
+      ctx.stroke();
+    }
     ctx.setLineDash([]);
 
-    // Axis labels
-    ctx.fillStyle = '#94a3b8';
+    ctx.strokeStyle = axisColor;
+    ctx.beginPath();
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, height - pad.bottom);
+    ctx.moveTo(pad.left, midY);
+    ctx.lineTo(width - pad.right, midY);
+    ctx.stroke();
+
+    ctx.fillStyle = axisColor;
     ctx.font = 'bold 9px Segoe UI, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('+1 V', PAD.l - 4, midY - ampY + 3);
-    ctx.fillText('0 V',  PAD.l - 4, midY + 3);
-    ctx.fillText('-1 V', PAD.l - 4, midY + ampY + 3);
+    ctx.fillText('+1 V', pad.left - 6, midY - ampY + 3);
+    ctx.fillText('0 V', pad.left - 6, midY + 3);
+    ctx.fillText('-1 V', pad.left - 6, midY + ampY + 3);
+
     ctx.textAlign = 'center';
-    for (let i = 0; i <= 4; i++) {
-      const xTick = PAD.l + (i / 4) * drawW;
-      const tb = ((i / 4) * Math.max(state.bits.length, 1)).toFixed(1).replace('.0', '');
-      ctx.fillText(tb, xTick, H - 6);
+    for (var t = 0; t <= 4; t++) {
+      var tickX = pad.left + (t / 4) * drawW;
+      var tb = ((t / 4) * Math.max(bitCount, 1)).toFixed(1).replace('.0', '');
+      ctx.fillText(tb, tickX, height - 6);
     }
-    ctx.fillText('Temps (Tb)', PAD.l + drawW / 2, H - 18);
+    ctx.fillText('Temps (Tb)', pad.left + drawW / 2, height - 18);
     ctx.save();
-    ctx.translate(14, PAD.t + drawH / 2);
+    ctx.translate(14, pad.top + drawH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText('Amplitude (V)', 0, 0);
     ctx.restore();
 
-    // Animated highlight region
-    if (animPos > 0 && animPos <= N) {
-      const bitIdx = Math.floor(animPos);
-      const x = PAD.l + bitIdx * segW;
-      const w = segW;
+    return { pad: pad, drawW: drawW, drawH: drawH, midY: midY, ampY: ampY };
+  }
+
+  function drawOriginalBits(canvas, bits, animPos) {
+    var sized = resizeCanvas(canvas);
+    var ctx = sized.ctx;
+    var width = sized.width;
+    var height = sized.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#fafbfc';
+    ctx.fillRect(0, 0, width, height);
+    if (!bits.length) return;
+
+    var axis = drawAxes(ctx, width, height, bits.length, false);
+    var segW = axis.drawW / bits.length;
+
+    if (animPos >= 0) {
+      var bitW = axis.drawW / Math.max(bits.length, 1);
       ctx.fillStyle = 'rgba(22,163,74,0.08)';
-      ctx.fillRect(x, PAD.t, w, drawH);
+      ctx.fillRect(axis.pad.left + Math.floor(animPos) * bitW, axis.pad.top, bitW, axis.drawH);
     }
 
-    // Draw signal
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var x = axis.pad.left;
+    for (var i = 0; i < bits.length; i++) {
+      var y = axis.midY - (bits[i] === 1 ? axis.ampY * 0.9 : -axis.ampY * 0.9);
+      var xEnd = axis.pad.left + (i + 1) * segW;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        var prevY = axis.midY - (bits[i - 1] === 1 ? axis.ampY * 0.9 : -axis.ampY * 0.9);
+        if (prevY !== y) {
+          ctx.lineTo(x, prevY);
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.lineTo(xEnd, y);
+      x = xEnd;
+    }
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    for (var j = 0; j < bits.length; j++) {
+      var xCenter = axis.pad.left + (j + 0.5) * segW;
+      ctx.fillStyle = Math.floor(animPos) === j ? '#16a34a' : '#64748b';
+      ctx.font = Math.floor(animPos) === j ? 'bold 11px Consolas, monospace' : '10px Consolas, monospace';
+      ctx.fillText(String(bits[j]), xCenter, axis.midY + 3);
+    }
+  }
+
+  function drawWaveform(canvas, segs, color, animPos) {
+    var sized = resizeCanvas(canvas);
+    var ctx = sized.ctx;
+    var width = sized.width;
+    var height = sized.height;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#fafbfc';
+    ctx.fillRect(0, 0, width, height);
+    if (!segs.length) return;
+
+    var axis = drawAxes(ctx, width, height, state.bits.length, false);
+    var segW = axis.drawW / segs.length;
+    var bitW = axis.drawW / Math.max(state.bits.length, 1);
+
+    if (animPos >= 0) {
+      ctx.fillStyle = 'rgba(22,163,74,0.08)';
+      ctx.fillRect(axis.pad.left + Math.floor(animPos) * bitW, axis.pad.top, bitW, axis.drawH);
+    }
+
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
     ctx.beginPath();
-
-    let x = PAD.l;
-    for (let i = 0; i < N; i++) {
-      const seg = segs[i];
-      const y = midY - seg.level * ampY;
-      const xEnd = PAD.l + (i + 1) * segW;
-
+    var x = axis.pad.left;
+    for (var i = 0; i < segs.length; i++) {
+      var seg = segs[i];
+      var y = axis.midY - seg.level * axis.ampY;
+      var xEnd = axis.pad.left + (i + 1) * segW;
       if (i === 0) {
         ctx.moveTo(x, y);
       } else {
-        const prevY = midY - segs[i - 1].level * ampY;
+        var prevY = axis.midY - segs[i - 1].level * axis.ampY;
         if (prevY !== y) {
-          // Vertical transition
           ctx.lineTo(x, prevY);
-          ctx.lineTo(x, y);
-        } else {
           ctx.lineTo(x, y);
         }
       }
@@ -425,255 +465,173 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     }
     ctx.stroke();
 
-    // Bit markers (vertical dashed separators)
     ctx.strokeStyle = '#d1d5db';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
-    for (let i = 1; i < N; i++) {
-      // Only draw if not a half-segment boundary (unless it's a full-bit boundary)
-      const xMark = PAD.l + i * segW;
+    for (var k = 1; k < segs.length; k++) {
+      var xMark = axis.pad.left + k * segW;
       ctx.beginPath();
-      ctx.moveTo(xMark, PAD.t);
-      ctx.lineTo(xMark, PAD.t + drawH);
+      ctx.moveTo(xMark, axis.pad.top);
+      ctx.lineTo(xMark, axis.pad.top + axis.drawH);
       ctx.stroke();
     }
     ctx.setLineDash([]);
 
-    // Special markers (V, B for HDB3/B8ZS)
     ctx.font = 'bold 8px Consolas, monospace';
     ctx.textAlign = 'center';
-    for (let i = 0; i < N; i++) {
-      const seg = segs[i];
-      const xCenter = PAD.l + (i + 0.5) * segW;
-      if (seg.v) {
+    for (var m = 0; m < segs.length; m++) {
+      var xCenter = axis.pad.left + (m + 0.5) * segW;
+      if (segs[m].v) {
         ctx.fillStyle = '#dc2626';
-        ctx.fillText('V', xCenter, PAD.t + 10);
-      } else if (seg.b) {
+        ctx.fillText('V', xCenter, axis.pad.top + 10);
+      } else if (segs[m].b) {
         ctx.fillStyle = '#b45309';
-        ctx.fillText('B', xCenter, PAD.t + 10);
+        ctx.fillText('B', xCenter, axis.pad.top + 10);
       }
     }
   }
 
-  function drawOriginalBits(canvas, bits, animPos) {
-    const ctx = canvas.getContext('2d');
-    const size = getCanvasSize(canvas);
-    const W = size.width;
-    const H = size.height;
-    const PAD = { t: 12, b: 34, l: 58, r: 12 };
+  function drawSpectrum(canvas, encoded) {
+    var sized = resizeCanvas(canvas);
+    var ctx = sized.ctx;
+    var width = sized.width;
+    var height = sized.height;
+    var pad = { top: 16, right: 16, bottom: 36, left: 58 };
+    var drawW = width - pad.left - pad.right;
+    var drawH = height - pad.top - pad.bottom;
 
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#fafbfc';
-    ctx.fillRect(0, 0, W, H);
-
-    if (!bits || bits.length === 0) return;
-
-    const axis = drawWaveAxes(ctx, W, H, PAD, bits.length);
-    const drawW = axis.drawW;
-    const drawH = axis.drawH;
-    const midY = axis.midY;
-    const ampY = drawH * 0.35;
-
-    const N = bits.length;
-    const segW = drawW / N;
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 9px Segoe UI, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('+1 V', PAD.l - 4, midY - ampY + 3);
-    ctx.fillText('-1 V', PAD.l - 4, midY + ampY + 3);
-    ctx.textAlign = 'center';
-    for (let i = 0; i <= 4; i++) {
-      const xTick = PAD.l + (i / 4) * drawW;
-      const tb = ((i / 4) * bits.length).toFixed(1).replace('.0', '');
-      ctx.fillText(tb, xTick, H - 6);
-    }
-    ctx.fillText('Temps (Tb)', PAD.l + drawW / 2, H - 18);
-
-    // Draw NRZ-L representation as original data
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    let x = PAD.l;
-    for (let i = 0; i < N; i++) {
-      const y = midY - (bits[i] === 1 ? ampY : -ampY);
-      const xEnd = PAD.l + (i + 1) * segW;
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        const prevY = midY - (bits[i - 1] === 1 ? ampY : -ampY);
-        if (prevY !== y) {
-          ctx.lineTo(x, prevY);
-          ctx.lineTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      ctx.lineTo(xEnd, y);
-      x = xEnd;
-    }
-    ctx.stroke();
-
-    // Bit labels in center
-    for (let i = 0; i < N; i++) {
-      const xCenter = PAD.l + (i + 0.5) * segW;
-      const isActive = animPos > 0 && Math.floor(animPos) === i;
-      ctx.fillStyle = isActive ? '#16a34a' : '#64748b';
-      ctx.font = isActive ? 'bold 11px Consolas, monospace' : '10px Consolas, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(bits[i], xCenter, midY + 3);
-    }
-  }
-
-  /* ?? Spectrum ????????????????????????????????????????????????? */
-  function drawSpectrum(canvas, allSegs) {
-    const ctx = canvas.getContext('2d');
-    const size = getCanvasSize(canvas);
-    const W = size.width;
-    const H = size.height;
-    const PAD = { t: 16, b: 36, l: 58, r: 16 };
-    const drawW = W - PAD.l - PAD.r;
-    const drawH = H - PAD.t - PAD.b;
-
-    ctx.clearRect(0, 0, W, H);
+    ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, width, height);
 
-    // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
     ctx.lineWidth = 1;
-    const gridLines = 5;
-    for (let i = 0; i <= gridLines; i++) {
-      const y = PAD.t + (i / gridLines) * drawH;
+    for (var i = 0; i <= 4; i++) {
+      var y = pad.top + (i / 4) * drawH;
       ctx.beginPath();
-      ctx.moveTo(PAD.l, y);
-      ctx.lineTo(W - PAD.r, y);
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(width - pad.right, y);
+      ctx.stroke();
+    }
+    for (var j = 0; j <= 4; j++) {
+      var x = pad.left + (j / 4) * drawW;
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top);
+      ctx.lineTo(x, height - pad.bottom);
       ctx.stroke();
     }
 
-    // Axis labels
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '9px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('0', PAD.l, H - 4);
-    ctx.fillText('0.25/Tb', PAD.l + drawW * 0.25, H - 4);
-    ctx.fillText('0.5/Tb', PAD.l + drawW / 2, H - 4);
-    ctx.fillText('0.75/Tb', PAD.l + drawW * 0.75, H - 4);
-    ctx.fillText('1/Tb', W - PAD.r, H - 4);
+    ctx.fillText('0', pad.left, height - 4);
+    ctx.fillText('0.25/Tb', pad.left + drawW * 0.25, height - 4);
+    ctx.fillText('0.5/Tb', pad.left + drawW * 0.5, height - 4);
+    ctx.fillText('0.75/Tb', pad.left + drawW * 0.75, height - 4);
+    ctx.fillText('1/Tb', pad.left + drawW, height - 4);
+    ctx.fillText('Frequence normalisee (Tb?¹)', pad.left + drawW / 2, height - 18);
     ctx.textAlign = 'left';
-    ctx.fillText('Amplitude normalisée', 2, PAD.t + 8);
-    ctx.textAlign = 'center';
-    ctx.fillText('Fréquence normalisée (Tb?¹)', PAD.l + drawW / 2, H - 18);
+    ctx.fillText('Amplitude normalisee', 4, pad.top + 8);
 
-    if (!allSegs || Object.keys(allSegs).length === 0) return;
+    Object.keys(encoded).forEach(function (codeId) {
+      var segs = encoded[codeId];
+      if (!segs || !segs.length) return;
 
-    // Compute PSD estimate via DFT magnitude
-    Object.entries(allSegs).forEach(([codeId, segs]) => {
-      if (!segs || segs.length === 0) return;
-      const color = CODES[codeId] ? CODES[codeId].color : '#ffffff';
-
-      const levels = segs.map(s => s.level);
-      const N = levels.length;
-      const NFFT = Math.min(N, 128);
-      const freqBins = 64;
-
-      // Simple DFT magnitude
-      const mag = new Float32Array(freqBins);
-      for (let k = 0; k < freqBins; k++) {
-        let re = 0, im = 0;
-        for (let n = 0; n < NFFT; n++) {
-          const phi = (2 * Math.PI * k * n) / NFFT;
-          re += levels[n % N] * Math.cos(phi);
-          im -= levels[n % N] * Math.sin(phi);
+      var levels = segs.map(function (s) { return s.level; });
+      var n = levels.length;
+      var bins = 64;
+      var mag = new Float32Array(bins);
+      for (var k = 0; k < bins; k++) {
+        var re = 0;
+        var im = 0;
+        for (var nIdx = 0; nIdx < Math.min(n, 128); nIdx++) {
+          var phi = (2 * Math.PI * k * nIdx) / Math.min(n, 128);
+          re += levels[nIdx % n] * Math.cos(phi);
+          im -= levels[nIdx % n] * Math.sin(phi);
         }
-        mag[k] = Math.sqrt(re * re + im * im) / NFFT;
+        mag[k] = Math.sqrt(re * re + im * im) / Math.max(Math.min(n, 128), 1);
       }
 
-      // Normalise
-      const maxMag = Math.max(...mag, 0.001);
+      var maxMag = 0.001;
+      for (var m = 0; m < mag.length; m++) maxMag = Math.max(maxMag, mag[m]);
 
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = CODES[codeId].color;
       ctx.lineWidth = 1.8;
       ctx.beginPath();
-      for (let k = 0; k < freqBins; k++) {
-        const x = PAD.l + (k / (freqBins - 1)) * drawW;
-        const y = PAD.t + drawH - (mag[k] / maxMag) * drawH * 0.88;
-        if (k === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      for (var p = 0; p < bins; p++) {
+        var px = pad.left + (p / (bins - 1)) * drawW;
+        var py = pad.top + drawH - (mag[p] / maxMag) * drawH * 0.88;
+        if (p === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
       ctx.stroke();
     });
   }
 
-  function bindWaveformMeasurement(canvas, type, codeId) {
-    if (!canvas) return;
+  function bindMeasurement(canvas, type, codeId) {
     canvas.onmousemove = function (event) {
-      const rect = canvas.getBoundingClientRect();
-      const size = getCanvasSize(canvas);
-      const PAD = type === 'spectrum' ? { t: 16, b: 36, l: 58, r: 16 } : { t: 12, b: 34, l: 58, r: 12 };
-      const drawW = size.width - PAD.l - PAD.r;
-      const drawH = size.height - PAD.t - PAD.b;
-      const x = Math.max(PAD.l, Math.min(size.width - PAD.r, event.clientX - rect.left));
-      const y = Math.max(PAD.t, Math.min(size.height - PAD.b, event.clientY - rect.top));
+      var rect = canvas.getBoundingClientRect();
+      var width = canvas.clientWidth;
+      var height = canvas.clientHeight;
+      var pad = type === 'spectrum' ? { top: 16, right: 16, bottom: 36, left: 58 } : { top: 12, right: 12, bottom: 32, left: 56 };
+      var drawW = width - pad.left - pad.right;
+      var drawH = height - pad.top - pad.bottom;
+      var x = Math.max(pad.left, Math.min(width - pad.right, event.clientX - rect.left));
+      var y = Math.max(pad.top, Math.min(height - pad.bottom, event.clientY - rect.top));
 
       if (type === 'spectrum') {
-        const freq = ((x - PAD.l) / Math.max(drawW, 1)).toFixed(3);
-        const amp = (1 - ((y - PAD.t) / Math.max(drawH, 1))).toFixed(3);
+        var freq = ((x - pad.left) / Math.max(drawW, 1)).toFixed(3);
+        var amp = (1 - (y - pad.top) / Math.max(drawH, 1)).toFixed(3);
         showTooltip('<strong>Spectre</strong><br>f = ' + freq + ' Tb?¹<br>|S(f)| = ' + amp, event.clientX, event.clientY);
         return;
       }
 
-      const bitCount = Math.max(state.bits.length, 1);
-      const tb = ((x - PAD.l) / Math.max(drawW, 1)) * bitCount;
+      var tb = ((x - pad.left) / Math.max(drawW, 1)) * Math.max(state.bits.length, 1);
       if (type === 'bits') {
-        const index = Math.min(state.bits.length - 1, Math.max(0, Math.floor(tb)));
-        const bit = state.bits[index];
-        showTooltip('<strong>Signal binaire</strong><br>t = ' + tb.toFixed(2) + ' Tb<br>bit = ' + bit, event.clientX, event.clientY);
+        var index = Math.min(state.bits.length - 1, Math.max(0, Math.floor(tb)));
+        showTooltip('<strong>Signal binaire</strong><br>t = ' + tb.toFixed(2) + ' Tb<br>bit = ' + state.bits[index], event.clientX, event.clientY);
         return;
       }
 
-      const segs = state.encoded[codeId] || [];
-      const segIndex = Math.min(segs.length - 1, Math.max(0, Math.floor((tb / bitCount) * segs.length)));
-      const level = segs[segIndex] ? segs[segIndex].level : 0;
+      var segs = state.encoded[codeId] || [];
+      var segIndex = Math.min(segs.length - 1, Math.max(0, Math.floor((tb / Math.max(state.bits.length, 1)) * segs.length)));
+      var level = segs[segIndex] ? segs[segIndex].level : 0;
       showTooltip('<strong>' + codeId + '</strong><br>t = ' + tb.toFixed(2) + ' Tb<br>A = ' + level.toFixed(1) + ' V', event.clientX, event.clientY);
     };
     canvas.onmouseleave = hideTooltip;
     canvas.style.cursor = 'crosshair';
   }
 
-  /* ?? UI ??????????????????????????????????????????????????????? */
-  function parseBits(str) {
-    return str.trim().replace(/\s/g, '').split('').filter(c => c === '0' || c === '1').map(Number);
-  }
-
   function buildCodeCheckboxes() {
-    const grid = document.getElementById('cl-code-grid');
+    var grid = document.getElementById('cl-code-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    Object.entries(CODES).forEach(([id, def]) => {
-      const item = document.createElement('label');
-      item.className = 'cl-code-item' + (state.selectedCodes.includes(id) ? ' checked' : '');
+
+    Object.keys(CODES).forEach(function (id) {
+      var def = CODES[id];
+      var item = document.createElement('label');
+      item.className = 'cl-code-item' + (state.selectedCodes.indexOf(id) >= 0 ? ' checked' : '');
       item.title = def.desc;
 
-      const cb = document.createElement('input');
+      var cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.value = id;
-      cb.checked = state.selectedCodes.includes(id);
+      cb.checked = state.selectedCodes.indexOf(id) >= 0;
 
-      const span = document.createElement('span');
+      var span = document.createElement('span');
       span.className = 'cl-code-label';
       span.textContent = def.label;
 
-      const dot = document.createElement('span');
+      var dot = document.createElement('span');
       dot.className = 'cl-code-dot';
       dot.style.background = def.color;
 
-      cb.addEventListener('change', () => {
+      cb.addEventListener('change', function () {
         if (cb.checked) {
-          if (!state.selectedCodes.includes(id)) state.selectedCodes.push(id);
+          if (state.selectedCodes.indexOf(id) < 0) state.selectedCodes.push(id);
           item.classList.add('checked');
         } else {
-          state.selectedCodes = state.selectedCodes.filter(c => c !== id);
+          state.selectedCodes = state.selectedCodes.filter(function (code) { return code !== id; });
           item.classList.remove('checked');
         }
         render();
@@ -686,374 +644,299 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     });
   }
 
-  function buildWaveformCards() {
-    const stage = document.getElementById('cl-stage');
-    if (!stage) return;
-    stage.innerHTML = '';
-
-    // Original signal card
-    const origCard = document.createElement('div');
-    origCard.className = 'cl-waveform-card is-original';
-    origCard.innerHTML = `
-      <div class="cl-waveform-header">
-        <div class="cl-waveform-title">
-          <span class="cl-dot" style="background:#94a3b8"></span>
-          Signal binaire original
-        </div>
-        <div class="cl-waveform-meta" id="cl-bits-meta"></div>
-      </div>
-      <canvas id="cl-canvas-original" class="cl-canvas is-original"></canvas>
-      <div class="cl-bits-display" id="cl-bits-display"></div>`;
-    stage.appendChild(origCard);
-
-    // Stats card
-    const statsCard = document.createElement('div');
-    statsCard.className = 'cl-waveform-card';
-    statsCard.innerHTML = `
-      <div class="cl-waveform-header">
-        <div class="cl-waveform-title" style="color:#16a34a">Indicateurs comparatifs</div>
-      </div>
-      <div class="cl-stats-bar" id="cl-stats-bar"></div>
-      <div style="overflow-x:auto;margin-top:14px">
-        <table class="cl-compare-table" id="cl-compare-table">
-          <thead><tr>
-            <th>Code</th>
-            <th>Transitions</th>
-            <th>Biais DC</th>
-            <th>Densité trans.</th>
-            <th>Équilibre ±</th>
-            <th>Bande min.</th>
-            <th>Composante DC</th>
-          </tr></thead>
-          <tbody id="cl-compare-tbody"></tbody>
-        </table>
-      </div>`;
-    stage.appendChild(statsCard);
-
-    // One card per selected code
-    state.selectedCodes.forEach(codeId => {
-      if (!CODES[codeId]) return;
-      const def = CODES[codeId];
-      const card = document.createElement('div');
-      card.className = 'cl-waveform-card';
-      card.id = `cl-card-${codeId}`;
-      card.style.borderLeft = `4px solid ${def.color}`;
-      card.innerHTML = `
-        <div class="cl-waveform-header">
-          <div class="cl-waveform-title">
-            <span class="cl-dot" style="background:${def.color}"></span>
-            ${def.label}
-          </div>
-          <div class="cl-waveform-meta">
-            <span title="${def.desc}" style="color:${def.color};font-weight:700">${def.desc}</span>
-          </div>
-        </div>
-        <canvas id="cl-canvas-${codeId}" class="cl-canvas"></canvas>`;
-      stage.appendChild(card);
-    });
-
-    // Spectrum card
-    const specCard = document.createElement('div');
-    specCard.className = 'cl-spectrum-card';
-    specCard.innerHTML = `
-      <h3>Densité spectrale de puissance estimée (DSP)</h3>
-      <canvas id="cl-spectrum" class="cl-spectrum"></canvas>
-      <div class="cl-spectrum-legend" id="cl-spectrum-legend"></div>`;
-    stage.appendChild(specCard);
-
-    // Resize all canvases
-    setTimeout(resizeCanvases, 0);
-  }
-
-  function resizeCanvases() {
-    document.querySelectorAll('canvas.cl-canvas, canvas.cl-spectrum').forEach(c => {
-      c.width = c.offsetWidth * window.devicePixelRatio;
-      c.height = c.offsetHeight * window.devicePixelRatio;
-      const ctx = c.getContext('2d');
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    });
-  }
-
-  function updateBitsDisplay() {
-    const container = document.getElementById('cl-bits-display');
-    const meta = document.getElementById('cl-bits-meta');
-    if (!container) return;
-    container.innerHTML = '';
-    state.bits.forEach((b, i) => {
-      const span = document.createElement('span');
-      span.className = `cl-bit ${b === 1 ? 'one' : 'zero'}`;
-      span.dataset.idx = i;
-      span.textContent = b;
-      container.appendChild(span);
-    });
-    if (meta) {
-      meta.innerHTML = `<span><strong>${state.bits.length}</strong> bits</span>
-        <span><strong>${state.bits.filter(b => b === 1).length}</strong> uns</span>
-        <span><strong>${state.bits.filter(b => b === 0).length}</strong> zéros</span>`;
-    }
-  }
-
-  function updateStatsTable() {
-    const tbody = document.getElementById('cl-compare-tbody');
-    const statsBar = document.getElementById('cl-stats-bar');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-    let totalTransitions = 0;
-    let codeCount = 0;
-
-    state.selectedCodes.forEach(codeId => {
-      const segs = state.encoded[codeId];
-      if (!segs) return;
-      const st = computeStats(segs);
-      const def = CODES[codeId];
-      const hasDC = Math.abs(parseFloat(st.dcBias)) > 0.05;
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><span style="color:${def.color};font-weight:800">${def.label}</span></td>
-        <td><strong>${st.transitions}</strong></td>
-        <td><code>${st.dcBias}</code></td>
-        <td>${st.density}%</td>
-        <td>${st.balance}%</td>
-        <td>${st.bandwidth}</td>
-        <td>${hasDC
-          ? '<span class="cl-badge red">Composante DC</span>'
-          : '<span class="cl-badge green">Sans DC</span>'}</td>`;
-      tbody.appendChild(tr);
-      totalTransitions += st.transitions;
-      codeCount++;
-    });
-
-    // Global stats in top bar
-    if (statsBar) {
-      const avgTrans = codeCount > 0 ? (totalTransitions / codeCount).toFixed(0) : '—';
-      const ones = state.bits.filter(b => b === 1).length;
-      const zeros = state.bits.filter(b => b === 0).length;
-      statsBar.innerHTML = `
-        <div class="cl-stat">
-          <div class="cl-stat__label">Longueur séquence</div>
-          <div class="cl-stat__value">${state.bits.length}</div>
-          <div class="cl-stat__sub">bits</div>
-        </div>
-        <div class="cl-stat">
-          <div class="cl-stat__label">Uns / Zéros</div>
-          <div class="cl-stat__value">${ones} / ${zeros}</div>
-          <div class="cl-stat__sub">ratio ${(ones / Math.max(state.bits.length, 1) * 100).toFixed(0)}%</div>
-        </div>
-        <div class="cl-stat">
-          <div class="cl-stat__label">Codes actifs</div>
-          <div class="cl-stat__value">${codeCount}</div>
-          <div class="cl-stat__sub">affichés</div>
-        </div>
-        <div class="cl-stat">
-          <div class="cl-stat__label">Moy. transitions</div>
-          <div class="cl-stat__value">${avgTrans}</div>
-          <div class="cl-stat__sub">par séquence</div>
-        </div>`;
-    }
-  }
-
-  function updateSpectrumLegend() {
-    const legend = document.getElementById('cl-spectrum-legend');
-    if (!legend) return;
-    legend.innerHTML = '';
-    state.selectedCodes.forEach(codeId => {
-      const def = CODES[codeId];
-      if (!def) return;
-      const item = document.createElement('div');
-      item.className = 'cl-legend-item';
-      item.innerHTML = `<span class="cl-legend-dot" style="background:${def.color}"></span>${def.label}`;
-      legend.appendChild(item);
-    });
-  }
-
-  /* ?? Render all waveforms ????????????????????????????????????? */
-  function render() {
-    if (state.bits.length === 0) return;
-
-    // Encode
-    state.encoded = {};
-    state.selectedCodes.forEach(codeId => {
-      state.encoded[codeId] = encode(codeId, state.bits);
-    });
-
-    buildWaveformCards();
-    updateBitsDisplay();
-    updateStatsTable();
-    updateSpectrumLegend();
-
-    // Draw after a tick (canvases need layout)
-    requestAnimationFrame(() => {
-      // Original
-      const origCanvas = document.getElementById('cl-canvas-original');
-      if (origCanvas) {
-        drawOriginalBits(origCanvas, state.bits, 0);
-        bindWaveformMeasurement(origCanvas, 'bits');
-      }
-
-      // Each code
-      state.selectedCodes.forEach(codeId => {
-        const canvas = document.getElementById(`cl-canvas-${codeId}`);
-        if (canvas && state.encoded[codeId]) {
-          drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, 0, CODES[codeId].label);
-          bindWaveformMeasurement(canvas, 'code', codeId);
-        }
-      });
-
-      // Spectrum
-      const specCanvas = document.getElementById('cl-spectrum');
-      if (specCanvas) {
-        specCanvas.width = specCanvas.offsetWidth * window.devicePixelRatio;
-        specCanvas.height = specCanvas.offsetHeight * window.devicePixelRatio;
-        const ctx = specCanvas.getContext('2d');
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        drawSpectrum(specCanvas, state.encoded);
-        bindWaveformMeasurement(specCanvas, 'spectrum');
-      }
-    });
-  }
-
-  /* ?? Animation ???????????????????????????????????????????????? */
-  function startAnimation() {
-    if (state.isAnimating) { stopAnimation(); return; }
-    state.isAnimating = true;
-    state.animPos = 0;
-    const btn = document.getElementById('cl-btn-anim');
-    if (btn) btn.textContent = '? Arrêter';
-
-    const totalBits = state.bits.length;
-    const msPerBit = 1000 / state.animSpeed;
-    let lastTime = null;
-    let elapsed = 0;
-
-    function step(ts) {
-      if (!state.isAnimating) return;
-      if (lastTime === null) lastTime = ts;
-      elapsed += ts - lastTime;
-      lastTime = ts;
-
-      state.animPos = (elapsed / msPerBit) % (totalBits + 1);
-      const bitIdx = Math.min(Math.floor(state.animPos), totalBits - 1);
-
-      // Highlight current bit
-      document.querySelectorAll('.cl-bit').forEach((el, i) => {
-        el.classList.toggle('active', i === bitIdx);
-      });
-
-      // Redraw all with highlight
-      const origCanvas = document.getElementById('cl-canvas-original');
-      if (origCanvas) drawOriginalBits(origCanvas, state.bits, state.animPos);
-
-      state.selectedCodes.forEach(codeId => {
-        const canvas = document.getElementById(`cl-canvas-${codeId}`);
-        if (canvas && state.encoded[codeId]) {
-          // For RZ / Manchester, animPos maps to segment pairs
-          drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, state.animPos, codeId);
-        }
-      });
-
-      if (state.animPos >= totalBits) {
-        elapsed = 0; // loop
-      }
-
-      state.animFrame = requestAnimationFrame(step);
-    }
-    state.animFrame = requestAnimationFrame(step);
-  }
-
-  function stopAnimation() {
-    state.isAnimating = false;
-    if (state.animFrame) cancelAnimationFrame(state.animFrame);
-    state.animFrame = null;
-    const btn = document.getElementById('cl-btn-anim');
-    if (btn) btn.textContent = '? Animer';
-    document.querySelectorAll('.cl-bit').forEach(el => el.classList.remove('active'));
-  }
-
-  /* ?? Presets ?????????????????????????????????????????????????? */
-  const PRESETS = [
-    { label: 'Série de 1',      bits: '11111111' },
-    { label: 'Série de 0',      bits: '00000000' },
-    { label: 'Alternance',      bits: '10101010' },
-    { label: 'HDB3 test',       bits: '10000011000010' },
-    { label: 'B8ZS test',       bits: '1000000001000000001' },
-    { label: 'Aléatoire',       bits: 'random' }
-  ];
-
   function buildPresets() {
-    const bar = document.getElementById('cl-presets');
+    var bar = document.getElementById('cl-presets');
     if (!bar) return;
-    PRESETS.forEach(p => {
-      const btn = document.createElement('button');
+    bar.innerHTML = '';
+    PRESETS.forEach(function (preset) {
+      var btn = document.createElement('button');
       btn.className = 'cl-btn';
-      btn.style.flex = '0 0 auto';
-      btn.textContent = p.label;
-      btn.addEventListener('click', () => {
-        let bits = p.bits;
+      btn.type = 'button';
+      btn.textContent = preset.label;
+      btn.addEventListener('click', function () {
+        var bits = preset.bits;
         if (bits === 'random') {
-          bits = Array.from({ length: 16 }, () => Math.round(Math.random())).join('');
+          bits = Array.from({ length: 16 }, function () { return Math.round(Math.random()); }).join('');
         }
-        const inp = document.getElementById('cl-input');
-        if (inp) { inp.value = bits; }
+        var input = document.getElementById('cl-input');
+        if (input) input.value = bits;
         handleInput(bits);
       });
       bar.appendChild(btn);
     });
   }
 
-  function handleInput(rawStr) {
-    const bits = parseBits(rawStr || '');
-    const errEl = document.getElementById('cl-input-error');
-    if (bits.length < 2) {
-      if (errEl) { errEl.textContent = 'Entrez au moins 2 bits (0 et 1).'; errEl.classList.add('visible'); }
-      return;
+  function buildWaveformCards() {
+    var stage = document.getElementById('cl-stage');
+    if (!stage) return;
+    stage.innerHTML = '';
+
+    var original = document.createElement('div');
+    original.className = 'cl-waveform-card is-original';
+    original.innerHTML = '' +
+      '<div class="cl-waveform-header">' +
+      '  <div class="cl-waveform-title"><span class="cl-dot" style="background:#94a3b8"></span>Signal binaire original</div>' +
+      '  <div class="cl-waveform-meta" id="cl-bits-meta"></div>' +
+      '</div>' +
+      '<canvas id="cl-canvas-original" class="cl-canvas is-original"></canvas>' +
+      '<div class="cl-bits-display" id="cl-bits-display"></div>';
+    stage.appendChild(original);
+
+    var stats = document.createElement('div');
+    stats.className = 'cl-waveform-card';
+    stats.innerHTML = '' +
+      '<div class="cl-waveform-header">' +
+      '  <div class="cl-waveform-title" style="color:#16a34a">Indicateurs comparatifs</div>' +
+      '</div>' +
+      '<div class="cl-stats-bar" id="cl-stats-bar"></div>' +
+      '<div style="overflow-x:auto;margin-top:14px">' +
+      '  <table class="cl-compare-table" id="cl-compare-table">' +
+      '    <thead><tr><th>Code</th><th>Transitions</th><th>Biais DC</th><th>Densite trans.</th><th>Equilibre +/-</th><th>Bande min.</th><th>Composante DC</th></tr></thead>' +
+      '    <tbody id="cl-compare-tbody"></tbody>' +
+      '  </table>' +
+      '</div>';
+    stage.appendChild(stats);
+
+    state.selectedCodes.forEach(function (codeId) {
+      var def = CODES[codeId];
+      if (!def) return;
+      var card = document.createElement('div');
+      card.className = 'cl-waveform-card';
+      card.style.borderLeft = '4px solid ' + def.color;
+      card.innerHTML = '' +
+        '<div class="cl-waveform-header">' +
+        '  <div class="cl-waveform-title"><span class="cl-dot" style="background:' + def.color + '"></span>' + def.label + '</div>' +
+        '  <div class="cl-waveform-meta"><span style="color:' + def.color + ';font-weight:700">' + def.desc + '</span></div>' +
+        '</div>' +
+        '<canvas id="cl-canvas-' + codeId + '" class="cl-canvas"></canvas>';
+      stage.appendChild(card);
+    });
+
+    var spec = document.createElement('div');
+    spec.className = 'cl-spectrum-card';
+    spec.innerHTML = '' +
+      '<h3>Densite spectrale de puissance estimee (DSP)</h3>' +
+      '<canvas id="cl-spectrum" class="cl-spectrum"></canvas>' +
+      '<div class="cl-spectrum-legend" id="cl-spectrum-legend"></div>';
+    stage.appendChild(spec);
+  }
+
+  function updateBitsDisplay() {
+    var container = document.getElementById('cl-bits-display');
+    var meta = document.getElementById('cl-bits-meta');
+    if (!container) return;
+    container.innerHTML = '';
+
+    state.bits.forEach(function (bit, index) {
+      var span = document.createElement('span');
+      span.className = 'cl-bit ' + (bit === 1 ? 'one' : 'zero');
+      if (state.isAnimating && Math.floor(state.animPos) === index) {
+        span.className += ' active';
+      }
+      span.dataset.idx = String(index);
+      span.textContent = String(bit);
+      container.appendChild(span);
+    });
+
+    if (meta) {
+      var ones = state.bits.filter(function (bit) { return bit === 1; }).length;
+      var zeros = state.bits.length - ones;
+      meta.innerHTML = '<span><strong>' + state.bits.length + '</strong> bits</span>' +
+        '<span><strong>' + ones + '</strong> uns</span>' +
+        '<span><strong>' + zeros + '</strong> zeros</span>';
     }
-    if (bits.length > 64) {
-      if (errEl) { errEl.textContent = 'Maximum 64 bits pour une lecture confortable.'; errEl.classList.add('visible'); }
-      return;
+  }
+
+  function updateStats() {
+    var tbody = document.getElementById('cl-compare-tbody');
+    var statsBar = document.getElementById('cl-stats-bar');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    var totalTransitions = 0;
+    var codeCount = 0;
+    state.selectedCodes.forEach(function (codeId) {
+      var segs = state.encoded[codeId];
+      if (!segs || !segs.length) return;
+      var st = computeStats(segs);
+      var hasDC = Math.abs(parseFloat(st.dcBias)) > 0.05;
+      var row = document.createElement('tr');
+      row.innerHTML = '' +
+        '<td><span style="color:' + CODES[codeId].color + ';font-weight:800">' + CODES[codeId].label + '</span></td>' +
+        '<td><strong>' + st.transitions + '</strong></td>' +
+        '<td><code>' + st.dcBias + '</code></td>' +
+        '<td>' + st.density + '%</td>' +
+        '<td>' + st.balance + '%</td>' +
+        '<td>' + st.bandwidth + '</td>' +
+        '<td>' + (hasDC ? '<span class="cl-badge red">Composante DC</span>' : '<span class="cl-badge green">Sans DC</span>') + '</td>';
+      tbody.appendChild(row);
+      totalTransitions += st.transitions;
+      codeCount++;
+    });
+
+    if (statsBar) {
+      var ones = state.bits.filter(function (bit) { return bit === 1; }).length;
+      var zeros = state.bits.length - ones;
+      var avgTransitions = codeCount ? (totalTransitions / codeCount).toFixed(0) : '0';
+      statsBar.innerHTML = '' +
+        '<div class="cl-stat"><div class="cl-stat__label">Longueur sequence</div><div class="cl-stat__value">' + state.bits.length + '</div><div class="cl-stat__sub">bits</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Uns / zeros</div><div class="cl-stat__value">' + ones + ' / ' + zeros + '</div><div class="cl-stat__sub">ratio ' + ((ones / Math.max(state.bits.length, 1)) * 100).toFixed(0) + '%</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Codes actifs</div><div class="cl-stat__value">' + codeCount + '</div><div class="cl-stat__sub">affiches</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Moy. transitions</div><div class="cl-stat__value">' + avgTransitions + '</div><div class="cl-stat__sub">par sequence</div></div>';
     }
-    if (errEl) errEl.classList.remove('visible');
-    state.bits = bits;
-    stopAnimation();
+  }
+
+  function updateLegend() {
+    var legend = document.getElementById('cl-spectrum-legend');
+    if (!legend) return;
+    legend.innerHTML = '';
+    state.selectedCodes.forEach(function (codeId) {
+      var def = CODES[codeId];
+      if (!def) return;
+      var item = document.createElement('div');
+      item.className = 'cl-legend-item';
+      item.innerHTML = '<span class="cl-legend-dot" style="background:' + def.color + '"></span>' + def.label;
+      legend.appendChild(item);
+    });
+  }
+
+  function render() {
+    if (!state.bits.length) return;
+
+    state.encoded = {};
+    state.selectedCodes.forEach(function (codeId) {
+      state.encoded[codeId] = encode(codeId, state.bits);
+    });
+
+    buildWaveformCards();
+    updateBitsDisplay();
+    updateStats();
+    updateLegend();
+
+    requestAnimationFrame(function () {
+      var originalCanvas = document.getElementById('cl-canvas-original');
+      if (originalCanvas) {
+        drawOriginalBits(originalCanvas, state.bits, state.isAnimating ? state.animPos : -1);
+        bindMeasurement(originalCanvas, 'bits');
+      }
+
+      state.selectedCodes.forEach(function (codeId) {
+        var canvas = document.getElementById('cl-canvas-' + codeId);
+        if (canvas && state.encoded[codeId]) {
+          drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, state.isAnimating ? state.animPos : -1);
+          bindMeasurement(canvas, 'code', codeId);
+        }
+      });
+
+      var spectrumCanvas = document.getElementById('cl-spectrum');
+      if (spectrumCanvas) {
+        drawSpectrum(spectrumCanvas, state.encoded);
+        bindMeasurement(spectrumCanvas, 'spectrum');
+      }
+    });
+  }
+
+  function stopAnimation() {
+    state.isAnimating = false;
+    if (state.animFrame) cancelAnimationFrame(state.animFrame);
+    state.animFrame = null;
+    var btn = document.getElementById('cl-btn-anim');
+    if (btn) btn.textContent = '? Animer';
+    document.querySelectorAll('.cl-bit').forEach(function (el) { el.classList.remove('active'); });
     render();
   }
 
-  /* ?? Init ????????????????????????????????????????????????????? */
+  function startAnimation() {
+    if (state.isAnimating) {
+      stopAnimation();
+      return;
+    }
+
+    state.isAnimating = true;
+    state.animPos = 0;
+    var btn = document.getElementById('cl-btn-anim');
+    if (btn) btn.textContent = '? Arreter';
+
+    var totalBits = Math.max(state.bits.length, 1);
+    var msPerBit = 1000 / Math.max(state.animSpeed, 0.1);
+    var lastTime = null;
+    var elapsed = 0;
+
+    function step(ts) {
+      if (!state.isAnimating) return;
+      if (lastTime === null) lastTime = ts;
+      elapsed += ts - lastTime;
+      lastTime = ts;
+      state.animPos = (elapsed / msPerBit) % totalBits;
+
+      var activeIndex = Math.floor(state.animPos);
+      document.querySelectorAll('.cl-bit').forEach(function (el, index) {
+        el.classList.toggle('active', index === activeIndex);
+      });
+
+      render();
+      state.animFrame = requestAnimationFrame(step);
+    }
+
+    state.animFrame = requestAnimationFrame(step);
+  }
+
+  function handleInput(rawStr) {
+    var bits = parseBits(rawStr);
+    var errorEl = document.getElementById('cl-input-error');
+    if (bits.length < 2) {
+      if (errorEl) {
+        errorEl.textContent = 'Entrez au moins 2 bits (0 et 1).';
+        errorEl.classList.add('visible');
+      }
+      return;
+    }
+    if (bits.length > 64) {
+      if (errorEl) {
+        errorEl.textContent = 'Maximum 64 bits pour une lecture confortable.';
+        errorEl.classList.add('visible');
+      }
+      return;
+    }
+    if (errorEl) errorEl.classList.remove('visible');
+    state.bits = bits;
+    if (state.isAnimating) stopAnimation();
+    render();
+  }
+
   function init() {
     buildCodeCheckboxes();
     buildPresets();
 
-    const inp = document.getElementById('cl-input');
-    if (inp) {
-      inp.value = DEFAULT_BITS;
-      inp.addEventListener('input', () => handleInput(inp.value));
+    var input = document.getElementById('cl-input');
+    if (input) {
+      input.value = DEFAULT_BITS;
+      input.addEventListener('input', function () { handleInput(input.value); });
     }
 
-    const animBtn = document.getElementById('cl-btn-anim');
+    var animBtn = document.getElementById('cl-btn-anim');
     if (animBtn) animBtn.addEventListener('click', startAnimation);
 
-    const resetBtn = document.getElementById('cl-btn-reset');
-    if (resetBtn) resetBtn.addEventListener('click', () => {
-      const input = document.getElementById('cl-input');
-      if (input) { input.value = DEFAULT_BITS; handleInput(DEFAULT_BITS); }
-    });
-
-    const speedSlider = document.getElementById('cl-speed');
-    const speedVal = document.getElementById('cl-speed-val');
-    if (speedSlider) {
-      speedSlider.addEventListener('input', () => {
-        state.animSpeed = parseFloat(speedSlider.value);
-        if (speedVal) speedVal.textContent = `${state.animSpeed} b/s`;
+    var resetBtn = document.getElementById('cl-btn-reset');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', function () {
+        if (input) input.value = DEFAULT_BITS;
+        handleInput(DEFAULT_BITS);
       });
     }
 
-    window.addEventListener('resize', () => {
-      resizeCanvases();
-      render();
-    });
+    var speedSlider = document.getElementById('cl-speed');
+    var speedVal = document.getElementById('cl-speed-val');
+    if (speedSlider) {
+      state.animSpeed = parseFloat(speedSlider.value || '2');
+      if (speedVal) speedVal.textContent = state.animSpeed + ' b/s';
+      speedSlider.addEventListener('input', function () {
+        state.animSpeed = parseFloat(speedSlider.value || '2');
+        if (speedVal) speedVal.textContent = state.animSpeed + ' b/s';
+      });
+    }
 
-    // Initial render
+    window.addEventListener('resize', render);
     handleInput(DEFAULT_BITS);
   }
 
