@@ -17,10 +17,12 @@ const canNyquistRatio = document.getElementById('canNyquistRatio');
 const canQuantStep = document.getElementById('canQuantStep');
 const canSqnr = document.getElementById('canSqnr');
 const canPresetButtons = document.querySelectorAll('[data-can-preset]');
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Variables pour l'animation
 let samplePoints = [];
 let scanLine1, scanLine2;
+let canHoverTooltip = null;
 const w = 800, h = 160;
 const yMin = 20, yMax = 140; // Marges pour le dessin
 const amplitude = (yMax - yMin) / 2;
@@ -32,6 +34,174 @@ const canPresets = {
   nyquist: { freq: 5, sr: 10, bits: 4 },
   hq: { freq: 3, sr: 60, bits: 6 }
 };
+
+function formatMsLabel(value) {
+  return Math.round(value * 1000) + ' ms';
+}
+
+function ensureCanTooltip() {
+  if (canHoverTooltip) {
+    return canHoverTooltip;
+  }
+
+  canHoverTooltip = document.createElement('div');
+  canHoverTooltip.style.position = 'fixed';
+  canHoverTooltip.style.zIndex = '9999';
+  canHoverTooltip.style.pointerEvents = 'none';
+  canHoverTooltip.style.padding = '8px 10px';
+  canHoverTooltip.style.borderRadius = '10px';
+  canHoverTooltip.style.background = 'rgba(15, 23, 42, 0.94)';
+  canHoverTooltip.style.color = '#f8fafc';
+  canHoverTooltip.style.font = '12px/1.4 Segoe UI, sans-serif';
+  canHoverTooltip.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
+  canHoverTooltip.style.display = 'none';
+  document.body.appendChild(canHoverTooltip);
+  return canHoverTooltip;
+}
+
+function showCanTooltip(html, clientX, clientY) {
+  const tooltip = ensureCanTooltip();
+  tooltip.innerHTML = html;
+  tooltip.style.left = clientX + 14 + 'px';
+  tooltip.style.top = clientY + 14 + 'px';
+  tooltip.style.display = 'block';
+}
+
+function hideCanTooltip() {
+  if (canHoverTooltip) {
+    canHoverTooltip.style.display = 'none';
+  }
+}
+
+function getSignalY(value) {
+  return yCenter - value * amplitude;
+}
+
+function getSamplePointAtSvgX(svgX) {
+  if (!samplePoints.length) {
+    return null;
+  }
+
+  let nearest = samplePoints[0];
+  let minDist = Math.abs(svgX - nearest.x);
+  for (let i = 1; i < samplePoints.length; i++) {
+    const dist = Math.abs(svgX - samplePoints[i].x);
+    if (dist < minDist) {
+      nearest = samplePoints[i];
+      minDist = dist;
+    }
+  }
+  return nearest;
+}
+
+function ensureHoverArtifacts(svg, ids) {
+  let line = document.getElementById(ids.line);
+  if (!line) {
+    line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('id', ids.line);
+    line.setAttribute('y1', '0');
+    line.setAttribute('y2', String(h));
+    line.setAttribute('stroke', '#0f172a');
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke-dasharray', '4 4');
+    line.setAttribute('opacity', '0.8');
+    line.setAttribute('visibility', 'hidden');
+    svg.appendChild(line);
+  }
+
+  let dot = document.getElementById(ids.dot);
+  if (!dot) {
+    dot = document.createElementNS(SVG_NS, 'circle');
+    dot.setAttribute('id', ids.dot);
+    dot.setAttribute('r', '4.5');
+    dot.setAttribute('fill', '#ffffff');
+    dot.setAttribute('stroke', '#0f172a');
+    dot.setAttribute('stroke-width', '1.5');
+    dot.setAttribute('visibility', 'hidden');
+    svg.appendChild(dot);
+  }
+
+  return { line, dot };
+}
+
+function attachCanHover(svg, mode) {
+  if (!svg) {
+    return;
+  }
+
+  const ids = mode === 'signal'
+    ? { line: 'canHoverSignalLine', dot: 'canHoverSignalDot' }
+    : { line: 'canHoverQuantLine', dot: 'canHoverQuantDot' };
+
+  const artifacts = ensureHoverArtifacts(svg, ids);
+
+  svg.onmousemove = function (event) {
+    const rect = svg.getBoundingClientRect();
+    const svgX = Math.max(0, Math.min(w, ((event.clientX - rect.left) / rect.width) * w));
+    const point = getSamplePointAtSvgX(svgX);
+    if (!point) {
+      return;
+    }
+
+    const value = mode === 'signal' ? point.analogValue : point.quantValue;
+    const dotY = mode === 'signal' ? point.y : point.yQuant;
+    const title = mode === 'signal' ? 'Signal analogique' : 'Quantification';
+
+    artifacts.line.setAttribute('x1', point.x);
+    artifacts.line.setAttribute('x2', point.x);
+    artifacts.line.setAttribute('visibility', 'visible');
+    artifacts.dot.setAttribute('cx', point.x);
+    artifacts.dot.setAttribute('cy', dotY);
+    artifacts.dot.setAttribute('visibility', 'visible');
+
+    showCanTooltip(
+      '<strong>' + title + '</strong><br>' +
+      't = ' + formatMsLabel(point.time) + '<br>' +
+      'A = ' + value.toFixed(3) + ' V<br>' +
+      'Code = ' + point.code,
+      event.clientX,
+      event.clientY
+    );
+  };
+
+  svg.onmouseleave = function () {
+    artifacts.line.setAttribute('visibility', 'hidden');
+    artifacts.dot.setAttribute('visibility', 'hidden');
+    hideCanTooltip();
+  };
+}
+
+function buildAxesOverlay(options) {
+  const axisColor = '#94a3b8';
+  const gridColor = '#e2e8f0';
+  const xTicks = [0, 0.25, 0.5, 0.75, 1];
+  const yTicks = [1, 0.5, 0, -0.5, -1];
+  let svg = '';
+
+  yTicks.forEach(function (tick) {
+    const y = getSignalY(tick);
+    const label = (tick > 0 ? '+' : '') + tick.toFixed(1) + ' V';
+    svg += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="4 4"/>`;
+    svg += `<text x="42" y="${y - 4}" fill="${axisColor}" font-size="10" text-anchor="end">${label}</text>`;
+  });
+
+  xTicks.forEach(function (tick) {
+    const x = tick * w;
+    svg += `<line x1="${x}" y1="${yMin}" x2="${x}" y2="${yMax}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="4 4"/>`;
+    svg += `<text x="${x}" y="154" fill="${axisColor}" font-size="10" text-anchor="middle">${formatMsLabel(tick * timeWindow)}</text>`;
+  });
+
+  svg += `<line x1="0" y1="${yCenter}" x2="${w}" y2="${yCenter}" stroke="${axisColor}" stroke-width="1.3"/>`;
+  svg += `<line x1="44" y1="${yMin}" x2="44" y2="${yMax}" stroke="${axisColor}" stroke-width="1.3"/>`;
+  svg += `<text x="400" y="158" fill="${axisColor}" font-size="11" text-anchor="middle">Temps (ms)</text>`;
+  svg += `<text x="16" y="80" fill="${axisColor}" font-size="11" text-anchor="middle" transform="rotate(-90 16 80)">Amplitude (V)</text>`;
+
+  if (options && options.extraLabel) {
+    svg += `<text x="790" y="14" fill="${axisColor}" font-size="10" text-anchor="end">${options.extraLabel}</text>`;
+  }
+
+  return svg;
+}
 
 canPresetButtons.forEach(function (button) {
   button.addEventListener('click', function () {
@@ -90,13 +260,13 @@ function updateVisualization() {
   canSamplingStatus.textContent = samplingStatus;
   canSamplingNote.textContent = samplingNote;
   canNyquistRatio.textContent = nyquistRatio.toFixed(2);
-  canQuantStep.textContent = quantStep.toFixed(3) + ' FS';
+  canQuantStep.textContent = quantStep.toFixed(3) + ' V';
   canSqnr.textContent = sqnrDb.toFixed(1) + ' dB';
 
   // ----------------------------------------------------
   // PANNEAU 1 : SIGNAL ANALOGIQUE
   // ----------------------------------------------------
-  let signalSVG = '';
+  let signalSVG = buildAxesOverlay({ extraLabel: 'Fenêtre : 1 s • Fe = ' + fs + ' Hz' });
   
   // Tracé du signal continu (onde sinusoïdale)
   let wavePath = `M 0 ${yCenter}`;
@@ -129,7 +299,7 @@ function updateVisualization() {
     // Conversion en binaire (ajout des zéros à gauche selon la résolution)
     const binaryCode = quantizedLevel.toString(2).padStart(B, '0');
     
-    samplePoints.push({ x, y, yQuant, code: binaryCode });
+    samplePoints.push({ x, y, yQuant, code: binaryCode, time: t, analogValue: sineValue, quantValue: (quantizedLevel / Math.max(numLevels - 1, 1)) * 2 - 1 });
   }
 
   // Ajout de la ligne de balayage animée
@@ -139,7 +309,7 @@ function updateVisualization() {
   // ----------------------------------------------------
   // PANNEAU 2 : QUANTIFICATION
   // ----------------------------------------------------
-  let quantSVG = '';
+  let quantSVG = buildAxesOverlay({ extraLabel: 'Niveaux : ' + numLevels + ' • Pas = ' + quantStep.toFixed(3) + ' V' });
   
   // Grille des niveaux de quantification
   for(let i = 0; i < numLevels; i++) {
@@ -165,6 +335,8 @@ function updateVisualization() {
   // Ligne de balayage
   quantSVG += `<line id="scan2" x1="0" y1="0" x2="0" y2="${h}" stroke="red" stroke-width="1" opacity="0.7"/>`;
   svgQuant.innerHTML = quantSVG;
+  attachCanHover(svgSignal, 'signal');
+  attachCanHover(svgQuant, 'quant');
 
   // ----------------------------------------------------
   // PANNEAU 3 : CODAGE BINAIRE

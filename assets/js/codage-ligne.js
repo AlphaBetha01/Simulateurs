@@ -1,8 +1,10 @@
 /* ================================================================
+/* ================================================================
    SIMULATEUR CODAGE DE LIGNE
    Codes : NRZ-L, NRZ-M, NRZ-I, RZ, Manchester, Manchester Diff.,
            AMI, HDB3, B8ZS
    ================================================================ */
+LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numerisation-codage-ligne' });
 (function () {
   'use strict';
 
@@ -32,7 +34,8 @@
     animPos: 0,         // animated bit position (float)
     animSpeed: 1,       // bits per second (animation)
     isAnimating: false,
-    spectrumCtx: null
+    spectrumCtx: null,
+    tooltipEl: null
   };
 
   /* ?? Encoders ????????????????????????????????????????????????? */
@@ -283,12 +286,50 @@
     return '2 × Tb?¹';
   }
 
+  function ensureTooltip() {
+    if (state.tooltipEl) return state.tooltipEl;
+    const el = document.createElement('div');
+    el.style.position = 'fixed';
+    el.style.zIndex = '9999';
+    el.style.pointerEvents = 'none';
+    el.style.padding = '8px 10px';
+    el.style.borderRadius = '10px';
+    el.style.background = 'rgba(15, 23, 42, 0.94)';
+    el.style.color = '#f8fafc';
+    el.style.font = '12px/1.4 Segoe UI, sans-serif';
+    el.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    state.tooltipEl = el;
+    return el;
+  }
+
+  function showTooltip(html, clientX, clientY) {
+    const el = ensureTooltip();
+    el.innerHTML = html;
+    el.style.left = clientX + 14 + 'px';
+    el.style.top = clientY + 14 + 'px';
+    el.style.display = 'block';
+  }
+
+  function hideTooltip() {
+    if (state.tooltipEl) state.tooltipEl.style.display = 'none';
+  }
+
+  function getCanvasSize(canvas) {
+    return {
+      width: canvas.clientWidth || canvas.width,
+      height: canvas.clientHeight || canvas.height
+    };
+  }
+
   /* ?? Drawing ?????????????????????????????????????????????????? */
   function drawWaveform(canvas, segs, color, animPos, label) {
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
-    const PAD = { t: 6, b: 6, l: 36, r: 10 };
+    const size = getCanvasSize(canvas);
+    const W = size.width;
+    const H = size.height;
+    const PAD = { t: 12, b: 34, l: 56, r: 12 };
     const drawW = W - PAD.l - PAD.r;
     const drawH = H - PAD.t - PAD.b;
     const midY = PAD.t + drawH / 2;
@@ -330,9 +371,21 @@
     ctx.fillStyle = '#94a3b8';
     ctx.font = 'bold 9px Segoe UI, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('+V', PAD.l - 4, midY - ampY + 3);
-    ctx.fillText('0',  PAD.l - 4, midY + 3);
-    ctx.fillText('?V', PAD.l - 4, midY + ampY + 3);
+    ctx.fillText('+1 V', PAD.l - 4, midY - ampY + 3);
+    ctx.fillText('0 V',  PAD.l - 4, midY + 3);
+    ctx.fillText('-1 V', PAD.l - 4, midY + ampY + 3);
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 4; i++) {
+      const xTick = PAD.l + (i / 4) * drawW;
+      const tb = ((i / 4) * Math.max(state.bits.length, 1)).toFixed(1).replace('.0', '');
+      ctx.fillText(tb, xTick, H - 6);
+    }
+    ctx.fillText('Temps (Tb)', PAD.l + drawW / 2, H - 18);
+    ctx.save();
+    ctx.translate(14, PAD.t + drawH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Amplitude (V)', 0, 0);
+    ctx.restore();
 
     // Animated highlight region
     if (animPos > 0 && animPos <= N) {
@@ -404,13 +457,10 @@
 
   function drawOriginalBits(canvas, bits, animPos) {
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
-    const PAD = { t: 6, b: 6, l: 36, r: 10 };
-    const drawW = W - PAD.l - PAD.r;
-    const drawH = H - PAD.t - PAD.b;
-    const midY = PAD.t + drawH / 2;
-    const ampY = drawH * 0.35;
+    const size = getCanvasSize(canvas);
+    const W = size.width;
+    const H = size.height;
+    const PAD = { t: 12, b: 34, l: 58, r: 12 };
 
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#fafbfc';
@@ -418,8 +468,27 @@
 
     if (!bits || bits.length === 0) return;
 
+    const axis = drawWaveAxes(ctx, W, H, PAD, bits.length);
+    const drawW = axis.drawW;
+    const drawH = axis.drawH;
+    const midY = axis.midY;
+    const ampY = drawH * 0.35;
+
     const N = bits.length;
     const segW = drawW / N;
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 9px Segoe UI, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('+1 V', PAD.l - 4, midY - ampY + 3);
+    ctx.fillText('-1 V', PAD.l - 4, midY + ampY + 3);
+    ctx.textAlign = 'center';
+    for (let i = 0; i <= 4; i++) {
+      const xTick = PAD.l + (i / 4) * drawW;
+      const tb = ((i / 4) * bits.length).toFixed(1).replace('.0', '');
+      ctx.fillText(tb, xTick, H - 6);
+    }
+    ctx.fillText('Temps (Tb)', PAD.l + drawW / 2, H - 18);
 
     // Draw NRZ-L representation as original data
     ctx.strokeStyle = '#94a3b8';
@@ -454,20 +523,15 @@
       ctx.textAlign = 'center';
       ctx.fillText(bits[i], xCenter, midY + 3);
     }
-
-    // Axis label
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 9px Segoe UI, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('bit', PAD.l - 4, midY + 3);
   }
 
   /* ?? Spectrum ????????????????????????????????????????????????? */
   function drawSpectrum(canvas, allSegs) {
     const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
-    const PAD = { t: 14, b: 24, l: 40, r: 14 };
+    const size = getCanvasSize(canvas);
+    const W = size.width;
+    const H = size.height;
+    const PAD = { t: 16, b: 36, l: 58, r: 16 };
     const drawW = W - PAD.l - PAD.r;
     const drawH = H - PAD.t - PAD.b;
 
@@ -492,10 +556,14 @@
     ctx.font = '9px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('0', PAD.l, H - 4);
+    ctx.fillText('0.25/Tb', PAD.l + drawW * 0.25, H - 4);
     ctx.fillText('0.5/Tb', PAD.l + drawW / 2, H - 4);
+    ctx.fillText('0.75/Tb', PAD.l + drawW * 0.75, H - 4);
     ctx.fillText('1/Tb', W - PAD.r, H - 4);
     ctx.textAlign = 'left';
-    ctx.fillText('|S(f)|²', 2, PAD.t + 8);
+    ctx.fillText('Amplitude normalisée', 2, PAD.t + 8);
+    ctx.textAlign = 'center';
+    ctx.fillText('Fréquence normalisée (Tb?¹)', PAD.l + drawW / 2, H - 18);
 
     if (!allSegs || Object.keys(allSegs).length === 0) return;
 
@@ -535,6 +603,42 @@
       }
       ctx.stroke();
     });
+  }
+
+  function bindWaveformMeasurement(canvas, type, codeId) {
+    if (!canvas) return;
+    canvas.onmousemove = function (event) {
+      const rect = canvas.getBoundingClientRect();
+      const size = getCanvasSize(canvas);
+      const PAD = type === 'spectrum' ? { t: 16, b: 36, l: 58, r: 16 } : { t: 12, b: 34, l: 58, r: 12 };
+      const drawW = size.width - PAD.l - PAD.r;
+      const drawH = size.height - PAD.t - PAD.b;
+      const x = Math.max(PAD.l, Math.min(size.width - PAD.r, event.clientX - rect.left));
+      const y = Math.max(PAD.t, Math.min(size.height - PAD.b, event.clientY - rect.top));
+
+      if (type === 'spectrum') {
+        const freq = ((x - PAD.l) / Math.max(drawW, 1)).toFixed(3);
+        const amp = (1 - ((y - PAD.t) / Math.max(drawH, 1))).toFixed(3);
+        showTooltip('<strong>Spectre</strong><br>f = ' + freq + ' Tb?¹<br>|S(f)| = ' + amp, event.clientX, event.clientY);
+        return;
+      }
+
+      const bitCount = Math.max(state.bits.length, 1);
+      const tb = ((x - PAD.l) / Math.max(drawW, 1)) * bitCount;
+      if (type === 'bits') {
+        const index = Math.min(state.bits.length - 1, Math.max(0, Math.floor(tb)));
+        const bit = state.bits[index];
+        showTooltip('<strong>Signal binaire</strong><br>t = ' + tb.toFixed(2) + ' Tb<br>bit = ' + bit, event.clientX, event.clientY);
+        return;
+      }
+
+      const segs = state.encoded[codeId] || [];
+      const segIndex = Math.min(segs.length - 1, Math.max(0, Math.floor((tb / bitCount) * segs.length)));
+      const level = segs[segIndex] ? segs[segIndex].level : 0;
+      showTooltip('<strong>' + codeId + '</strong><br>t = ' + tb.toFixed(2) + ' Tb<br>A = ' + level.toFixed(1) + ' V', event.clientX, event.clientY);
+    };
+    canvas.onmouseleave = hideTooltip;
+    canvas.style.cursor = 'crosshair';
   }
 
   /* ?? UI ??????????????????????????????????????????????????????? */
@@ -607,7 +711,7 @@
     statsCard.className = 'cl-waveform-card';
     statsCard.innerHTML = `
       <div class="cl-waveform-header">
-        <div class="cl-waveform-title" style="color:#16a34a">?? Indicateurs comparatifs</div>
+        <div class="cl-waveform-title" style="color:#16a34a">Indicateurs comparatifs</div>
       </div>
       <div class="cl-stats-bar" id="cl-stats-bar"></div>
       <div style="overflow-x:auto;margin-top:14px">
@@ -783,13 +887,17 @@
     requestAnimationFrame(() => {
       // Original
       const origCanvas = document.getElementById('cl-canvas-original');
-      if (origCanvas) drawOriginalBits(origCanvas, state.bits, 0);
+      if (origCanvas) {
+        drawOriginalBits(origCanvas, state.bits, 0);
+        bindWaveformMeasurement(origCanvas, 'bits');
+      }
 
       // Each code
       state.selectedCodes.forEach(codeId => {
         const canvas = document.getElementById(`cl-canvas-${codeId}`);
         if (canvas && state.encoded[codeId]) {
           drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, 0, CODES[codeId].label);
+          bindWaveformMeasurement(canvas, 'code', codeId);
         }
       });
 
@@ -801,6 +909,7 @@
         const ctx = specCanvas.getContext('2d');
         ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         drawSpectrum(specCanvas, state.encoded);
+        bindWaveformMeasurement(specCanvas, 'spectrum');
       }
     });
   }

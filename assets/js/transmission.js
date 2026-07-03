@@ -25,6 +25,8 @@ const ui = {
 const ctxEye = ui.eyeCanvas.getContext('2d');
 let audioCtx, osc, noiseNode, gainMaster, gainNoise;
 const linkPresetButtons = document.querySelectorAll('[data-link-preset]');
+let transmissionTooltip = null;
+const transmissionPlotData = {};
 
 const linkPresets = {
   fibre: { media: 'fibre', dist: 10, fe: 18, jitter: 1, txGain: 1.0, fc: 34, threshold: 0, fec: 0, filter: 1, lineCode: 'nrz' },
@@ -94,6 +96,168 @@ ui.btnAudio.addEventListener('click', () => {
 
 function getAnalogVal(t) { return Math.sin(t * 3) * 0.7 + Math.sin(t * 7.5) * 0.2; }
 
+function formatTbTick(value) {
+  return value.toFixed(value >= 10 ? 0 : 1);
+}
+
+function ensureTransmissionTooltip() {
+  if (transmissionTooltip) {
+    return transmissionTooltip;
+  }
+
+  transmissionTooltip = document.createElement('div');
+  transmissionTooltip.style.position = 'fixed';
+  transmissionTooltip.style.zIndex = '9999';
+  transmissionTooltip.style.pointerEvents = 'none';
+  transmissionTooltip.style.padding = '8px 10px';
+  transmissionTooltip.style.borderRadius = '10px';
+  transmissionTooltip.style.background = 'rgba(15, 23, 42, 0.94)';
+  transmissionTooltip.style.color = '#f8fafc';
+  transmissionTooltip.style.font = '12px/1.4 Segoe UI, sans-serif';
+  transmissionTooltip.style.boxShadow = '0 10px 24px rgba(15, 23, 42, 0.22)';
+  transmissionTooltip.style.display = 'none';
+  document.body.appendChild(transmissionTooltip);
+  return transmissionTooltip;
+}
+
+function showTransmissionTooltip(html, clientX, clientY) {
+  const tooltip = ensureTransmissionTooltip();
+  tooltip.innerHTML = html;
+  tooltip.style.left = clientX + 14 + 'px';
+  tooltip.style.top = clientY + 14 + 'px';
+  tooltip.style.display = 'block';
+}
+
+function hideTransmissionTooltip() {
+  if (transmissionTooltip) {
+    transmissionTooltip.style.display = 'none';
+  }
+}
+
+function attachTransmissionHover(svg, key, title, color) {
+  if (!svg) {
+    return;
+  }
+
+  svg.onmousemove = function (event) {
+    const series = transmissionPlotData[key];
+    if (!series || !series.length) {
+      return;
+    }
+
+    const rect = svg.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const index = Math.min(series.length - 1, Math.max(0, Math.round(ratio * (series.length - 1))));
+    const point = series[index];
+    showTransmissionTooltip(
+      '<strong>' + title + '</strong><br>' +
+      't = ' + point.tb.toFixed(2) + ' Tb<br>' +
+      'A = ' + point.value.toFixed(3) + ' V',
+      event.clientX,
+      event.clientY
+    );
+    svg.style.cursor = 'crosshair';
+  };
+
+  svg.onmouseleave = function () {
+    hideTransmissionTooltip();
+  };
+
+  if (color) {
+    svg.style.outline = '1px solid transparent';
+  }
+}
+
+function buildSvgAxes(width, height, options) {
+  const axisColor = '#94a3b8';
+  const gridColor = options.dark ? 'rgba(148,163,184,0.18)' : '#e2e8f0';
+  const top = options.top;
+  const bottom = options.bottom;
+  const mid = (top + bottom) / 2;
+  const amp = (bottom - top) / 2;
+  const left = options.left || 34;
+  const xMax = Math.max(options.xMax || 1, 1);
+  let svg = '';
+
+  [1, 0, -1].forEach(function (level) {
+    const y = mid - level * amp;
+    const label = (level > 0 ? '+' : '') + level + ' V';
+    svg += `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="4 4"/>`;
+    svg += `<text x="${left - 4}" y="${y + 3}" fill="${axisColor}" font-size="9" text-anchor="end">${label}</text>`;
+  });
+
+  for (let i = 0; i <= 4; i++) {
+    const ratio = i / 4;
+    const x = ratio * width;
+    svg += `<line x1="${x}" y1="${top}" x2="${x}" y2="${bottom}" stroke="${gridColor}" stroke-width="1" stroke-dasharray="4 4"/>`;
+    svg += `<text x="${x}" y="${height - 4}" fill="${axisColor}" font-size="9" text-anchor="middle">${formatTbTick(ratio * xMax)}</text>`;
+  }
+
+  svg += `<line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}" stroke="${axisColor}" stroke-width="1.2"/>`;
+  svg += `<line x1="0" y1="${mid}" x2="${width}" y2="${mid}" stroke="${axisColor}" stroke-width="1.2"/>`;
+  svg += `<text x="${width / 2}" y="${height - 16}" fill="${axisColor}" font-size="10" text-anchor="middle">Temps (Tb)</text>`;
+  svg += `<text x="14" y="${height / 2}" fill="${axisColor}" font-size="10" text-anchor="middle" transform="rotate(-90 14 ${height / 2})">Amplitude (V)</text>`;
+
+  if (options.note) {
+    svg += `<text x="${width - 8}" y="12" fill="${axisColor}" font-size="9" text-anchor="end">${options.note}</text>`;
+  }
+
+  return svg;
+}
+
+function drawEyeAxes(ctx, width, height) {
+  const axisColor = 'rgba(148,163,184,0.85)';
+  const gridColor = 'rgba(148,163,184,0.18)';
+  const left = 36;
+  const top = 10;
+  const bottom = height - 24;
+  const mid = (top + bottom) / 2;
+  const amp = 40;
+
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  [mid - amp, mid, mid + amp].forEach(function (y) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  });
+  [0, 0.5, 1].forEach(function (ratio) {
+    const x = ratio * width;
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = axisColor;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, bottom);
+  ctx.moveTo(0, mid);
+  ctx.lineTo(width, mid);
+  ctx.stroke();
+
+  ctx.fillStyle = axisColor;
+  ctx.font = '10px Segoe UI, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('+1 V', left - 4, mid - amp + 3);
+  ctx.fillText('0 V', left - 4, mid + 3);
+  ctx.fillText('-1 V', left - 4, mid + amp + 3);
+  ctx.textAlign = 'center';
+  ctx.fillText('0', 0, height - 6);
+  ctx.fillText('1 Tb', width / 2, height - 6);
+  ctx.fillText('2 Tb', width, height - 6);
+  ctx.fillText('Temps (Tb)', width / 2, height - 18);
+  ctx.save();
+  ctx.translate(14, height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Amplitude (V)', 0, 0);
+  ctx.restore();
+}
+
 function draw() {
   if (!state.isPaused) state.time += state.speed;
   const tGlobal = state.time;
@@ -113,7 +277,7 @@ function draw() {
   const w = 400, h = 100, hEye = 150;
   
   // UI Texts
-  $('valGain').textContent = `x${txGain.toFixed(1)}`;
+  $('valGain').textContent = `${txGain.toFixed(1)} V/V`;
   $('valFc').textContent = `${fPorteuse} Hz`;
   $('valJitter').textContent = `${jitterVal}%`;
   $('valThresh').textContent = `${threshVal.toFixed(2)} V`;
@@ -145,7 +309,7 @@ function draw() {
 
   ui.vDist.textContent = (ui.media.value === 'sat' ? dist * 700 + 35000 : dist) + " km";
   ui.vNoise.textContent = `Atténuation : ${attenuation.toFixed(1)} dB`;
-  ui.vFe.textContent = `${fe} bits`;
+  ui.vFe.textContent = `${fe.toFixed(0)} kb/s`;
   ui.vRb.textContent = `${fe} kbps`;
   ui.vC.textContent = `${effectiveCapacity.toFixed(1)} kbps`;
   
@@ -188,11 +352,17 @@ function draw() {
   const bitW = w / fe;
   let txBitStr = "", rxBitStr = "";
   let pSrc = `M 0 50`, pDig = `M 0 50`, pMod = `M 0 50`, pCh = `M 0 80`, pDemod = "", pOut = `M 0 50`;
+  const sourceSeries = [];
+  const modSeries = [];
+  const channelSeries = [];
+  const demodSeries = [];
+  const outSeries = [];
   
   if (!state.isPaused) {
     ctxEye.fillStyle = 'rgba(0, 0, 17, 0.15)';
     ctxEye.fillRect(0, 0, w, hEye);
   }
+  drawEyeAxes(ctxEye, w, hEye);
   
   // Tracé du seuil de décision sur l'œil
   ctxEye.strokeStyle = 'rgba(239, 68, 68, 0.5)';
@@ -269,10 +439,12 @@ function draw() {
     
     const valAna = getAnalogVal(t) * txGain;
     pSrc += ` L ${x} ${50 - valAna * 30}`;
+    sourceSeries.push({ tb: (x / w) * fe, value: valAna });
 
     let phase = bitVal ? 0 : Math.PI;
     const valMod = Math.sin(t * fPorteuse + phase) * txGain;
     pMod += ` L ${x} ${50 - valMod * 30}`;
+    modSeries.push({ tb: (x / w) * fe, value: valMod });
 
     const noiseLevel = Math.max(0, 100 - SNR_dB) * 0.015; 
     const noise = (Math.random() + Math.random() + Math.random() - 1.5) * noiseLevel;
@@ -280,6 +452,7 @@ function draw() {
     
     const valCh = (valMod * attScale) + noise;
     pCh += ` L ${x} ${80 - valCh * 50}`;
+    channelSeries.push({ tb: (x / w) * fe, value: valCh });
 
     // Application du Jitter sur l'oscilloscope de l'oeil
     const eyeWidth = bitW * 2;
@@ -304,26 +477,46 @@ function draw() {
       let outVal = getAnalogVal(t) * txGain;
       if (bitArray[bitIdx].err) outVal = -outVal + (Math.random()-0.5)*0.5; 
       yOut = 50 - outVal * 30;
+      outSeries.push({ tb: (x / w) * fe, value: outVal });
     } else {
       const bRx = bitArray[bitIdx].rx;
       yOut = 50 - (bRx ? 1 : -1) * 20;
+      outSeries.push({ tb: (x / w) * fe, value: bRx ? 1 : -1 });
     }
     pOut += ` L ${x} ${yOut}`;
   }
 
+  bitArray.forEach(function (bit, index) {
+    demodSeries.push({ tb: index + 0.5, value: bit.rx ? 1 : -1 });
+  });
+
+  transmissionPlotData.source = sourceSeries;
+  transmissionPlotData.mod = modSeries;
+  transmissionPlotData.channel = channelSeries;
+  transmissionPlotData.demod = demodSeries;
+  transmissionPlotData.out = outSeries;
+
   ui.txBits.textContent = txBitStr;
   ui.rxBits.innerHTML = rxBitStr;
 
-  ui.svgSource.innerHTML = `<path d="${pSrc}" stroke="#60a5fa" stroke-width="2" fill="none" />
+  const baseAxes = buildSvgAxes(w, h, { top: 20, bottom: 80, xMax: fe, note: fe + ' bits observés' });
+  const channelAxes = buildSvgAxes(w, hEye, { top: 30, bottom: 130, xMax: fe, note: 'SNR ' + SNR_dB.toFixed(1) + ' dB', dark: true });
+
+  ui.svgSource.innerHTML = `${baseAxes}<path d="${pSrc}" stroke="#60a5fa" stroke-width="2" fill="none" />
     <path d="${pDig}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="2 2" fill="none"/>`;
-  ui.svgMod.innerHTML = `<path d="${pMod}" stroke="#818cf8" stroke-width="1.5" fill="none" />`;
-  ui.svgChannel.innerHTML = `<path d="${pCh}" stroke="${SNR_dB > 15 ? '#cbd5e1' : '#ef4444'}" stroke-width="1.5" fill="none" opacity="0.8"/>`;
+  ui.svgMod.innerHTML = `${baseAxes}<path d="${pMod}" stroke="#818cf8" stroke-width="1.5" fill="none" />`;
+  ui.svgChannel.innerHTML = `${channelAxes}<path d="${pCh}" stroke="${SNR_dB > 15 ? '#cbd5e1' : '#ef4444'}" stroke-width="1.5" fill="none" opacity="0.8"/>`;
   
   // Tracé ligne de seuil sur le démodulateur
   const demodThreshY = 50 - (threshVal * 30);
-  ui.svgDemod.innerHTML = pDemod + `<line x1="0" y1="${demodThreshY}" x2="${w}" y2="${demodThreshY}" stroke="rgba(239,68,68,0.5)" stroke-dasharray="4 4"/>`;
+  ui.svgDemod.innerHTML = `${baseAxes}${pDemod}<line x1="0" y1="${demodThreshY}" x2="${w}" y2="${demodThreshY}" stroke="rgba(239,68,68,0.5)" stroke-dasharray="4 4"/>`;
   
-  ui.svgOut.innerHTML = `<path d="${pOut}" stroke="${BER > 0.1 ? 'var(--err)' : 'var(--rx)'}" stroke-width="2.5" fill="none" />`;
+  ui.svgOut.innerHTML = `${baseAxes}<path d="${pOut}" stroke="${BER > 0.1 ? 'var(--err)' : 'var(--rx)'}" stroke-width="2.5" fill="none" />`;
+  attachTransmissionHover(ui.svgSource, 'source', 'Source analogique');
+  attachTransmissionHover(ui.svgMod, 'mod', 'Porteuse modulée');
+  attachTransmissionHover(ui.svgChannel, 'channel', 'Signal reçu');
+  attachTransmissionHover(ui.svgDemod, 'demod', 'Décision logique');
+  attachTransmissionHover(ui.svgOut, 'out', 'Signal restitué');
 
   requestAnimationFrame(draw);
 }

@@ -87,6 +87,95 @@ ui.btnPause.addEventListener('click', () => {
     else ui.btnPause.classList.remove('paused');
 });
 
+function drawRectAxes(ctx, width, height, options) {
+    const left = options.left || 50;
+    const right = options.right || 16;
+    const top = options.top || 16;
+    const bottom = options.bottom || 30;
+    const plotW = width - left - right;
+    const plotH = height - top - bottom;
+    const gridColor = options.gridColor || 'rgba(148,163,184,0.14)';
+    const axisColor = options.axisColor || 'rgba(226,232,240,0.8)';
+
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+
+    (options.xTicks || []).forEach(tick => {
+        const x = left + tick.pos * plotW;
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + plotH); ctx.stroke();
+        ctx.fillStyle = axisColor;
+        ctx.font = '10px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(tick.label, x, height - 6);
+    });
+
+    (options.yTicks || []).forEach(tick => {
+        const y = top + tick.pos * plotH;
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotW, y); ctx.stroke();
+        ctx.fillStyle = axisColor;
+        ctx.font = '10px Segoe UI, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(tick.label, left - 6, y + 3);
+    });
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = axisColor;
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, top + plotH);
+    ctx.lineTo(left + plotW, top + plotH);
+    ctx.stroke();
+
+    ctx.fillStyle = axisColor;
+    ctx.font = 'bold 11px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(options.xLabel, left + plotW / 2, height - 18);
+    ctx.save();
+    ctx.translate(16, top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText(options.yLabel, 0, 0);
+    ctx.restore();
+
+    return { left, right, top, bottom, plotW, plotH };
+}
+
+function drawConstellationAxes(ctx, width, height) {
+    ctx.strokeStyle = 'rgba(148,163,184,0.14)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    [width / 2 - 100, width / 2, width / 2 + 100].forEach(x => {
+        ctx.beginPath(); ctx.moveTo(x, 16); ctx.lineTo(x, height - 30); ctx.stroke();
+    });
+    [height / 2 - 100, height / 2, height / 2 + 100].forEach(y => {
+        ctx.beginPath(); ctx.moveTo(44, y); ctx.lineTo(width - 16, y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(226,232,240,0.8)';
+    ctx.beginPath();
+    ctx.moveTo(44, height / 2); ctx.lineTo(width - 16, height / 2);
+    ctx.moveTo(width / 2, 16); ctx.lineTo(width / 2, height - 30);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(226,232,240,0.85)';
+    ctx.font = '10px Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('-1', width / 2 - 100, height - 6);
+    ctx.fillText('0', width / 2, height - 6);
+    ctx.fillText('+1', width / 2 + 100, height - 6);
+    ctx.fillText('I (u.a.)', width / 2, height - 18);
+    ctx.textAlign = 'right';
+    ctx.fillText('+1', 40, height / 2 - 100 + 3);
+    ctx.fillText('0', 40, height / 2 + 3);
+    ctx.fillText('-1', 40, height / 2 + 100 + 3);
+    ctx.save();
+    ctx.translate(14, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Q (u.a.)', 0, 0);
+    ctx.restore();
+}
+
 function render() {
     if (!state.isPaused) state.time += 0.05;
 
@@ -114,7 +203,7 @@ function render() {
     ui.vBaud.textContent = Rs + " kBd";
     ui.vAlpha.textContent = alpha.toFixed(1);
     ui.vSNR.textContent = SNR_dB.toFixed(1) + " dB";
-    ui.vRb.textContent = Rb.toFixed(1) + " kbps";
+    ui.vRb.textContent = Rb.toFixed(1) + " kb/s";
     ui.vSpecEff.textContent = (filterType==='rect' ? '< ' : '') + specEff.toFixed(2) + " b/s/Hz";
     ui.vModName.textContent = modNames[M] || (M + '-QAM');
     ui.alpha.disabled = filterType !== 'rrc';
@@ -126,9 +215,7 @@ function render() {
         ctxConst.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctxConst.fillRect(0, 0, wC, hC);
     }
-    
-    ctxConst.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctxConst.beginPath(); ctxConst.moveTo(0, hC/2); ctxConst.lineTo(wC, hC/2); ctxConst.moveTo(wC/2, 0); ctxConst.lineTo(wC/2, hC); ctxConst.stroke();
+    drawConstellationAxes(ctxConst, wC, hC);
 
     idealSymbols = [];
     let scale = 1;
@@ -189,11 +276,25 @@ function render() {
     // --- SPECTRE ---
     const wS = 700, hS = 260;
     ctxSpec.clearRect(0, 0, wS, hS);
-    
-    ctxSpec.strokeStyle = 'rgba(255,255,255,0.1)';
-    for(let i=0; i<10; i++) {
-        ctxSpec.beginPath(); ctxSpec.moveTo(0, i*(hS/10)); ctxSpec.lineTo(wS, i*(hS/10)); ctxSpec.stroke();
-    }
+    drawRectAxes(ctxSpec, wS, hS, {
+        xTicks: [
+            { pos: 0, label: '-2' },
+            { pos: 0.25, label: '-1' },
+            { pos: 0.5, label: '0' },
+            { pos: 0.75, label: '+1' },
+            { pos: 1, label: '+2' }
+        ],
+        yTicks: [
+            { pos: 0, label: '0 dB' },
+            { pos: 1 / 3, label: '-20 dB' },
+            { pos: 2 / 3, label: '-40 dB' },
+            { pos: 1, label: '-60 dB' }
+        ],
+        xLabel: 'Fréquence normalisée (f/Rs)',
+        yLabel: 'DSP (dB)',
+        axisColor: 'rgba(226,232,240,0.85)',
+        gridColor: 'rgba(148,163,184,0.14)'
+    });
 
     ctxSpec.beginPath();
     ctxSpec.strokeStyle = '#38bdf8'; // Couleur HEX explicite (--tx)
@@ -229,6 +330,24 @@ function render() {
     // --- TIME DOMAIN & EYE DIAGRAM ---
     const wT = 700, hT = 260;
     ctxTime.clearRect(0, 0, wT, hT);
+    drawRectAxes(ctxTime, wT, hT, {
+        xTicks: [
+            { pos: 0, label: '0' },
+            { pos: 0.25, label: '4' },
+            { pos: 0.5, label: '8' },
+            { pos: 0.75, label: '12' },
+            { pos: 1, label: '16' }
+        ],
+        yTicks: [
+            { pos: 0.15, label: '+1 u.a.' },
+            { pos: 0.5, label: '0' },
+            { pos: 0.85, label: '-1 u.a.' }
+        ],
+        xLabel: 'Temps (Ts)',
+        yLabel: 'Amplitude (u.a.)',
+        axisColor: 'rgba(30,41,59,0.8)',
+        gridColor: 'rgba(148,163,184,0.15)'
+    });
     
     ctxTime.beginPath(); 
     ctxTime.strokeStyle = '#38bdf8'; // Couleur HEX explicite I
@@ -238,6 +357,22 @@ function render() {
         ctxEye.fillStyle = 'rgba(0, 0, 0, 0.15)';
         ctxEye.fillRect(0, 0, wT, hT);
     }
+    drawRectAxes(ctxEye, wT, hT, {
+        xTicks: [
+            { pos: 0, label: '0' },
+            { pos: 0.5, label: '1' },
+            { pos: 1, label: '2' }
+        ],
+        yTicks: [
+            { pos: 0.15, label: '+1 u.a.' },
+            { pos: 0.5, label: '0' },
+            { pos: 0.85, label: '-1 u.a.' }
+        ],
+        xLabel: 'Temps (Ts)',
+        yLabel: 'Amplitude (u.a.)',
+        axisColor: 'rgba(226,232,240,0.85)',
+        gridColor: 'rgba(148,163,184,0.14)'
+    });
 
     const pixelsPerSym = 40;
     const scrollOffset = state.time * 50; 

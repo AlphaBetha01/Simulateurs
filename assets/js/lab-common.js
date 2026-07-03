@@ -178,6 +178,63 @@
         }
       ]
     },
+    'numerisation-codage-ligne': {
+      exercises: [
+        {
+          title: 'Analyser l\u2019impact des longues s\u00e9ries de z\u00e9ros',
+          prompt: 'Pourquoi une longue s\u00e9quence de z\u00e9ros nuit-elle \u00e0 la synchronisation en AMI et comment HDB3 y rem\u00e9die ?',
+          correction: [
+            'En AMI, une suite de z\u00e9ros produit un signal 0\u202fV continu, sans aucune transition.',
+            'Sans transition, le r\u00e9cepteur ne peut pas r\u00e9cup\u00e9rer le rythme d\u2019horloge.',
+            'HDB3 substitue chaque groupe de 4 z\u00e9ros cons\u00e9cutifs par 000V ou B00V.'
+          ]
+        },
+        {
+          title: 'Comparer bande minimale et composante DC',
+          prompt: 'Comparez NRZ-L, Manchester et AMI sur deux crit\u00e8res : bande minimale occup\u00e9e et pr\u00e9sence d\u2019une composante DC.',
+          correction: [
+            'NRZ-L occupe la bande minimale (0,5\u202f/\u202fTb) mais peut contenir une DC si les 0 et 1 sont d\u00e9s\u00e9quilibr\u00e9s.',
+            'Manchester occupe le double de bande (1\u202f/\u202fTb) mais garantit une DC nulle par la transition centrale.',
+            'AMI \u00e9limine la DC car +V et \u2212V s\u2019\u00e9quilibrent, avec une d\u00e9tection d\u2019erreur native.'
+          ]
+        },
+        {
+          title: 'Identifier les substitutions B8ZS',
+          prompt: 'Sur la s\u00e9quence de test B8ZS, localisez les marqueurs V et B et expliquez leur r\u00f4le respectif.',
+          correction: [
+            'V est une violation de la r\u00e8gle AMI : deux marques successives de m\u00eame polarit\u00e9.',
+            'B est une marque bipolaire conforme ins\u00e9r\u00e9e pour maintenir la r\u00e8gle d\u2019alternance.',
+            'Ensemble, V et B signalent la s\u00e9quence substitu\u00e9e au r\u00e9cepteur.'
+          ]
+        }
+      ],
+      quiz: [
+        {
+          question: 'En Manchester, une transition montante au milieu du bit repr\u00e9sente : ',
+          options: ['Un bit \u00e0 1', 'Un bit \u00e0 0', 'Une violation AMI'],
+          answer: 0,
+          explanation: 'Par convention IEEE\u202f802.3, la transition montante au milieu code le 1 en Manchester.'
+        },
+        {
+          question: 'Avantage principal de Manchester Diff\u00e9rentiel : ',
+          options: ['Insensibilit\u00e9 \u00e0 l\u2019inversion de polarit\u00e9 de ligne', 'Bande deux fois plus \u00e9troite', 'Absence totale de transitions'],
+          answer: 0,
+          explanation: 'La pr\u00e9sence ou l\u2019absence de transition en d\u00e9but de bit porte l\u2019information.'
+        },
+        {
+          question: 'HDB3 est principalement utilis\u00e9 dans : ',
+          options: ['Les liaisons E1 (2 Mbit/s) en Europe', 'Les liaisons Wi-Fi 802.11', 'La modulation 64-QAM'],
+          answer: 0,
+          explanation: 'HDB3 est le code de ligne standardis\u00e9 pour la trame primaire E1 \u00e0 2,048 Mbit/s.'
+        },
+        {
+          question: 'B8ZS diff\u00e8re de HDB3 par : ',
+          options: ['Le seuil de substitution (8 z\u00e9ros) et son usage en T1/DS1', 'L\u2019absence de DC', 'Des niveaux quaternaires'],
+          answer: 0,
+          explanation: 'B8ZS substitue les groupes de 8 z\u00e9ros, normalis\u00e9 pour les hi\u00e9rarchies T1/DS1.'
+        }
+      ]
+    },
     'modulations-symbol': {
       exercises: [
         {
@@ -945,6 +1002,30 @@
         { title: 'Cr\u00e9er un aliasing', text: 'R\u00e9glez un cas de sous-\u00e9chantillonnage puis notez la fr\u00e9quence apparente du signal repli\u00e9.', target: '.lab-preset-bar' },
         { title: 'Revenir \u00e0 Nyquist', text: 'Placez-vous juste au seuil de Nyquist et observez la faible marge disponible.', target: '.lab-kpi-grid' },
         { title: 'Augmenter la r\u00e9solution', text: 'Gardez Fe fixe puis augmentez le nombre de bits pour isoler l\u2019effet de la quantification.', target: '.stage' }
+      ]
+    },
+    'numerisation-codage-ligne': {
+      title: 'Codage de Ligne',
+      subtitle: 'Comparez 9 codes en bande de base et identifiez leurs propri\u00e9t\u00e9s spectrales, leur composante DC et leur capacit\u00e9 d\u2019auto-synchronisation.',
+      help: [
+        'Commencez par saisir une s\u00e9quence avec une longue plage de z\u00e9ros pour voir AMI \u00e9chouer et HDB3 compenser.',
+        'Comparez toujours la bande du spectre affich\u00e9e avec la bande th\u00e9orique 0,5/Tb ou 1/Tb.',
+        'Utilisez les pr\u00e9r\u00e9glages \u00ab\u202fAMI vs HDB3\u202f\u00bb et \u00ab\u202fB8ZS\u202f\u00bb pour observer directement les substitutions.'
+      ],
+      objectives: [
+        'Identifier les propri\u00e9t\u00e9s (DC, bande, synchronisation) de chaque famille de codes.',
+        'Expliquer le m\u00e9canisme de substitution HDB3 et B8ZS.',
+        'Relier le choix du code de ligne \u00e0 son contexte d\u2019usage (E1, T1, Ethernet).'
+      ],
+      questions: [
+        'Pourquoi Manchester est-il pr\u00e9f\u00e9r\u00e9 dans Ethernet malgr\u00e9 sa bande plus large ?',
+        'Quel crit\u00e8re favorise HDB3 par rapport \u00e0 AMI simple ?',
+        'En quoi B8ZS et HDB3 sont-ils analogues mais distincts ?'
+      ],
+      tpSteps: [
+        { title: 'Observer NRZ et RZ', text: 'Saisissez \u00ab\u202f10110100\u202f\u00bb et comparez NRZ-L, NRZ-M et RZ : amplitude, transitions et largeur spectrale.', target: '.cl-code-grid' },
+        { title: 'Provoquer une perte de synchro AMI', text: 'Entrez \u00ab\u202f100000001\u202f\u00bb et observez la longue plage plate en AMI : justifiez le probl\u00e8me de synchronisation.', target: '.cl-stage' },
+        { title: 'Comparer HDB3 et B8ZS', text: 'Activez le pr\u00e9r\u00e9glage B8ZS/HDB3, localisez les marqueurs V et B et expliquez les substitutions.', target: '.cl-stage' }
       ]
     },
     modulations: {
