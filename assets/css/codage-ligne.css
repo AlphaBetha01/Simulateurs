@@ -504,8 +504,11 @@ canvas.cl-spectrum {
 }
 
 .cl-bit.active {
-  transform: scale(1.15);
-  box-shadow: 0 2px 8px rgba(22,163,74,.3);
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px rgba(245,158,11,.32), 0 6px 16px rgba(245,158,11,.35);
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 /* ?? Comparison table ?????????????????????????????????? */

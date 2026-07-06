@@ -244,9 +244,20 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       if (segs[i].level !== segs[i - 1].level) transitions++;
     }
     var ratio = transitions / Math.max(2 * segs.length, 1);
-    if (ratio <= 0.5) return '0.5 × Tb?¹';
-    if (ratio <= 1) return '1 × Tb?¹';
-    return '2 × Tb?¹';
+    if (ratio <= 0.5) return '0.5 × Tb\u207b\u00b9';
+    if (ratio <= 1) return '1 × Tb\u207b\u00b9';
+    return '2 × Tb\u207b\u00b9';
+  }
+
+  function drawActiveHighlight(ctx, axis, bitIndex, bitCount) {
+    if (bitIndex < 0) return;
+    var bitW = axis.drawW / Math.max(bitCount, 1);
+    var x = axis.pad.left + bitIndex * bitW;
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.24)';
+    ctx.fillRect(x, axis.pad.top, bitW, axis.drawH);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 1, axis.pad.top + 1, Math.max(bitW - 2, 0), Math.max(axis.drawH - 2, 0));
   }
 
   function computeStats(segs) {
@@ -391,8 +402,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
 
     if (animPos >= 0) {
       var bitW = axis.drawW / Math.max(bits.length, 1);
-      ctx.fillStyle = 'rgba(22,163,74,0.08)';
-      ctx.fillRect(axis.pad.left + Math.floor(animPos) * bitW, axis.pad.top, bitW, axis.drawH);
+      drawActiveHighlight(ctx, axis, Math.floor(animPos), bits.length);
     }
 
     ctx.strokeStyle = '#94a3b8';
@@ -440,8 +450,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     var bitW = axis.drawW / Math.max(state.bits.length, 1);
 
     if (animPos >= 0) {
-      ctx.fillStyle = 'rgba(22,163,74,0.08)';
-      ctx.fillRect(axis.pad.left + Math.floor(animPos) * bitW, axis.pad.top, bitW, axis.drawH);
+      drawActiveHighlight(ctx, axis, Math.floor(animPos), state.bits.length);
     }
 
     ctx.strokeStyle = color;
@@ -703,7 +712,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       '<div class="cl-stats-bar" id="cl-stats-bar"></div>' +
       '<div style="overflow-x:auto;margin-top:14px">' +
       '  <table class="cl-compare-table" id="cl-compare-table">' +
-      '    <thead><tr><th>Code</th><th>Transitions</th><th>Biais DC</th><th>Densité trans.</th><th>Équilibre ±</th><th>Bande min.</th><th>Composante DC</th></tr></thead>' +
+      '    <thead><tr><th>Code</th><th>Transitions</th><th>Biais DC</th><th>Densit\u00e9 trans.</th><th>\u00c9quilibre \u00b1</th><th>Bande min.</th><th>Composante DC</th></tr></thead>' +
       '    <tbody id="cl-compare-tbody"></tbody>' +
       '  </table>' +
       '</div>';
@@ -727,7 +736,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     var spec = document.createElement('div');
     spec.className = 'cl-spectrum-card';
     spec.innerHTML = '' +
-      '<h3>Densité spectrale de puissance estimée (DSP)</h3>' +
+      '<h3>Densit\u00e9 spectrale de puissance estim\u00e9e (DSP)</h3>' +
       '<canvas id="cl-spectrum" class="cl-spectrum"></canvas>' +
       '<div class="cl-spectrum-legend" id="cl-spectrum-legend"></div>';
     stage.appendChild(spec);
@@ -774,7 +783,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       var zeros = state.bits.length - ones;
       meta.innerHTML = '<span><strong>' + state.bits.length + '</strong> bits</span>' +
         '<span><strong>' + ones + '</strong> uns</span>' +
-        '<span><strong>' + zeros + '</strong> zéros</span>';
+        '<span><strong>' + zeros + '</strong> z\u00e9ros</span>';
     }
   }
 
@@ -810,10 +819,10 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       var zeros = state.bits.length - ones;
       var avgTransitions = codeCount ? (totalTransitions / codeCount).toFixed(0) : '0';
       statsBar.innerHTML = '' +
-        '<div class="cl-stat"><div class="cl-stat__label">Longueur séquence</div><div class="cl-stat__value">' + state.bits.length + '</div><div class="cl-stat__sub">bits</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Uns / zéros</div><div class="cl-stat__value">' + ones + ' / ' + zeros + '</div><div class="cl-stat__sub">ratio ' + ((ones / Math.max(state.bits.length, 1)) * 100).toFixed(0) + '%</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Codes actifs</div><div class="cl-stat__value">' + codeCount + '</div><div class="cl-stat__sub">affichés</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Moy. transitions</div><div class="cl-stat__value">' + avgTransitions + '</div><div class="cl-stat__sub">par séquence</div></div>';
+        '<div class="cl-stat"><div class="cl-stat__label">Longueur s\u00e9quence</div><div class="cl-stat__value">' + state.bits.length + '</div><div class="cl-stat__sub">bits</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Uns / z\u00e9ros</div><div class="cl-stat__value">' + ones + ' / ' + zeros + '</div><div class="cl-stat__sub">ratio ' + ((ones / Math.max(state.bits.length, 1)) * 100).toFixed(0) + '%</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Codes actifs</div><div class="cl-stat__value">' + codeCount + '</div><div class="cl-stat__sub">affich\u00e9s</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Moy. transitions</div><div class="cl-stat__value">' + avgTransitions + '</div><div class="cl-stat__sub">par s\u00e9quence</div></div>';
     }
   }
 
@@ -893,7 +902,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     state.isAnimating = true;
     state.animPos = 0;
     var btn = document.getElementById('cl-btn-anim');
-    if (btn) btn.textContent = '? Arrêter';
+    if (btn) btn.textContent = '? Arr\u00eater';
 
     var totalBits = Math.max(state.bits.length, 1);
     var msPerBit = 1000 / Math.max(state.animSpeed, 0.1);
