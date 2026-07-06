@@ -13,14 +13,14 @@
     <a class="lab-global-header__home" href="../../index.html">← Accueil</a>
     <div class="lab-global-header__brand">
       <strong>Laboratoire Virtuel de Télécommunication</strong>
-      <span>DSP avancé • I/Q, spectre, œil et bruit AWGN</span>
+      <span>DSP avancé • I/Q, spectre, œil, OFDM, MIMO, 5G-like et canaux réalistes</span>
     </div>
   </div>
 </div>
 
 <div class="wrap">
   <h1>
-    Laboratoire d'Ingénierie Télécom : Modulation I/Q & Filtrage
+    Laboratoire d'Ingénierie Télécom : Modulation I/Q, OFDM, MIMO, 5G-like & Filtrage
     <button id="btnPlayPause">⏸️ Pause / Mesures</button>
   </h1>
   
@@ -38,6 +38,23 @@
       <div>
         <label>Distance de Transmission <span class="val" id="valDist">20 km</span></label>
         <input type="range" id="dist" min="0" max="100" value="20">
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Scénario de canal réaliste</label>
+        <select id="channelProfile">
+          <option value="awgn" selected>AWGN de référence</option>
+          <option value="multipath">Multi-trajets modéré</option>
+          <option value="rayleigh">Fading Rayleigh</option>
+          <option value="rician">Fading Rician</option>
+          <option value="isi">ISI sévère</option>
+        </select>
+      </div>
+      <div>
+        <label>Lecture rapide <span class="val" id="valChannelProfile">AWGN de référence</span></label>
+        <div style="font-size:12px;color:var(--muted)">Compare l’effet des échos, du fading et de l’interférence inter-symboles.</div>
       </div>
     </div>
 
@@ -71,6 +88,99 @@
       </div>
     </div>
 
+    <div class="ctrl-group">
+      <div>
+        <label>Code correcteur d'erreurs</label>
+        <select id="fecType">
+          <option value="none" selected>Sans FEC</option>
+          <option value="rep3">Répétition ×3</option>
+          <option value="hamming74">Hamming (7,4)</option>
+        </select>
+      </div>
+      <div>
+        <label>Résumé FEC <span class="val" id="valFecType">Sans FEC</span></label>
+        <div style="font-size:12px;color:var(--muted)">Le décodage corrige des erreurs après décision symbole, sans améliorer le canal physique lui-même.</div>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <div>
+        <label>Mode système radio</label>
+        <select id="systemMode">
+          <option value="manual" selected>Exploration libre</option>
+          <option value="5g">5G-like pédagogique</option>
+        </select>
+      </div>
+      <div>
+        <label>Scénario couverture <span class="val" id="valCoverageScenario">Libre</span></label>
+        <select id="coverageScenario">
+          <option value="good" selected>Bonne couverture</option>
+          <option value="edge">Cell edge</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Mode scheduler radio</label>
+        <select id="schedulerMode">
+          <option value="off" selected>Désactivé</option>
+          <option value="on">Scheduler pédagogique</option>
+        </select>
+      </div>
+      <div>
+        <label>Politique d'allocation <span class="val" id="valSchedulerPolicy">Aucune</span></label>
+        <select id="schedulerPolicy">
+          <option value="max">Débit max</option>
+          <option value="fair">Équité stricte</option>
+          <option value="pf" selected>Proportionnel</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Architecture de transmission</label>
+        <select id="waveformMode">
+          <option value="single" selected>Monoporteuse</option>
+          <option value="ofdm">OFDM pédagogique</option>
+        </select>
+      </div>
+      <div>
+        <label>Lecture OFDM <span class="val" id="valWaveformMode">Monoporteuse</span></label>
+        <div style="font-size:12px;color:var(--muted)">Le mode OFDM répartit les données sur plusieurs sous-porteuses et utilise un préfixe cyclique contre l’ISI.</div>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Architecture d'antennes</label>
+        <select id="mimoMode">
+          <option value="siso" selected>SISO 1x1</option>
+          <option value="simo12">SIMO 1x2 (diversité)</option>
+          <option value="mimo22">MIMO 2x2 (spatial)</option>
+        </select>
+      </div>
+      <div>
+        <label>Lecture MIMO <span class="val" id="valMimoMode">SISO 1x1</span></label>
+        <div style="font-size:12px;color:var(--muted)">Compare l’amélioration de robustesse par diversité et l’augmentation de débit par multiplexage spatial.</div>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <div>
+        <label>Sous-porteuses OFDM</label>
+        <select id="ofdmSubcarriers">
+          <option value="4">4</option>
+          <option value="8" selected>8</option>
+          <option value="16">16</option>
+        </select>
+      </div>
+      <div>
+        <label>Préfixe cyclique <span class="val" id="valOfdmCp">25 %</span></label>
+        <input type="range" id="ofdmCp" min="0" max="50" step="5" value="25">
+      </div>
+    </div>
+
     <div class="stats-board">
       <div class="stat-item">
         <div class="stat-title">Rapport Signal/Bruit (SNR)</div>
@@ -85,8 +195,16 @@
         <div class="stat-val" id="valSpecEff" style="color:var(--rx)">3.08 b/s/Hz</div>
       </div>
       <div class="stat-item">
-        <div class="stat-title">Débit Binaire (Rb)</div>
+        <div class="stat-title">Débit ligne (Rb)</div>
         <div class="stat-val" id="valRb">40.0 kbps</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">BER brut</div>
+        <div class="stat-val" id="valBERRaw" style="color:var(--warn)">0.000</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-title">BER après FEC</div>
+        <div class="stat-val" id="valBERFec" style="color:var(--rx)">0.000</div>
       </div>
     </div>
   </div>
@@ -95,6 +213,9 @@
     <button class="lab-preset-btn" type="button" data-dsp-preset="robust">BPSK robuste</button>
     <button class="lab-preset-btn" type="button" data-dsp-preset="nominal">16-QAM nominal</button>
     <button class="lab-preset-btn" type="button" data-dsp-preset="dense">64-QAM limite</button>
+    <button class="lab-preset-btn" type="button" data-dsp-preset="ofdm">OFDM multi-trajets</button>
+    <button class="lab-preset-btn" type="button" data-dsp-preset="5g-good">5G bonne couverture</button>
+    <button class="lab-preset-btn" type="button" data-dsp-preset="5g-edge">5G cell edge</button>
   </div>
 
   <div class="lab-kpi-grid" aria-label="Mesures DSP">
@@ -113,7 +234,71 @@
       <div id="dspChannelState" class="lab-kpi-value">Confortable</div>
       <div id="dspChannelNote" class="lab-kpi-note">Constellation nette et œil largement ouvert.</div>
     </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Taux de code</div>
+      <div id="dspCodeRate" class="lab-kpi-value">1.00</div>
+      <div id="dspCodeRateNote" class="lab-kpi-note">Part de débit utile conservée après ajout de redondance.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Gain de correction</div>
+      <div id="dspFecGain" class="lab-kpi-value">Aucun</div>
+      <div id="dspFecGainNote" class="lab-kpi-note">Compare le BER brut au BER utile après décodage.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Mode de lien</div>
+      <div id="dspWaveformMode" class="lab-kpi-value">Monoporteuse</div>
+      <div id="dspWaveformNote" class="lab-kpi-note">Le signal traverse le canal sur une seule porteuse de baseband.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Marge CP</div>
+      <div id="dspCpGuard" class="lab-kpi-value">—</div>
+      <div id="dspCpGuardNote" class="lab-kpi-note">Compare la longueur du préfixe cyclique à l’étalement temporel du canal.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Mode spatial</div>
+      <div id="dspMimoMode" class="lab-kpi-value">SISO</div>
+      <div id="dspMimoNote" class="lab-kpi-note">Une seule chaîne d’émission et de réception.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Gain MIMO</div>
+      <div id="dspMimoGain" class="lab-kpi-value">Référence</div>
+      <div id="dspMimoGainNote" class="lab-kpi-note">Montre si l’architecture privilégie la robustesse ou le débit spatial.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">MCS actif</div>
+      <div id="dspMcs" class="lab-kpi-value">Manuel</div>
+      <div id="dspMcsNote" class="lab-kpi-note">Combine modulation, codage et architecture radio sélectionnés automatiquement en mode 5G-like.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">État couverture</div>
+      <div id="dspCoverageState" class="lab-kpi-value">Libre</div>
+      <div id="dspCoverageNote" class="lab-kpi-note">Compare bonne couverture et cell edge selon la marge radio et le MCS retenu.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Débit total UE</div>
+      <div id="dspSchedTotalRate" class="lab-kpi-value">—</div>
+      <div id="dspSchedTotalRateNote" class="lab-kpi-note">Somme des débits utiles alloués aux trois usagers quand le scheduler est actif.</div>
+    </article>
+    <article class="lab-kpi-card">
+      <div class="lab-kpi-label">Indice d'équité</div>
+      <div id="dspSchedFairness" class="lab-kpi-value">—</div>
+      <div id="dspSchedFairnessNote" class="lab-kpi-note">Mesure la régularité du partage des ressources entre `UE proche`, `UE moyen` et `UE bord cellule`.</div>
+    </article>
   </div>
+
+  <section class="block" style="margin-top:4px">
+    <div class="block-title">5. Scheduler radio multi-usagers</div>
+    <div id="schedulerSummary" style="font-size:13px;color:var(--text);line-height:1.6">Scheduler désactivé : le laboratoire affiche un seul lien utilisateur.</div>
+    <div id="schedulerUsers" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px"></div>
+  </section>
+
+  <section class="block" style="margin-top:4px">
+    <div class="block-title">6. Trame radio / Resource Blocks</div>
+    <div id="rbSummary" style="font-size:13px;color:var(--text);line-height:1.6">Activez le scheduler pour visualiser la répartition des ressources en temps et en fréquence.</div>
+    <div id="rbFrameInfo" style="font-size:12px;color:var(--muted);margin-top:6px">Trame courante : —</div>
+    <div id="rbLegend" style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 10px"></div>
+    <div id="rbGrid" style="display:grid;grid-template-columns:120px repeat(12, minmax(22px, 1fr));gap:4px;align-items:center"></div>
+  </section>
 
   <div class="stage">
     
@@ -121,7 +306,7 @@
     <div class="block">
       <div class="block-title">1. Diagramme de Constellation (I/Q)</div>
       <div class="scope-container grid-bg">
-        <div class="scope-label">Réception I/Q + Bruit Gaussien (AWGN)</div>
+        <div id="constScopeLabel" class="scope-label">Réception I/Q après canal et bruit</div>
         <canvas id="constCanvas" width="700" height="260"></canvas>
       </div>
     </div>
@@ -139,7 +324,7 @@
     <div class="block">
       <div class="block-title">3. Diagramme de l'Œil (Canal I - Baseband)</div>
       <div class="scope-container grid-bg">
-        <div class="scope-label">Visualisation de l'ISI et du Bruit</div>
+        <div id="eyeScopeLabel" class="scope-label">Visualisation de l'ISI, du fading et du bruit</div>
         <canvas id="eyeCanvas" width="700" height="260"></canvas>
       </div>
     </div>
@@ -150,6 +335,24 @@
       <div class="scope-container">
         <div class="scope-label">Composante I (Bleu) et Q (Vert)</div>
         <canvas id="timeCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 5. BER vs SNR -->
+    <div class="block" style="grid-column:1 / -1">
+      <div class="block-title">7. Courbe BER vs SNR</div>
+      <div class="scope-container grid-bg">
+        <div id="berScopeLabel" class="scope-label">Courbes théoriques et estimation utile après FEC avec marqueur temps réel</div>
+        <canvas id="berCanvas" width="700" height="260"></canvas>
+      </div>
+    </div>
+
+    <!-- 6. History -->
+    <div class="block" style="grid-column:1 / -1">
+      <div class="block-title">8. Historique temporel du lien</div>
+      <div class="scope-container grid-bg">
+        <div id="historyScopeLabel" class="scope-label">Fenêtre glissante : SNR, BER utile et débit utile pour relier dynamique instantanée et tendance</div>
+        <canvas id="historyCanvas" width="700" height="260"></canvas>
       </div>
     </div>
 

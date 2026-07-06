@@ -344,6 +344,72 @@
       ]
     },
     'transmission-dsp': {
+      title: 'Traitement du signal avancé',
+      subtitle: 'Croisez canal, modulation, OFDM, MIMO, adaptation MCS et scheduler radio pour expliquer le BER utile obtenu.',
+      help: [
+        'Le canal dégrade d’abord les symboles avant toute correction numérique.',
+        'Le BER brut se lit après décision symbole ; le BER après FEC se lit après décodage.',
+        'Un code correcteur améliore la robustesse utile mais réduit le débit d’information net.',
+        'En OFDM, le préfixe cyclique protège contre les échos tant qu’il reste plus long que l’étalement du canal.',
+        'En MIMO, la diversité améliore surtout la robustesse alors que le multiplexage spatial cherche d’abord à augmenter le débit utile.',
+        'En mode 5G-like, un MCS pédagogique adapte conjointement modulation, codage et stratégie spatiale selon la couverture.',
+        'Un scheduler radio répartit ensuite les ressources entre plusieurs UE selon un compromis entre équité et débit total.',
+        'La trame radio affichée permet de voir concrètement quels resource blocks sont servis à chaque UE en temps et en fréquence.',
+        'L’animation d’une trame à l’autre montre qu’un scheduler ne fige pas l’allocation : il la réévalue continuellement.',
+        'La courbe BER vs SNR relie enfin les réglages instantanés à une tendance théorique globale de performance.',
+        'L’historique temporel permet de comparer la valeur instantanée d’un indicateur à sa dynamique récente.'
+      ],
+      objectives: [
+        'Relier fading, multi-trajets et ISI aux vues constellation, spectre et œil.',
+        'Comparer BER brut et BER après correction pour quantifier l’apport du FEC.',
+        'Justifier le compromis entre robustesse gagnée et redondance ajoutée.',
+        'Comparer monoporteuse et OFDM face au multi-trajets et à l’ISI.',
+        'Comparer diversité `1x2` et multiplexage spatial `2x2` sur les critères robustesse et débit.',
+        'Relier bonne couverture et cell edge au choix automatique du MCS.',
+        'Comparer plusieurs politiques de scheduling sur trois UE de qualité radio différente.',
+        'Lire graphiquement une grille de resource blocks pour relier allocation et performance.',
+        'Observer l’évolution temporelle d’une allocation radio et non une seule photographie statique.',
+        'Relier un point de fonctionnement courant à une courbe BER vs SNR.',
+        'Comparer évolution instantanée et tendance glissante sur un même lien.'
+      ],
+      questions: [
+        'Pourquoi un FEC ne corrige-t-il pas visuellement la fermeture de l’œil alors qu’il peut réduire le BER utile ?',
+        'Dans quel cas choisiriez-vous `Hamming (7,4)` plutôt qu’une simple répétition ×3 ?',
+        'Pourquoi OFDM devient-il plus robuste quand le préfixe cyclique couvre la mémoire du canal ?',
+        'Pourquoi `SIMO 1x2` et `MIMO 2x2` n’apportent-ils pas le même type de gain ?',
+        'Pourquoi un système 5G-like ne conserve-t-il pas le même MCS entre bonne couverture et cell edge ?',
+        'Pourquoi la politique `débit max` ne donne-t-elle pas la même répartition que la politique `équité stricte` ?',
+        'Comment la grille temps/fréquence permet-elle d’identifier l’UE favorisé par une politique scheduler ?',
+        'Pourquoi l’UE dominant peut-il changer de place ou d’intensité d’une trame à l’autre sans que la politique change ?',
+        'Que signifie un déplacement du marqueur courant vers la gauche ou vers la droite sur une courbe BER vs SNR ?',
+        'Que montre un historique temporel que ne montre pas une seule mesure instantanée ?'
+      ],
+      tpSteps: [
+        { title: 'Observer le canal brut', text: 'Choisissez un scénario de canal puis relevez SNR, SER, BER brut et ouverture de l’œil sans FEC.', target: '#valSNR' },
+        { title: 'Activer le FEC', text: 'Passez ensuite à `Répétition ×3` ou `Hamming (7,4)` et comparez le BER après correction.', target: '#valBERFec' },
+        { title: 'Basculer en OFDM', text: 'Activez ensuite le mode `OFDM pédagogique` et comparez la marge CP en présence de multi-trajets.', target: '#dspCpGuard' },
+        { title: 'Activer le MIMO', text: 'Comparez ensuite `SISO`, `SIMO 1x2` et `MIMO 2x2` pour distinguer gain de diversité et gain de débit spatial.', target: '#dspMimoMode' },
+        { title: 'Basculer en 5G-like', text: 'Activez ensuite le mode `5G-like pédagogique` et comparez le MCS retenu entre `bonne couverture` et `cell edge`.', target: '#dspMcs' },
+        { title: 'Activer le scheduler', text: 'Comparez ensuite `débit max`, `équité stricte` et `proportionnel` sur `UE proche`, `UE moyen` et `UE bord cellule`.', target: '#dspSchedTotalRate' },
+        { title: 'Lire la trame radio', text: 'Observez enfin les resource blocks colorés pour relier visuellement la politique choisie à la part de ressources de chaque UE.', target: '#rbGrid' },
+        { title: 'Suivre l’animation RB', text: 'Laissez tourner plusieurs trames pour observer comment l’ordonnancement se réévalue dans le temps tout en gardant la logique de politique choisie.', target: '#rbFrameInfo' },
+        { title: 'Lire la courbe BER', text: 'Observez le marqueur courant sur la courbe BER vs SNR et comparez-le à la tendance théorique quand vous changez modulation, FEC ou canal.', target: '#berCanvas' },
+        { title: 'Lire l’historique temporel', text: 'Comparez ensuite SNR, BER utile et débit utile sur la fenêtre glissante pour distinguer variation instantanée et tendance récente.', target: '#historyCanvas' },
+        { title: 'Conclure en ingénieur', text: 'Reliez le gain observé au taux de code, au débit utile affiché, au préfixe cyclique éventuel, à l’architecture spatiale, au MCS retenu, à la politique scheduler et à la trame RB.', target: '#dspCodeRate' }
+      ],
+      expectedAnswers: [
+        'Le FEC ne modifie pas le canal analogique ni la dispersion ; il agit uniquement après la décision numérique.',
+        'Un gain de BER utile s’obtient au prix d’une baisse de débit utile liée au taux de code.',
+        'Hamming (7,4) corrige efficacement des erreurs isolées avec moins de redondance qu’une répétition simple.',
+        'OFDM transforme un canal sélectif en fréquence en plusieurs sous-canaux plus faciles à égaliser, à condition que le préfixe cyclique soit suffisant.',
+        'La diversité `1x2` améliore d’abord la fiabilité de détection alors que le `2x2` spatial augmente surtout la quantité d’information transmise simultanément.',
+        'Un profil cell edge force généralement un MCS plus robuste alors qu’une bonne couverture autorise une modulation plus dense et parfois un multiplexage spatial.',
+        'Une politique scheduler orientée débit total favorise surtout les meilleurs canaux, tandis qu’une politique équitable accepte une baisse de capacité globale pour mieux servir tous les UE.',
+        'La grille de resource blocks rend visible cette priorité en montrant quels UE occupent le plus de cases temps/fréquence.',
+        'L’animation montre en plus que cette priorité se manifeste au fil des trames et pas seulement sur une image figée.',
+        'Sur la courbe BER vs SNR, déplacer le point courant vers la droite signifie généralement une meilleure marge radio et un BER plus faible.',
+        'L’historique temporel aide à voir si une amélioration est durable ou seulement momentanée.'
+      ],
       exercises: [
         {
           title: 'Comparer trois vues du canal',
@@ -353,8 +419,292 @@
             'La constellation renseigne sur la marge de décision symbole.',
             'L’œil renseigne sur la qualité temporelle de l’échantillonnage.'
           ]
+        },
+        {
+          title: 'Justifier un choix de code',
+          prompt: 'Comparez `Répétition ×3` et `Hamming (7,4)` sur le gain de BER obtenu et sur le coût en débit utile.',
+          correction: [
+            'La répétition ×3 ajoute beaucoup de redondance mais corrige par vote majoritaire très simple.',
+            'Hamming (7,4) offre un meilleur taux de code et corrige une erreur simple par mot de code.',
+            'Le bon choix dépend donc du type d’erreurs observées et du débit utile que l’on accepte de sacrifier.'
+          ]
+        },
+        {
+          title: 'Comparer monoporteuse et OFDM',
+          prompt: 'Expliquez pourquoi OFDM résiste mieux au multi-trajets qu’une transmission monoporteuse quand le préfixe cyclique est bien dimensionné.',
+          correction: [
+            'La monoporteuse subit directement l’étalement temporel et l’ISI sur tout le flux symbole.',
+            'OFDM découpe la bande en sous-porteuses plus étroites, donc plus faciles à égaliser individuellement.',
+            'Si le préfixe cyclique couvre les échos principaux, l’ISI inter-blocs devient faible et la robustesse augmente nettement.'
+          ]
+        },
+        {
+          title: 'Comparer diversité et multiplexage spatial',
+          prompt: 'Comparez `SIMO 1x2` et `MIMO 2x2` sur la robustesse, la sensibilité au canal et le débit utile obtenu.',
+          correction: [
+            'La diversité `1x2` combine plusieurs observations d’un même flux pour réduire les erreurs.',
+            'Le `2x2` spatial transmet plusieurs flux simultanés et augmente donc d’abord le débit utile potentiel.',
+            'Le choix dépend du besoin : fiabilité maximale ou capacité plus élevée à canal suffisant.'
+          ]
+        },
+        {
+          title: 'Justifier un MCS 5G-like',
+          prompt: 'Expliquez pourquoi un scénario `cell edge` conduit à un MCS plus conservateur qu’un scénario `bonne couverture`.',
+          correction: [
+            'Au bord de cellule, la marge radio est plus faible et les fluctuations de canal pèsent davantage sur la décision.',
+            'Le système réduit alors l’exigence spectrale en choisissant une modulation moins dense ou un codage plus protecteur.',
+            'En bonne couverture, la réserve SNR permet au contraire d’augmenter la densité de modulation et parfois le multiplexage spatial.'
+          ]
+        },
+        {
+          title: 'Comparer trois politiques scheduler',
+          prompt: 'Comparez `débit max`, `équité stricte` et `proportionnel` sur le compromis entre capacité totale et service du bord cellule.',
+          correction: [
+            'La politique débit max privilégie les UE les mieux couverts pour maximiser la somme des débits.',
+            'L’équité stricte répartit plus uniformément les ressources, même si le débit total baisse.',
+            'Le proportionnel cherche un compromis intermédiaire entre rendement global et partage raisonnable.'
+          ]
+        },
+        {
+          title: 'Lire une grille RB',
+          prompt: 'Expliquez comment reconnaître visuellement sur la grille RB qu’un UE est favorisé ou au contraire moins servi.',
+          correction: [
+            'Un UE favorisé occupe une plus grande proportion de cases colorées sur la grille temps/fréquence.',
+            'Un partage homogène se traduit par une présence plus régulière des couleurs entre les UE.',
+            'La lecture graphique doit être recoupée avec le débit total et l’indice d’équité affichés.'
+          ]
+        },
+        {
+          title: 'Interpréter une animation scheduler',
+          prompt: 'Expliquez pourquoi une animation de trame peut modifier localement les blocs attribués tout en conservant la logique globale de la politique choisie.',
+          correction: [
+            'Le scheduler réévalue régulièrement la situation radio et les priorités relatives.',
+            'Des variations locales peuvent déplacer quelques blocs d’une trame à l’autre sans changer l’objectif global de la politique.',
+            'L’analyse correcte doit donc comparer plusieurs trames et non une seule image instantanée.'
+          ]
+        },
+        {
+          title: 'Lire une courbe BER vs SNR',
+          prompt: 'Expliquez comment utiliser la courbe BER vs SNR et son marqueur courant pour comparer deux réglages de modulation ou de FEC.',
+          correction: [
+            'La courbe donne la tendance théorique globale quand la marge Eb/N0 varie.',
+            'Le marqueur courant montre où se situe le réglage instantané choisi sur cette tendance.',
+            'Comparer deux réglages consiste donc à observer le déplacement horizontal du point et la baisse ou hausse du BER correspondant.'
+          ]
+        },
+        {
+          title: 'Interpréter un historique temporel',
+          prompt: 'Expliquez pourquoi un historique glissant de SNR, BER utile et débit utile complète utilement la lecture d’un point instantané.',
+          correction: [
+            'Une seule mesure peut refléter une fluctuation brève du canal ou du scheduler.',
+            'L’historique montre si cette mesure s’inscrit dans une tendance stable ou dans une variation passagère.',
+            'L’analyse d’ingénierie gagne donc à croiser instantané et évolution récente.'
+          ]
         }
       ],
+      manipulations: [
+        {
+          title: 'Comparer BER brut et BER corrigé',
+          objective: 'Montrer expérimentalement qu’un FEC agit sur les bits utiles sans améliorer le canal physique.',
+          actions: [
+            'Choisir un cas de canal dégradé mais encore décodable.',
+            'Relever SNR, SER, BER brut et BER après FEC sans correction.',
+            'Activer ensuite `Répétition ×3` puis `Hamming (7,4)` à réglages identiques.',
+            'Comparer le gain observé et la baisse de débit utile.'
+          ],
+          measures: ['Canal', 'FEC', 'SER', 'BER brut', 'BER après FEC'],
+          quantitativeHints: [
+            'Conservez le même canal et la même modulation pour isoler l’effet du FEC.',
+            'Relevez explicitement les deux BER avant de conclure au gain.',
+            'Ajoutez le taux de code ou le débit utile dans votre comparaison finale.'
+          ],
+          validationCriteria: [
+            'Le relevé doit contenir au moins un cas sans FEC et un cas avec FEC.',
+            'La conclusion doit distinguer amélioration du BER utile et absence d’amélioration du canal brut.',
+            'Le compromis redondance / robustesse doit être cité explicitement.'
+          ]
+        },
+        {
+          title: 'Séparer canal et décodage',
+          objective: 'Montrer qu’un œil fermé partiellement peut rester exploitable grâce à une correction adaptée.',
+          actions: [
+            'Choisir un canal à trajets multiples ou un fading Rayleigh.',
+            'Observer l’œil et la constellation sans FEC.',
+            'Activer un FEC puis relever la nouvelle lecture BER après correction.',
+            'Expliquer pourquoi l’amélioration se voit dans les métriques plutôt que dans la forme brute de l’œil.'
+          ],
+          measures: ['Scénario', 'Œil', 'Constellation', 'BER utile', 'Conclusion']
+        },
+        {
+          title: 'Tester le préfixe cyclique OFDM',
+          objective: 'Relier la longueur du préfixe cyclique à la robustesse OFDM en canal multi-trajets.',
+          actions: [
+            'Activer `OFDM pédagogique` sur un canal `multi-trajets` ou `ISI`.',
+            'Faire varier uniquement le préfixe cyclique.',
+            'Relever la marge CP, le SER et le BER après FEC.',
+            'Comparer ensuite avec le mode monoporteuse au même canal.'
+          ],
+          measures: ['Mode', 'Canal', 'CP', 'SER', 'Conclusion'],
+          quantitativeHints: [
+            'Conservez la même modulation pour comparer uniquement l’effet de l’architecture de transmission.',
+            'Repérez le seuil où la marge CP devient positive.',
+            'Reliez la baisse du SER au fait que le préfixe couvre enfin la mémoire du canal.'
+          ],
+          validationCriteria: [
+            'Le tableau doit comporter au moins deux valeurs de préfixe cyclique.',
+            'La comparaison OFDM / monoporteuse doit être explicite.',
+            'La conclusion doit relier marge CP, multi-trajets et robustesse fréquentielle.'
+          ]
+        },
+        {
+          title: 'Comparer gain de diversité et gain spatial',
+          objective: 'Montrer qu’une antenne supplémentaire ne sert pas toujours le même objectif selon l’architecture choisie.',
+          actions: [
+            'Choisir un canal radio ou Rayleigh suffisamment exigeant.',
+            'Comparer successivement `SISO`, `SIMO 1x2` et `MIMO 2x2` sans changer la modulation.',
+            'Relever BER après FEC, efficacité spectrale et lecture du mode spatial.',
+            'Conclure sur le compromis robustesse / capacité.'
+          ],
+          measures: ['Mode spatial', 'BER utile', 'Efficacité', 'Observation', 'Conclusion'],
+          quantitativeHints: [
+            'Conservez la même constellation pour isoler le gain spatial.',
+            'Repérez si le `1x2` baisse davantage le BER que le `2x2`.',
+            'Vérifiez si le `2x2` augmente bien le débit utile affiché.'
+          ],
+          validationCriteria: [
+            'Les trois architectures spatiales doivent apparaître dans le relevé.',
+            'La conclusion doit distinguer explicitement gain de diversité et gain de multiplexage.',
+            'Le raisonnement final doit relier performance et objectif système.'
+          ]
+        },
+        {
+          title: 'Comparer deux profils 5G-like',
+          objective: 'Relier la couverture radio au MCS sélectionné et au compromis débit/robustesse.',
+          actions: [
+            'Activer `5G-like pédagogique`.',
+            'Comparer successivement `bonne couverture` et `cell edge` à canal radio identique.',
+            'Relever MCS actif, BER après FEC, efficacité spectrale et mode spatial retenu.',
+            'Expliquer pourquoi le système adapte ses choix.'
+          ],
+          measures: ['Couverture', 'MCS', 'BER utile', 'Efficacité', 'Conclusion'],
+          quantitativeHints: [
+            'Relever explicitement le MCS affiché dans chaque scénario.',
+            'Comparer le débit utile et le BER final au lieu de commenter uniquement le SNR.',
+            'Identifier si le système privilégie davantage robustesse ou capacité dans chaque cas.'
+          ],
+          validationCriteria: [
+            'Les deux scénarios de couverture doivent être présents.',
+            'La comparaison doit citer MCS, BER utile et efficacité spectrale.',
+            'La conclusion doit expliquer le lien entre couverture et adaptation modulation/codage.'
+          ]
+        },
+        {
+          title: 'Comparer les politiques d’ordonnancement',
+          objective: 'Montrer qu’un scheduler radio change la répartition des ressources entre plusieurs UE sans modifier leur position radio.',
+          actions: [
+            'Activer le scheduler pédagogique.',
+            'Comparer successivement `débit max`, `équité stricte` et `proportionnel`.',
+            'Relever pour chaque politique le débit total, l’indice d’équité et la part de ressources de chaque UE.',
+            'Conclure sur la politique la plus adaptée selon l’objectif réseau.'
+          ],
+          measures: ['Politique', 'Débit total', 'Équité', 'UE favorisé', 'Conclusion'],
+          quantitativeHints: [
+            'Repérez si le bord cellule reçoit une part plus importante avec la politique équitable.',
+            'Comparez toujours ensemble débit total et indice d’équité.',
+            'Cherchez la politique intermédiaire qui garde un bon débit sans abandonner les UE faibles.'
+          ],
+          validationCriteria: [
+            'Les trois politiques doivent apparaître dans le relevé.',
+            'Le tableau doit comporter débit total et indice d’équité.',
+            'La conclusion doit relier objectif réseau et choix de politique scheduler.'
+          ]
+        },
+        {
+          title: 'Relier RB et performance',
+          objective: 'Utiliser la grille RB pour justifier les écarts de débit entre plusieurs UE.',
+          actions: [
+            'Activer le scheduler puis choisir une politique d’allocation.',
+            'Observer la trame radio colorée.',
+            'Repérer quel UE reçoit le plus de resource blocks et comparer avec son débit utile.',
+            'Changer de politique puis expliquer l’évolution visuelle et numérique.'
+          ],
+          measures: ['Politique', 'UE dominant', 'Part RB', 'Débit total', 'Conclusion'],
+          quantitativeHints: [
+            'Comptez ou estimez la proportion de blocs attribués à chaque UE.',
+            'Vérifiez qu’un UE plus présent sur la grille possède bien un débit plus élevé.',
+            'Reliez toujours lecture graphique et KPI chiffrés.'
+          ],
+          validationCriteria: [
+            'Le relevé doit citer explicitement l’UE dominant selon au moins deux politiques.',
+            'La comparaison doit associer part RB et débit total.',
+            'La conclusion doit expliquer comment la grille matérialise le compromis scheduler.'
+          ]
+        },
+        {
+          title: 'Suivre plusieurs trames RB',
+          objective: 'Montrer qu’un scheduler anime l’allocation au cours du temps tout en conservant son objectif global.',
+          actions: [
+            'Laisser tourner l’animation sur plusieurs trames radio.',
+            'Relever la trame courante et l’UE dominant à deux instants différents.',
+            'Comparer la stabilité du débit total et de l’équité avec les variations locales de blocs.',
+            'Conclure sur la différence entre dynamique fine et stratégie globale.'
+          ],
+          measures: ['Trame', 'Politique', 'UE dominant', 'Équité', 'Conclusion'],
+          quantitativeHints: [
+            'Relevez au moins deux numéros de trame différents.',
+            'Vérifiez si le même UE reste majoritaire ou si la dominance oscille légèrement.',
+            'Distinguez variation locale des blocs et tendance moyenne de la politique.'
+          ],
+          validationCriteria: [
+            'Le relevé doit comparer plusieurs trames radio.',
+            'L’analyse doit distinguer évolution visuelle et maintien de la politique globale.',
+            'La conclusion doit expliquer pourquoi l’animation enrichit la lecture du scheduler.'
+          ]
+        },
+        {
+          title: 'Comparer deux points BER',
+          objective: 'Relier un changement de réglage à un déplacement du point courant sur la courbe BER vs SNR.',
+          actions: [
+            'Choisir un premier réglage de modulation et relever la position du point courant.',
+            'Modifier ensuite la modulation ou le FEC sans changer inutilement les autres paramètres.',
+            'Comparer le déplacement du marqueur et la variation de BER brut et utile.',
+            'Conclure sur le compromis robustesse / efficacité spectrale.'
+          ],
+          measures: ['Réglage', 'Eb/N0', 'BER brut', 'BER utile', 'Conclusion'],
+          quantitativeHints: [
+            'Relever la valeur Eb/N0 affichée en même temps que le point sur la courbe.',
+            'Comparer séparément BER brut et BER après FEC.',
+            'Relier la variation de BER à la densité de modulation choisie.'
+          ],
+          validationCriteria: [
+            'Au moins deux réglages doivent être comparés.',
+            'Le relevé doit citer Eb/N0 et BER.',
+            'La conclusion doit relier lecture graphique et raisonnement d’ingénierie.'
+          ]
+        },
+        {
+          title: 'Comparer instantané et tendance',
+          objective: 'Montrer qu’une bonne lecture du lien exige de comparer la mesure courante à l’historique glissant.',
+          actions: [
+            'Observer un instant où le SNR ou le BER change visiblement.',
+            'Comparer la valeur instantanée avec la trace historique récente.',
+            'Déterminer si le phénomène semble durable ou transitoire.',
+            'Conclure sur l’intérêt d’une lecture temporelle continue.'
+          ],
+          measures: ['Instant', 'SNR', 'BER utile', 'Débit utile', 'Conclusion'],
+          quantitativeHints: [
+            'Relevez au moins deux instants différents.',
+            'Comparez simultanément les trois courbes historiques.',
+            'Cherchez si une baisse de BER suit une amélioration de SNR ou une baisse de débit.'
+          ],
+          validationCriteria: [
+            'Le relevé doit comparer plusieurs instants.',
+            'L’analyse doit distinguer variation brève et tendance durable.',
+            'La conclusion doit justifier l’intérêt pédagogique de l’historique.'
+          ]
+        }
+      ],
+      measurementHints: ['Réglage', 'Avant', 'Après', 'Mesure', 'Interprétation'],
       quiz: [
         {
           question: 'Une fermeture verticale de l’œil traduit surtout : ',
@@ -367,6 +717,60 @@
           options: ['La bande occupée et le filtrage', 'Le numéro de groupe étudiant', 'La structure CAS'],
           answer: 0,
           explanation: 'Le domaine fréquentiel donne une lecture directe de l’occupation de bande et du façonnage du signal.'
+        },
+        {
+          question: 'Que change principalement un code correcteur dans ce laboratoire ? ',
+          options: ['Le BER utile après décision', 'La forme instantanée du canal analogique', 'La fréquence d’échantillonnage du CAN'],
+          answer: 0,
+          explanation: 'Le FEC agit après la décision numérique : il ne supprime pas le bruit ou l’ISI, mais corrige une partie des erreurs utiles.'
+        },
+        {
+          question: 'En OFDM, le rôle principal du préfixe cyclique est de : ',
+          options: ['Absorber l’étalement temporel du canal', 'Augmenter le nombre de bits par symbole', 'Supprimer tout bruit AWGN'],
+          answer: 0,
+          explanation: 'Le préfixe cyclique évite qu’une réponse impulsionnelle trop longue transforme le multi-trajets en forte ISI inter-blocs.'
+        },
+        {
+          question: 'Quel mode cherche d’abord un gain de robustesse plutôt qu’un gain de débit ? ',
+          options: ['SIMO 1x2', 'MIMO 2x2 spatial', 'Augmentation seule de la valence QAM'],
+          answer: 0,
+          explanation: 'La diversité `1x2` combine plusieurs observations d’un même flux pour réduire les erreurs sans multiplier les flux utiles.'
+        },
+        {
+          question: 'En mode 5G-like, un profil `cell edge` pousse en priorité vers : ',
+          options: ['Un MCS plus robuste', 'Une modulation toujours plus dense', 'La suppression du codage correcteur'],
+          answer: 0,
+          explanation: 'Quand la couverture est plus faible, le système réduit l’exigence spectrale pour protéger la fiabilité du lien.'
+        },
+        {
+          question: 'Quelle politique favorise d’abord le débit total au détriment possible du bord cellule ? ',
+          options: ['Débit max', 'Équité stricte', 'Répartition identique du MCS'],
+          answer: 0,
+          explanation: 'Une politique orientée débit max donne prioritairement les ressources aux UE offrant la meilleure efficacité instantanée.'
+        },
+        {
+          question: 'Sur la grille RB, un UE favorisé se reconnaît surtout par : ',
+          options: ['Une plus grande proportion de blocs colorés à son nom', 'Un changement de couleur du fond de page', 'Une disparition du SNR'],
+          answer: 0,
+          explanation: 'La répartition des resource blocks se lit directement par la quantité de cases attribuées à chaque UE dans la grille temps/fréquence.'
+        },
+        {
+          question: 'Si l’animation RB change légèrement d’une trame à l’autre, cela signifie surtout que : ',
+          options: ['Le scheduler réévalue l’allocation dans le temps', 'Le laboratoire a perdu la politique choisie', 'Le canal n’existe plus'],
+          answer: 0,
+          explanation: 'Une animation dynamique illustre l’ordonnancement trame par trame sans remettre en cause l’objectif global de la politique sélectionnée.'
+        },
+        {
+          question: 'Sur la courbe BER vs SNR, un déplacement du marqueur vers la droite indique généralement : ',
+          options: ['Une meilleure marge Eb/N0', 'Une disparition du canal', 'Une baisse automatique du nombre de sous-porteuses'],
+          answer: 0,
+          explanation: 'Aller vers la droite sur l’axe Eb/N0 signifie en général une meilleure réserve de bruit et donc une tendance à un BER plus faible.'
+        },
+        {
+          question: 'Quel est l’intérêt principal d’un historique temporel des KPI ? ',
+          options: ['Distinguer tendance et fluctuation instantanée', 'Supprimer le besoin de mesurer le BER', 'Remplacer complètement la constellation'],
+          answer: 0,
+          explanation: 'L’historique montre si une valeur instantanée est isolée ou si elle s’inscrit dans une évolution durable du lien.'
         }
       ]
     },
