@@ -40,7 +40,8 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     animPos: 0,
     animSpeed: 2,
     isAnimating: false,
-    tooltipEl: null
+    tooltipEl: null,
+    layoutKey: ''
   };
   var initialized = false;
 
@@ -635,7 +636,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
           state.selectedCodes = state.selectedCodes.filter(function (code) { return code !== id; });
           item.classList.remove('checked');
         }
-        render();
+        renderSimulator();
       });
 
       item.appendChild(cb);
@@ -667,9 +668,19 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     });
   }
 
-  function buildWaveformCards() {
+  function getLayoutKey() {
+    return state.selectedCodes.join('|');
+  }
+
+  function ensureWaveformCards() {
     var stage = document.getElementById('cl-stage');
     if (!stage) return;
+
+    var layoutKey = getLayoutKey();
+    if (stage.dataset.layoutKey === layoutKey && document.getElementById('cl-canvas-original')) {
+      return;
+    }
+
     stage.innerHTML = '';
 
     var original = document.createElement('div');
@@ -692,7 +703,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       '<div class="cl-stats-bar" id="cl-stats-bar"></div>' +
       '<div style="overflow-x:auto;margin-top:14px">' +
       '  <table class="cl-compare-table" id="cl-compare-table">' +
-      '    <thead><tr><th>Code</th><th>Transitions</th><th>Biais DC</th><th>Densite trans.</th><th>Equilibre +/-</th><th>Bande min.</th><th>Composante DC</th></tr></thead>' +
+      '    <thead><tr><th>Code</th><th>Transitions</th><th>Biais DC</th><th>Densité trans.</th><th>Équilibre ±</th><th>Bande min.</th><th>Composante DC</th></tr></thead>' +
       '    <tbody id="cl-compare-tbody"></tbody>' +
       '  </table>' +
       '</div>';
@@ -716,10 +727,29 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     var spec = document.createElement('div');
     spec.className = 'cl-spectrum-card';
     spec.innerHTML = '' +
-      '<h3>Densite spectrale de puissance estimee (DSP)</h3>' +
+      '<h3>Densité spectrale de puissance estimée (DSP)</h3>' +
       '<canvas id="cl-spectrum" class="cl-spectrum"></canvas>' +
       '<div class="cl-spectrum-legend" id="cl-spectrum-legend"></div>';
     stage.appendChild(spec);
+
+    stage.dataset.layoutKey = layoutKey;
+
+    var originalCanvas = document.getElementById('cl-canvas-original');
+    if (originalCanvas) {
+      bindMeasurement(originalCanvas, 'bits');
+    }
+
+    state.selectedCodes.forEach(function (codeId) {
+      var canvas = document.getElementById('cl-canvas-' + codeId);
+      if (canvas) {
+        bindMeasurement(canvas, 'code', codeId);
+      }
+    });
+
+    var spectrumCanvas = document.getElementById('cl-spectrum');
+    if (spectrumCanvas) {
+      bindMeasurement(spectrumCanvas, 'spectrum');
+    }
   }
 
   function updateBitsDisplay() {
@@ -744,11 +774,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       var zeros = state.bits.length - ones;
       meta.innerHTML = '<span><strong>' + state.bits.length + '</strong> bits</span>' +
         '<span><strong>' + ones + '</strong> uns</span>' +
-        '<span><strong>' + zeros + '</strong> zeros</span>';
+        '<span><strong>' + zeros + '</strong> zéros</span>';
     }
   }
 
-  function updateStats() {
+  function renderStatsTable() {
     var tbody = document.getElementById('cl-compare-tbody');
     var statsBar = document.getElementById('cl-stats-bar');
     if (!tbody) return;
@@ -780,14 +810,14 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       var zeros = state.bits.length - ones;
       var avgTransitions = codeCount ? (totalTransitions / codeCount).toFixed(0) : '0';
       statsBar.innerHTML = '' +
-        '<div class="cl-stat"><div class="cl-stat__label">Longueur sequence</div><div class="cl-stat__value">' + state.bits.length + '</div><div class="cl-stat__sub">bits</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Uns / zeros</div><div class="cl-stat__value">' + ones + ' / ' + zeros + '</div><div class="cl-stat__sub">ratio ' + ((ones / Math.max(state.bits.length, 1)) * 100).toFixed(0) + '%</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Codes actifs</div><div class="cl-stat__value">' + codeCount + '</div><div class="cl-stat__sub">affiches</div></div>' +
-        '<div class="cl-stat"><div class="cl-stat__label">Moy. transitions</div><div class="cl-stat__value">' + avgTransitions + '</div><div class="cl-stat__sub">par sequence</div></div>';
+        '<div class="cl-stat"><div class="cl-stat__label">Longueur séquence</div><div class="cl-stat__value">' + state.bits.length + '</div><div class="cl-stat__sub">bits</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Uns / zéros</div><div class="cl-stat__value">' + ones + ' / ' + zeros + '</div><div class="cl-stat__sub">ratio ' + ((ones / Math.max(state.bits.length, 1)) * 100).toFixed(0) + '%</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Codes actifs</div><div class="cl-stat__value">' + codeCount + '</div><div class="cl-stat__sub">affichés</div></div>' +
+        '<div class="cl-stat"><div class="cl-stat__label">Moy. transitions</div><div class="cl-stat__value">' + avgTransitions + '</div><div class="cl-stat__sub">par séquence</div></div>';
     }
   }
 
-  function updateLegend() {
+  function renderSpectrumLegend() {
     var legend = document.getElementById('cl-spectrum-legend');
     if (!legend) return;
     legend.innerHTML = '';
@@ -801,40 +831,40 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     });
   }
 
-  function render() {
-    if (!state.bits.length) return;
-
+  function computeEncodedSignals() {
     state.encoded = {};
     state.selectedCodes.forEach(function (codeId) {
       state.encoded[codeId] = encode(codeId, state.bits);
     });
+  }
 
-    buildWaveformCards();
-    updateBitsDisplay();
-    updateStats();
-    updateLegend();
+  function drawAllCanvases() {
+    var originalCanvas = document.getElementById('cl-canvas-original');
+    if (originalCanvas) {
+      drawOriginalBits(originalCanvas, state.bits, state.isAnimating ? state.animPos : -1);
+    }
 
-    requestAnimationFrame(function () {
-      var originalCanvas = document.getElementById('cl-canvas-original');
-      if (originalCanvas) {
-        drawOriginalBits(originalCanvas, state.bits, state.isAnimating ? state.animPos : -1);
-        bindMeasurement(originalCanvas, 'bits');
-      }
-
-      state.selectedCodes.forEach(function (codeId) {
-        var canvas = document.getElementById('cl-canvas-' + codeId);
-        if (canvas && state.encoded[codeId]) {
-          drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, state.isAnimating ? state.animPos : -1);
-          bindMeasurement(canvas, 'code', codeId);
-        }
-      });
-
-      var spectrumCanvas = document.getElementById('cl-spectrum');
-      if (spectrumCanvas) {
-        drawSpectrum(spectrumCanvas, state.encoded);
-        bindMeasurement(spectrumCanvas, 'spectrum');
+    state.selectedCodes.forEach(function (codeId) {
+      var canvas = document.getElementById('cl-canvas-' + codeId);
+      if (canvas && state.encoded[codeId]) {
+        drawWaveform(canvas, state.encoded[codeId], CODES[codeId].color, state.isAnimating ? state.animPos : -1);
       }
     });
+
+    var spectrumCanvas = document.getElementById('cl-spectrum');
+    if (spectrumCanvas) {
+      drawSpectrum(spectrumCanvas, state.encoded);
+    }
+  }
+
+  function renderSimulator() {
+    if (!state.bits.length) return;
+    computeEncodedSignals();
+    ensureWaveformCards();
+    updateBitsDisplay();
+    renderStatsTable();
+    renderSpectrumLegend();
+    requestAnimationFrame(drawAllCanvases);
   }
 
   function stopAnimation() {
@@ -844,7 +874,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     var btn = document.getElementById('cl-btn-anim');
     if (btn) btn.textContent = '? Animer';
     document.querySelectorAll('.cl-bit').forEach(function (el) { el.classList.remove('active'); });
-    render();
+    drawAllCanvases();
   }
 
   function resetSimulator() {
@@ -863,7 +893,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     state.isAnimating = true;
     state.animPos = 0;
     var btn = document.getElementById('cl-btn-anim');
-    if (btn) btn.textContent = '? Arreter';
+    if (btn) btn.textContent = '? Arrêter';
 
     var totalBits = Math.max(state.bits.length, 1);
     var msPerBit = 1000 / Math.max(state.animSpeed, 0.1);
@@ -882,7 +912,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
         el.classList.toggle('active', index === activeIndex);
       });
 
-      render();
+      drawAllCanvases();
       state.animFrame = requestAnimationFrame(step);
     }
 
@@ -909,7 +939,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     if (errorEl) errorEl.classList.remove('visible');
     state.bits = bits;
     if (state.isAnimating) stopAnimation();
-    render();
+    renderSimulator();
   }
 
   function init() {
@@ -928,13 +958,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     var animBtn = document.getElementById('cl-btn-anim');
     if (animBtn) {
       animBtn.onclick = startAnimation;
-      animBtn.addEventListener('click', startAnimation);
     }
 
     var resetBtn = document.getElementById('cl-btn-reset');
     if (resetBtn) {
       resetBtn.onclick = resetSimulator;
-      resetBtn.addEventListener('click', resetBtn.onclick);
     }
 
     var speedSlider = document.getElementById('cl-speed');
@@ -948,7 +976,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       });
     }
 
-    window.addEventListener('resize', render);
+    window.addEventListener('resize', drawAllCanvases);
     handleInput(DEFAULT_BITS);
   }
 
