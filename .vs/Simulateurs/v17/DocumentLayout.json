@@ -3,15 +3,15 @@
   "WorkspaceRootPath": "C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\coly_\\AppData\\Local\\Temp\\VisualStudio\\copilot-vs\\plan-ed3c4c32-b999-46f7-b2ef-6ad38a8312de.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\assets\\js\\lab-common.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:assets\\js\\lab-common.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\pages\\numerisation\\CodageLigne.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:pages\\numerisation\\CodageLigne.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\coly_\\AppData\\Local\\Temp\\VisualStudio\\copilot-vs\\plan-ed3c4c32-b999-46f7-b2ef-6ad38a8312de.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\_insert_cl.py||{8B382828-6202-11D1-8870-0000F87579D2}|",
@@ -41,7 +41,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 10,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -57,7 +57,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "CodageLigne.html",
               "DocumentMoniker": "C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\pages\\numerisation\\CodageLigne.html",
               "RelativeDocumentMoniker": "pages\\numerisation\\CodageLigne.html",
@@ -65,8 +65,7 @@
               "RelativeToolTip": "pages\\numerisation\\CodageLigne.html",
               "ViewState": "AgIAAHYAAAAAAAAAAADwv5kAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-07-03T17:07:37.67Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-03T17:07:37.67Z"
             },
             {
               "$type": "Document",
@@ -78,8 +77,7 @@
               "RelativeToolTip": "assets\\js\\transmission-dsp.js",
               "ViewState": "AgIAAMwAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-07-03T16:44:54.81Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-03T16:44:54.81Z"
             },
             {
               "$type": "Document",
@@ -91,8 +89,7 @@
               "RelativeToolTip": "assets\\js\\transmission.js",
               "ViewState": "AgIAABsAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-07-03T16:44:23.227Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-03T16:44:23.227Z"
             },
             {
               "$type": "Document",
@@ -102,7 +99,7 @@
               "RelativeDocumentMoniker": "assets\\js\\codage-ligne.js",
               "ToolTip": "C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\assets\\js\\codage-ligne.js",
               "RelativeToolTip": "assets\\js\\codage-ligne.js",
-              "ViewState": "AgIAAMgCAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAN0CAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
               "WhenOpened": "2026-07-03T16:43:53.36Z",
               "EditorCaption": ""
@@ -117,12 +114,11 @@
               "RelativeToolTip": "assets\\js\\can.js",
               "ViewState": "AgIAABIAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-07-03T16:43:18.127Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-03T16:43:18.127Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "plan-ed3c4c32-b999-46f7-b2ef-6ad38a8312de.md",
               "DocumentMoniker": "C:\\Users\\coly_\\AppData\\Local\\Temp\\VisualStudio\\copilot-vs\\plan-ed3c4c32-b999-46f7-b2ef-6ad38a8312de.md",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\AppData\\Local\\Temp\\VisualStudio\\copilot-vs\\plan-ed3c4c32-b999-46f7-b2ef-6ad38a8312de.md",
@@ -143,12 +139,11 @@
               "RelativeToolTip": "_insert_cl.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAFMAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
-              "WhenOpened": "2026-07-03T14:50:10.853Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-07-03T14:50:10.853Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "lab-common.js",
               "DocumentMoniker": "C:\\Users\\coly_\\OneDrive\\Cours\\Transmission num\u00E9rique traitement signal\\Simulateurs\\assets\\js\\lab-common.js",
               "RelativeDocumentMoniker": "assets\\js\\lab-common.js",

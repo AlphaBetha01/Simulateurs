@@ -42,6 +42,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     isAnimating: false,
     tooltipEl: null
   };
+  var initialized = false;
 
   function parseBits(str) {
     return String(str || '')
@@ -846,6 +847,13 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     render();
   }
 
+  function resetSimulator() {
+    var input = document.getElementById('cl-input');
+    stopAnimation();
+    if (input) input.value = DEFAULT_BITS;
+    handleInput(DEFAULT_BITS);
+  }
+
   function startAnimation() {
     if (state.isAnimating) {
       stopAnimation();
@@ -905,6 +913,9 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
   }
 
   function init() {
+    if (initialized) return;
+    initialized = true;
+
     buildCodeCheckboxes();
     buildPresets();
 
@@ -915,14 +926,15 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     }
 
     var animBtn = document.getElementById('cl-btn-anim');
-    if (animBtn) animBtn.addEventListener('click', startAnimation);
+    if (animBtn) {
+      animBtn.onclick = startAnimation;
+      animBtn.addEventListener('click', startAnimation);
+    }
 
     var resetBtn = document.getElementById('cl-btn-reset');
     if (resetBtn) {
-      resetBtn.addEventListener('click', function () {
-        if (input) input.value = DEFAULT_BITS;
-        handleInput(DEFAULT_BITS);
-      });
+      resetBtn.onclick = resetSimulator;
+      resetBtn.addEventListener('click', resetBtn.onclick);
     }
 
     var speedSlider = document.getElementById('cl-speed');
@@ -940,9 +952,12 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     handleInput(DEFAULT_BITS);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
+  window.codageLigneAnimate = startAnimation;
+  window.codageLigneReset = resetSimulator;
+
+  if (document.body) {
     init();
+  } else {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   }
 })();
