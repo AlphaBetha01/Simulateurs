@@ -1,7 +1,12 @@
 ﻿LabCommon.initHeader({ bodySection: 'transmission-dsp', pageId: 'transmission-dsp' });
 LabCommon.initHeader({ bodySection: 'transmission-dsp', pageId: 'transmission-dsp' });
 
-const state = { isPaused: false, time: 0, history: [] };
+const state = {
+    isPaused: false,
+    time: 0,
+    history: [],
+    autoEval: { score: 0, attempts: 0, currentQuestion: null, signature: '', refreshNonce: 0 }
+};
 const phys = {
     cuivre: { attBase: 10, attKm: 0.5 },
     fibre: { attBase: 2, attKm: 0.05 },
@@ -158,6 +163,12 @@ const ui = {
     rbFrameInfo: $('rbFrameInfo'),
     rbLegend: $('rbLegend'),
     rbGrid: $('rbGrid'),
+    autoEvalRefresh: $('autoEvalRefresh'),
+    autoEvalScore: $('autoEvalScore'),
+    autoEvalContext: $('autoEvalContext'),
+    autoEvalQuestion: $('autoEvalQuestion'),
+    autoEvalOptions: $('autoEvalOptions'),
+    autoEvalFeedback: $('autoEvalFeedback'),
     berLabel: $('berScopeLabel'),
     historyLabel: $('historyScopeLabel'),
     constLabel: $('constScopeLabel'),
@@ -171,6 +182,7 @@ const ctxTime = $('timeCanvas').getContext('2d');
 const ctxBer = $('berCanvas').getContext('2d');
 const ctxHistory = $('historyCanvas').getContext('2d');
 const dspPresetButtons = document.querySelectorAll('[data-dsp-preset]');
+const theoryButtons = document.querySelectorAll('.theory-toggle');
 
 const dspPresets = {
     robust: { media: 'fibre', dist: 10, channel: 'awgn', waveform: 'single', mimo: 'simo12', fec: 'hamming74', ofdmSubcarriers: '8', ofdmCp: 25, mod: '2', baud: 8, filter: 'rrc', alpha: 0.2 },
@@ -658,6 +670,192 @@ function drawLinkHistory(ctx, history) {
         ctx.fillStyle = 'rgba(226,232,240,0.9)';
         ctx.fillText(item.label, item.x + 20, layout.top + 14);
     });
+}
+
+function hashString(value) {
+    let hash = 0;
+    for (let index = 0; index < value.length; index++) {
+        hash = ((hash << 5) - hash) + value.charCodeAt(index);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function buildAutoEvalQuestion(context) {
+    const questions = [];
+
+    if (context.schedulerSnapshot) {
+        const rankedUsers = context.schedulerSnapshot.users.slice().sort(function (a, b) { return b.share - a.share; });
+        const topUser = rankedUsers[0];
+        questions.push({
+            contextLabel: 'Scheduler ' + context.schedulerSnapshot.policy.label,
+            question: 'Avec la politique `' + context.schedulerSnapshot.policy.label + '`, quel UE reçoit actuellement la plus grande part de resource blocks ?',
+            options: context.schedulerSnapshot.users.map(function (user) { return user.label; }),
+            answer: context.schedulerSnapshot.users.findIndex(function (user) { return user.id === topUser.id; }),
+            explanation: topUser.label + ' reçoit ici la plus grande part de RB, ce qui reflète le compromis choisi par la politique d’ordonnancement actuelle.'
+        });
+    }
+
+    if (context.waveformMode === 'ofdm' && context.ofdmGuardInfo) {
+        questions.push({
+            contextLabel: 'OFDM • CP ' + Math.round(context.cpRatio * 100) + ' %',
+            question: 'Dans ce réglage OFDM, que montre principalement la marge de préfixe cyclique courante ?',
+            options: [
+                'Le CP couvre suffisamment les échos principaux',
+                'Le FEC augmente directement le SNR analogique',
+                'Le scheduler est automatiquement désactivé'
+            ],
+            answer: context.ofdmGuardInfo.protected ? 0 : 0,
+            explanation: context.ofdmGuardInfo.protected
+                ? 'La marge CP est positive : le préfixe cyclique couvre les trajets principaux et limite l’ISI inter-blocs.'
+                : 'La marge CP est insuffisante : le préfixe ne couvre pas toute la mémoire du canal et une ISI résiduelle persiste.'
+        });
+        questions.push({
+            contextLabel: 'OFDM • robustesse fréquentielle',
+            question: context.ofdmGuardInfo.protected
+                ? 'Quel effet principal doit-on attendre ici d’un CP suffisant en OFDM ?'
+                : 'Quel effet principal doit-on attendre ici d’un CP trop court en OFDM ?',
+            options: context.ofdmGuardInfo.protected
+                ? ['Moins d’ISI inter-blocs après FFT', 'Une disparition de toute atténuation fréquentielle', 'Une annulation complète du bruit AWGN']
+                : ['Davantage d’ISI inter-blocs malgré l’égalisation', 'Une hausse automatique du nombre de sous-porteuses', 'Une suppression du besoin de décision symbole'],
+            answer: 0,
+            explanation: context.ofdmGuardInfo.protected
+                ? 'Un CP suffisant protège l’orthogonalité OFDM face aux échos principaux.'
+                : 'Un CP trop court laisse réapparaître une partie de la dispersion temporelle sous forme d’ISI.'
+        });
+    }
+
+    if (context.systemMode === '5g' && context.mcsProfile) {
+        questions.push({
+            contextLabel: '5G-like • ' + context.coverageLabel,
+            question: 'En mode 5G-like, que traduit principalement le MCS courant `' + context.mcsProfile.id + '` ?',
+            options: [
+                'Un compromis actuel entre robustesse et efficacité spectrale',
+                'La suppression complète du besoin de FEC',
+                'Une valeur fixe indépendante de la couverture'
+            ],
+            answer: 0,
+            explanation: 'Le MCS courant dépend de la marge radio et adapte modulation, codage et parfois stratégie spatiale au scénario de couverture.'
+        });
+    }
+
+    if (context.mimoMode !== 'siso') {
+        questions.push({
+            contextLabel: 'Spatial • ' + context.mimoLabel,
+            question: 'Avec le mode `' + context.mimoLabel + '`, quel gain cherche-t-on surtout ici ?',
+            options: [
+                context.mimoMode === 'simo12' ? 'Un gain de diversité et de robustesse' : 'Un gain de débit par multiplexage spatial',
+                'Une hausse automatique du roll-off',
+                'Une disparition du besoin de sous-porteuses'
+            ],
+            answer: 0,
+            explanation: context.mimoMode === 'simo12'
+                ? 'Le mode 1x2 combine plusieurs observations d’un même flux pour améliorer la fiabilité.'
+                : 'Le mode 2x2 cherche d’abord à transporter plus d’information utile par flux spatiaux simultanés.'
+        });
+    }
+
+    if (context.fecKey !== 'none') {
+        questions.push({
+            contextLabel: 'FEC • ' + context.fecLabel,
+            question: 'Avec `' + context.fecLabel + '`, quelle grandeur est censée s’améliorer sans modifier directement le canal analogique ?',
+            options: ['Le BER utile après décodage', 'La fréquence d’échantillonnage', 'La puissance optique du lien'],
+            answer: 0,
+            explanation: 'Le code correcteur agit après décision numérique : il peut réduire le BER utile sans ouvrir lui-même l’œil analogique.'
+        });
+    }
+
+    questions.push({
+        contextLabel: 'Modulation • ' + context.modLabel,
+        question: 'Avec la modulation `' + context.modLabel + '` et un Eb/N0 courant de ' + context.ebN0Db.toFixed(1) + ' dB, que signifie surtout un marqueur déplacé vers la droite sur la courbe BER vs SNR ?',
+        options: ['Une meilleure marge radio et une tendance à un BER plus faible', 'Une disparition de la constellation', 'Une hausse forcée du nombre d’UE'],
+        answer: 0,
+        explanation: 'Vers la droite, la réserve Eb/N0 augmente en général et la probabilité d’erreur tend à diminuer.'
+    });
+
+    const signature = JSON.stringify({
+        waveformMode: context.waveformMode,
+        mimoMode: context.mimoMode,
+        fecKey: context.fecKey,
+        systemMode: context.systemMode,
+        schedulerMode: context.schedulerSnapshot ? context.schedulerSnapshot.policy.label : 'off',
+        coverage: context.coverageLabel,
+        mod: context.modLabel,
+        cp: context.cpRatio,
+        protected: context.ofdmGuardInfo ? context.ofdmGuardInfo.protected : null,
+        nonce: state.autoEval.refreshNonce
+    });
+    const selectedIndex = hashString(signature) % questions.length;
+    return questions[selectedIndex];
+}
+
+function renderAutoEvalQuestion(question) {
+    ui.autoEvalScore.textContent = state.autoEval.score + ' / ' + state.autoEval.attempts;
+    ui.autoEvalContext.textContent = question.contextLabel;
+    ui.autoEvalQuestion.textContent = question.question;
+    ui.autoEvalOptions.innerHTML = '';
+    ui.autoEvalFeedback.hidden = true;
+    ui.autoEvalFeedback.className = 'auto-eval-feedback';
+    ui.autoEvalFeedback.textContent = '';
+
+    question.options.forEach(function (option, index) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'auto-eval-option';
+        button.textContent = option;
+        button.addEventListener('click', function () {
+            if (!state.autoEval.currentQuestion || state.autoEval.currentQuestion.answered) {
+                return;
+            }
+
+            state.autoEval.attempts++;
+            const isCorrect = index === question.answer;
+            if (isCorrect) {
+                state.autoEval.score++;
+            }
+            state.autoEval.currentQuestion.answered = true;
+            state.autoEval.currentQuestion.selected = index;
+
+            Array.prototype.slice.call(ui.autoEvalOptions.children).forEach(function (child, childIndex) {
+                child.disabled = true;
+                if (childIndex === question.answer) {
+                    child.classList.add('is-correct');
+                } else if (childIndex === index) {
+                    child.classList.add('is-wrong');
+                }
+            });
+
+            ui.autoEvalScore.textContent = state.autoEval.score + ' / ' + state.autoEval.attempts;
+            ui.autoEvalFeedback.hidden = false;
+            ui.autoEvalFeedback.className = 'auto-eval-feedback ' + (isCorrect ? 'is-correct' : 'is-wrong');
+            ui.autoEvalFeedback.innerHTML = '<strong>' + (isCorrect ? 'Bonne réponse.' : 'Réponse à revoir.') + '</strong> ' + question.explanation;
+        });
+        ui.autoEvalOptions.appendChild(button);
+    });
+}
+
+function syncAutoEvaluation(context) {
+    const signature = JSON.stringify({
+        waveformMode: context.waveformMode,
+        mimoMode: context.mimoMode,
+        fecKey: context.fecKey,
+        modLabel: context.modLabel,
+        coverageLabel: context.coverageLabel,
+        schedulerPolicy: context.schedulerSnapshot ? context.schedulerSnapshot.policy.label : 'off',
+        guard: context.ofdmGuardInfo ? context.ofdmGuardInfo.protected : null,
+        systemMode: context.systemMode,
+        nonce: state.autoEval.refreshNonce
+    });
+
+    if (state.autoEval.signature === signature && state.autoEval.currentQuestion) {
+        ui.autoEvalScore.textContent = state.autoEval.score + ' / ' + state.autoEval.attempts;
+        return;
+    }
+
+    const question = buildAutoEvalQuestion(context);
+    state.autoEval.signature = signature;
+    state.autoEval.currentQuestion = Object.assign({ answered: false, selected: -1 }, question);
+    renderAutoEvalQuestion(state.autoEval.currentQuestion);
 }
 
 function countBitErrors(referenceBits, observedBits) {
@@ -1299,6 +1497,26 @@ dspPresetButtons.forEach(button => {
     });
 });
 
+theoryButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const targetId = button.dataset.theoryTarget;
+        const panel = document.getElementById(targetId);
+        if (!panel) {
+            return;
+        }
+
+        const willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        button.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        button.textContent = willOpen ? 'Masquer la théorie' : 'Voir la théorie';
+    });
+});
+
+ui.autoEvalRefresh.addEventListener('click', () => {
+    state.autoEval.refreshNonce++;
+    state.autoEval.signature = '';
+});
+
 ui.btnPause.addEventListener('click', () => {
     state.isPaused = !state.isPaused;
     ui.btnPause.textContent = state.isPaused ? '▶ Reprendre' : '⏸ Pause / Mesures';
@@ -1666,6 +1884,22 @@ function render() {
     ui.kpiFecGainNote.textContent = fecGainNote;
     ui.berLabel.textContent = 'Modulation ' + (modNames[M] || (M + '-QAM')) + ' • Eb/N0 courant ' + ebN0Db.toFixed(1) + ' dB • marqueurs brut/utiles';
     ui.historyLabel.textContent = 'Fenêtre glissante : SNR = ' + SNR_dB.toFixed(1) + ' dB • BER utile = ' + formatBer(fecMetrics.correctedBer) + ' • débit utile = ' + usefulRb.toFixed(1) + ' kb/s';
+
+    syncAutoEvaluation({
+        waveformMode: waveformMode,
+        mimoMode: mimoMode,
+        mimoLabel: mimoProfile.label,
+        fecKey: fecKey,
+        fecLabel: fecProfile.label,
+        systemMode: systemMode,
+        coverageLabel: systemMode === '5g' && coverageProfile ? coverageProfile.label : 'Exploration libre',
+        schedulerSnapshot: schedulerSnapshot,
+        ofdmGuardInfo: ofdmGuardInfo,
+        cpRatio: cpRatio,
+        modLabel: modNames[M] || (M + '-QAM'),
+        ebN0Db: ebN0Db,
+        mcsProfile: mcsProfile
+    });
 
     if (!state.isPaused || !state.history.length) {
         pushLinkHistory(SNR_dB, Math.max(fecMetrics.correctedBer, 1e-5), usefulRb);

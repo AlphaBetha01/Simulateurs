@@ -300,59 +300,115 @@
     <div id="rbGrid" style="display:grid;grid-template-columns:120px repeat(12, minmax(22px, 1fr));gap:4px;align-items:center"></div>
   </section>
 
+  <section class="block" style="margin-top:4px">
+    <div class="block-header">
+      <div class="block-title">9. Auto-évaluation contextuelle</div>
+      <button id="autoEvalRefresh" class="theory-toggle" type="button">Nouvelle question</button>
+    </div>
+    <div class="auto-eval-meta">
+      <div class="auto-eval-pill">Score <span id="autoEvalScore">0 / 0</span></div>
+      <div class="auto-eval-pill">Contexte <span id="autoEvalContext">Réglages courants</span></div>
+    </div>
+    <div id="autoEvalQuestion" class="auto-eval-question">Une question contextuelle apparaîtra ici selon les réglages du lien.</div>
+    <div id="autoEvalOptions" class="auto-eval-options"></div>
+    <div id="autoEvalFeedback" class="auto-eval-feedback" hidden></div>
+  </section>
+
   <div class="stage">
     
     <!-- 1. Constellation -->
     <div class="block">
-      <div class="block-title">1. Diagramme de Constellation (I/Q)</div>
+      <div class="block-header">
+        <div class="block-title">1. Diagramme de Constellation (I/Q)</div>
+        <button class="theory-toggle" type="button" data-theory-target="theoryConstellation" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container grid-bg">
         <div id="constScopeLabel" class="scope-label">Réception I/Q après canal et bruit</div>
         <canvas id="constCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theoryConstellation" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : <code>s = I + jQ</code> et la décision minimise en pratique la distance au point idéal le plus proche.</div>
+        <div class="theory-text">Lecture pédagogique : plus les points reçus restent groupés autour des symboles idéaux, plus la marge de décision est confortable. Le bruit, le fading et les erreurs d’égalisation dispersent la constellation.</div>
       </div>
     </div>
 
     <!-- 2. Spectre -->
     <div class="block">
-      <div class="block-title">2. Analyseur de Spectre (Densité Spectrale)</div>
+      <div class="block-header">
+        <div class="block-title">2. Analyseur de Spectre (Densité Spectrale)</div>
+        <button class="theory-toggle" type="button" data-theory-target="theorySpectrum" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container grid-bg">
         <div class="scope-label">PSD (dB) vs Fréquence</div>
         <canvas id="specCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theorySpectrum" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : <code>DSP(f) = |S(f)|²</code> et la bande utile dépend du façonnage, du roll-off et de l’architecture `OFDM` ou monoporteuse.</div>
+        <div class="theory-text">Lecture pédagogique : un spectre plus large n’est pas gratuit. Il faut relier bande occupée, efficacité spectrale et sélectivité fréquentielle du canal.</div>
       </div>
     </div>
 
     <!-- 3. Eye Diagram -->
     <div class="block">
-      <div class="block-title">3. Diagramme de l'Œil (Canal I - Baseband)</div>
+      <div class="block-header">
+        <div class="block-title">3. Diagramme de l'Œil (Canal I - Baseband)</div>
+        <button class="theory-toggle" type="button" data-theory-target="theoryEye" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container grid-bg">
         <div id="eyeScopeLabel" class="scope-label">Visualisation de l'ISI, du fading et du bruit</div>
         <canvas id="eyeCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theoryEye" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : la qualité de décision dépend de l’ouverture verticale et horizontale de l’œil au temps d’échantillonnage optimal.</div>
+        <div class="theory-text">Lecture pédagogique : le bruit ferme surtout l’œil verticalement, tandis que l’ISI et le jitter réduisent la marge temporelle. Un œil ouvert signifie une meilleure robustesse de décision.</div>
       </div>
     </div>
 
     <!-- 4. Time Domain -->
     <div class="block">
-      <div class="block-title">4. Signal Temporel (Bande de Base)</div>
+      <div class="block-header">
+        <div class="block-title">4. Signal Temporel (Bande de Base)</div>
+        <button class="theory-toggle" type="button" data-theory-target="theoryTime" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container">
         <div class="scope-label">Composante I (Bleu) et Q (Vert)</div>
         <canvas id="timeCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theoryTime" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : en bande de base, le signal résulte du façonnage des suites symbole sur les composantes <code>I(t)</code> et <code>Q(t)</code>.</div>
+        <div class="theory-text">Lecture pédagogique : la forme temporelle montre l’effet du filtre, du bruit et de la mémoire du canal. Elle aide à comprendre pourquoi deux symboles proches peuvent se gêner dans le temps.</div>
       </div>
     </div>
 
     <!-- 5. BER vs SNR -->
     <div class="block" style="grid-column:1 / -1">
-      <div class="block-title">7. Courbe BER vs SNR</div>
+      <div class="block-header">
+        <div class="block-title">7. Courbe BER vs SNR</div>
+        <button class="theory-toggle" type="button" data-theory-target="theoryBerSnr" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container grid-bg">
         <div id="berScopeLabel" class="scope-label">Courbes théoriques et estimation utile après FEC avec marqueur temps réel</div>
         <canvas id="berCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theoryBerSnr" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : quand <code>Eb/N0</code> augmente, le <code>BER</code> diminue en général fortement ; la pente dépend de la modulation et du codage.</div>
+        <div class="theory-text">Lecture pédagogique : la courbe donne une tendance globale. Le marqueur courant relie vos réglages instantanés à cette loi de comportement pour comparer robustesse et efficacité.</div>
       </div>
     </div>
 
     <!-- 6. History -->
     <div class="block" style="grid-column:1 / -1">
-      <div class="block-title">8. Historique temporel du lien</div>
+      <div class="block-header">
+        <div class="block-title">8. Historique temporel du lien</div>
+        <button class="theory-toggle" type="button" data-theory-target="theoryHistory" aria-expanded="false">Voir la théorie</button>
+      </div>
       <div class="scope-container grid-bg">
         <div id="historyScopeLabel" class="scope-label">Fenêtre glissante : SNR, BER utile et débit utile pour relier dynamique instantanée et tendance</div>
         <canvas id="historyCanvas" width="700" height="260"></canvas>
+      </div>
+      <div id="theoryHistory" class="theory-panel" hidden>
+        <div class="theory-formula">Rappel : une mesure instantanée décrit l’état courant, alors qu’un historique glissant aide à distinguer fluctuation transitoire et tendance durable.</div>
+        <div class="theory-text">Lecture pédagogique : comparer `SNR`, `BER utile` et `débit utile` dans le temps permet d’identifier si le lien s’améliore, se dégrade ou oscille autour d’un régime moyen.</div>
       </div>
     </div>
 

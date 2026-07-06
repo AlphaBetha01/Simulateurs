@@ -357,7 +357,9 @@
         'La trame radio affichée permet de voir concrètement quels resource blocks sont servis à chaque UE en temps et en fréquence.',
         'L’animation d’une trame à l’autre montre qu’un scheduler ne fige pas l’allocation : il la réévalue continuellement.',
         'La courbe BER vs SNR relie enfin les réglages instantanés à une tendance théorique globale de performance.',
-        'L’historique temporel permet de comparer la valeur instantanée d’un indicateur à sa dynamique récente.'
+        'Chaque bloc clé peut maintenant afficher un rappel de théorie avec formule courte et lecture physique du visuel associé.',
+        'L’historique temporel permet de comparer la valeur instantanée d’un indicateur à sa dynamique récente.',
+        'Le mode auto-évaluation pose des mini-questions contextuelles liées au réglage courant et corrige immédiatement la réponse.'
       ],
       objectives: [
         'Relier fading, multi-trajets et ISI aux vues constellation, spectre et œil.',
@@ -370,7 +372,9 @@
         'Lire graphiquement une grille de resource blocks pour relier allocation et performance.',
         'Observer l’évolution temporelle d’une allocation radio et non une seule photographie statique.',
         'Relier un point de fonctionnement courant à une courbe BER vs SNR.',
-        'Comparer évolution instantanée et tendance glissante sur un même lien.'
+        'Mobiliser un rappel théorique court au bon moment pour justifier un diagnostic expérimental.',
+        'Comparer évolution instantanée et tendance glissante sur un même lien.',
+        'Valider sa compréhension par des questions courtes directement liées au contexte courant.'
       ],
       questions: [
         'Pourquoi un FEC ne corrige-t-il pas visuellement la fermeture de l’œil alors qu’il peut réduire le BER utile ?',
@@ -382,7 +386,9 @@
         'Comment la grille temps/fréquence permet-elle d’identifier l’UE favorisé par une politique scheduler ?',
         'Pourquoi l’UE dominant peut-il changer de place ou d’intensité d’une trame à l’autre sans que la politique change ?',
         'Que signifie un déplacement du marqueur courant vers la gauche ou vers la droite sur une courbe BER vs SNR ?',
-        'Que montre un historique temporel que ne montre pas une seule mesure instantanée ?'
+        'Dans quel cas le bouton `Voir la théorie` vous aide-t-il à relier une formule au graphique observé ?',
+        'Que montre un historique temporel que ne montre pas une seule mesure instantanée ?',
+        'Pourquoi une question contextuelle peut-elle être plus formatrice qu’un quiz complètement détaché du réglage courant ?'
       ],
       tpSteps: [
         { title: 'Observer le canal brut', text: 'Choisissez un scénario de canal puis relevez SNR, SER, BER brut et ouverture de l’œil sans FEC.', target: '#valSNR' },
@@ -394,7 +400,9 @@
         { title: 'Lire la trame radio', text: 'Observez enfin les resource blocks colorés pour relier visuellement la politique choisie à la part de ressources de chaque UE.', target: '#rbGrid' },
         { title: 'Suivre l’animation RB', text: 'Laissez tourner plusieurs trames pour observer comment l’ordonnancement se réévalue dans le temps tout en gardant la logique de politique choisie.', target: '#rbFrameInfo' },
         { title: 'Lire la courbe BER', text: 'Observez le marqueur courant sur la courbe BER vs SNR et comparez-le à la tendance théorique quand vous changez modulation, FEC ou canal.', target: '#berCanvas' },
+        { title: 'Ouvrir la théorie', text: 'Utilisez ensuite `Voir la théorie` sur le bloc qui vous semble le plus utile pour justifier la lecture d’un graphe avec une formule simple.', target: '.theory-toggle' },
         { title: 'Lire l’historique temporel', text: 'Comparez ensuite SNR, BER utile et débit utile sur la fenêtre glissante pour distinguer variation instantanée et tendance récente.', target: '#historyCanvas' },
+        { title: 'Passer l’auto-évaluation', text: 'Répondez à une mini-question contextuelle puis utilisez la correction immédiate pour vérifier votre raisonnement sur le réglage courant.', target: '#autoEvalQuestion' },
         { title: 'Conclure en ingénieur', text: 'Reliez le gain observé au taux de code, au débit utile affiché, au préfixe cyclique éventuel, à l’architecture spatiale, au MCS retenu, à la politique scheduler et à la trame RB.', target: '#dspCodeRate' }
       ],
       expectedAnswers: [
@@ -499,6 +507,24 @@
             'Une seule mesure peut refléter une fluctuation brève du canal ou du scheduler.',
             'L’historique montre si cette mesure s’inscrit dans une tendance stable ou dans une variation passagère.',
             'L’analyse d’ingénierie gagne donc à croiser instantané et évolution récente.'
+          ]
+        },
+        {
+          title: 'Mobiliser un rappel théorique',
+          prompt: 'Choisissez un bloc du laboratoire puis expliquez comment le bouton `Voir la théorie` aide à relier le graphique affiché à un concept ou une formule utile.',
+          correction: [
+            'Le rappel théorique fournit une formule courte ou une loi de comportement directement liée au graphe.',
+            'Il aide à passer de l’observation visuelle à une justification technique explicite.',
+            'Le bon usage consiste à confronter immédiatement le rappel théorique au comportement réellement affiché.'
+          ]
+        },
+        {
+          title: 'Exploiter une question contextuelle',
+          prompt: 'Expliquez pourquoi une mini-question générée à partir du réglage courant peut aider à mieux mémoriser un concept que si elle était totalement abstraite.',
+          correction: [
+            'La question s’appuie sur un cas que l’étudiant vient d’observer à l’écran.',
+            'La correction immédiate relie directement le raisonnement à la mesure ou au graphique courant.',
+            'Le concept est ainsi réinvesti dans une situation concrète et plus facile à retenir.'
           ]
         }
       ],
@@ -702,6 +728,48 @@
             'L’analyse doit distinguer variation brève et tendance durable.',
             'La conclusion doit justifier l’intérêt pédagogique de l’historique.'
           ]
+        },
+        {
+          title: 'Justifier un graphe par la théorie',
+          objective: 'Utiliser le rappel théorique intégré pour expliquer un phénomène observé sur un bloc du laboratoire.',
+          actions: [
+            'Choisir un bloc graphique du laboratoire.',
+            'Ouvrir `Voir la théorie` pour ce bloc.',
+            'Relever une formule courte ou une idée de lecture fournie.',
+            'Montrer en quoi elle explique le comportement effectivement observé.'
+          ],
+          measures: ['Bloc choisi', 'Rappel théorique', 'Observation', 'Lien établi', 'Conclusion'],
+          quantitativeHints: [
+            'Choisissez un bloc où une variation est visible à l’écran.',
+            'Citez explicitement la formule ou la règle de lecture affichée.',
+            'Expliquez en une phrase le lien entre théorie et mesure.'
+          ],
+          validationCriteria: [
+            'Le rappel théorique doit être cité explicitement.',
+            'L’observation graphique doit être décrite concrètement.',
+            'Le lien théorie / pratique doit être formulé clairement.'
+          ]
+        },
+        {
+          title: 'Valider un raisonnement par auto-évaluation',
+          objective: 'Utiliser la mini-question contextuelle pour vérifier immédiatement la compréhension du réglage courant.',
+          actions: [
+            'Stabiliser un réglage intéressant du laboratoire.',
+            'Lire la question contextuelle proposée.',
+            'Répondre sans changer les paramètres, puis lire la correction immédiate.',
+            'Expliquer en quoi la réponse correcte s’appuie sur les mesures ou graphes affichés.'
+          ],
+          measures: ['Contexte', 'Question', 'Réponse choisie', 'Correction', 'Conclusion'],
+          quantitativeHints: [
+            'Citez explicitement le contexte courant : OFDM, MIMO, FEC, scheduler ou couverture.',
+            'Reliez la correction à une valeur affichée ou à un graphe visible.',
+            'Refaites une deuxième question après changement de réglage pour comparer.'
+          ],
+          validationCriteria: [
+            'Le contexte de la question doit être précisé.',
+            'La correction doit être reliée à une observation technique concrète.',
+            'La conclusion doit montrer ce que l’étudiant a vérifié ou corrigé dans son raisonnement.'
+          ]
         }
       ],
       measurementHints: ['Réglage', 'Avant', 'Après', 'Mesure', 'Interprétation'],
@@ -771,6 +839,18 @@
           options: ['Distinguer tendance et fluctuation instantanée', 'Supprimer le besoin de mesurer le BER', 'Remplacer complètement la constellation'],
           answer: 0,
           explanation: 'L’historique montre si une valeur instantanée est isolée ou si elle s’inscrit dans une évolution durable du lien.'
+        },
+        {
+          question: 'Quel est l’intérêt pédagogique principal du bouton `Voir la théorie` ? ',
+          options: ['Relier immédiatement un graphe à une formule ou un concept', 'Bloquer l’animation du simulateur', 'Remplacer toutes les manipulations expérimentales'],
+          answer: 0,
+          explanation: 'Le rappel théorique sert à faire le lien entre observation graphique et justification conceptuelle sans quitter la manipulation.'
+        },
+        {
+          question: 'Quel est l’intérêt principal d’une mini-question contextuelle avec correction immédiate ? ',
+          options: ['Vérifier tout de suite un raisonnement sur le réglage courant', 'Supprimer la nécessité d’observer les graphes', 'Remplacer toute interprétation physique'],
+          answer: 0,
+          explanation: 'L’auto-évaluation contextuelle fait travailler immédiatement la compréhension sur le cas en cours d’observation.'
         }
       ]
     },
