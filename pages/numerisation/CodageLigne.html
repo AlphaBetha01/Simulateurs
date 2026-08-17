@@ -75,7 +75,7 @@
         <div style="font-size:12px;color:#475569;line-height:1.55">
           <p style="margin:0 0 6px"><strong style="color:var(--accent)">NRZ</strong> — Niveau constant sur toute la durée du bit.</p>
           <p style="margin:0 0 6px"><strong style="color:#ca8a04">RZ</strong> — Retour à 0 en milieu de bit.</p>
-          <p style="margin:0 0 6px"><strong style="color:#1d4ed8">Manchester</strong> — Transition obligatoire au milieu.</p>
+          <p style="margin:0 0 6px"><strong style="color:#1d4ed8">Manchester</strong> — Transition au milieu (IEEE 802.3 : 1 = descente, 0 = montée).</p>
           <p style="margin:0 0 6px"><strong style="color:#dc2626">AMI / HDB3 / B8ZS</strong> — Codes bipolaires avec règles de substitution.</p>
         </div>
       </div>
@@ -94,7 +94,7 @@
         <ul>
           <li><strong>NRZ-L :</strong> +V = 1, −V = 0. Simple mais contient une composante DC.</li>
           <li><strong>NRZ-M :</strong> transition sur <em>1</em> (marque). Auto-synchronisant sur les longues séquences de 1.</li>
-          <li><strong>NRZ-I :</strong> transition sur <em>0</em>. Inversé du NRZ-M.</li>
+          <li><strong>NRZ-S :</strong> transition sur <em>0</em> (espace). Inversé du NRZ-M.</li>
           <li>Bande minimale ≈ 0,5 × f<sub>b</sub>. Sensible aux longues séries monotones.</li>
         </ul>
       </div>
@@ -111,7 +111,8 @@
       <div class="cl-theory-card info">
         <h4>Manchester &amp; Manchester différentiel</h4>
         <ul>
-          <li><strong>Manchester :</strong> transition au milieu de chaque bit. 1 = montée, 0 = descente.</li>
+          <li><strong>Manchester :</strong> transition au milieu de chaque bit. 1 = descente, 0 = montée (convention <em>IEEE 802.3</em> / Ethernet).</li>
+          <li>Il existe une convention inverse (G.E. Thomas) : 1 = montée, 0 = descente.</li>
           <li><strong>Manchester différentiel :</strong> transition au début pour 0, pas de transition au début pour 1.</li>
           <li>Bande plus large, mais excellente récupération d’horloge.</li>
         </ul>

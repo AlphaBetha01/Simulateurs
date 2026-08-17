@@ -12,7 +12,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
   const CODES = {
     'NRZ-L': { label: 'NRZ-L', color: '#16a34a', desc: 'NRZ niveau' },
     'NRZ-M': { label: 'NRZ-M', color: '#15803d', desc: 'Transition sur 1' },
-    'NRZ-I': { label: 'NRZ-I', color: '#22c55e', desc: 'Transition sur 0' },
+    'NRZ-S': { label: 'NRZ-S', color: '#22c55e', desc: 'Transition sur 0 (espace)' },
     'RZ': { label: 'RZ', color: '#ca8a04', desc: 'Retour a zero' },
     'MANCHESTER': { label: 'Manchester', color: '#1d4ed8', desc: 'Transition au milieu du bit' },
     'DIFF-MAN': { label: 'Manchester diff.', color: '#7c3aed', desc: 'Differentiel' },
@@ -44,6 +44,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     layoutKey: ''
   };
   var initialized = false;
+  var STORAGE_KEY = 'codageLigneStateV1';
 
   function parseBits(str) {
     return String(str || '')
@@ -55,6 +56,70 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
 
   function toggleLevel(level) {
     return level === LEVELS.HIGH ? LEVELS.LOW : LEVELS.HIGH;
+  }
+
+  function readStoredState() {
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeStoredState() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        bits: state.bits,
+        selectedCodes: state.selectedCodes,
+        animSpeed: state.animSpeed
+      }));
+    } catch (error) {
+      // Stockage indisponible : on ignore silencieusement.
+    }
+  }
+
+  function parseCodesParam(str) {
+    var valid = Object.keys(CODES);
+    return String(str || '')
+      .split(',')
+      .map(function (s) { return s.trim(); })
+      .filter(function (codeKey) { return valid.indexOf(codeKey) >= 0; });
+  }
+
+  function resolveInitialState() {
+    // Priorité de restauration : URL > localStorage > valeurs par défaut (déjà dans state).
+    var params = (window.LabCommon && typeof window.LabCommon.getParams === 'function')
+      ? window.LabCommon.getParams()
+      : new URLSearchParams(window.location.search);
+    var bitsParam = params.get('bits');
+    var codesParam = params.get('codes');
+    var restoredFromUrl = false;
+
+    if (bitsParam !== null || codesParam !== null) {
+      var urlBits = bitsParam !== null ? parseBits(bitsParam) : [];
+      var urlCodes = parseCodesParam(codesParam);
+      if (urlBits.length >= 2 && urlBits.length <= 64) {
+        state.bits = urlBits;
+        restoredFromUrl = true;
+      }
+      if (urlCodes.length) state.selectedCodes = urlCodes;
+    }
+
+    if (!restoredFromUrl) {
+      var stored = readStoredState();
+      if (stored && Array.isArray(stored.bits) && stored.bits.length >= 2 && stored.bits.length <= 64) {
+        state.bits = stored.bits.filter(function (b) { return b === 0 || b === 1; });
+        if (!state.bits.length) state.bits = parseBits(DEFAULT_BITS);
+      }
+      if (stored && Array.isArray(stored.selectedCodes)) {
+        var validCodes = parseCodesParam(stored.selectedCodes.join(','));
+        if (validCodes.length) state.selectedCodes = validCodes;
+      }
+      if (stored && typeof stored.animSpeed === 'number' && isFinite(stored.animSpeed)) {
+        state.animSpeed = Math.max(0.5, Math.min(8, stored.animSpeed));
+      }
+    }
   }
 
   function encodeNRZ_L(bits) {
@@ -69,7 +134,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     });
   }
 
-  function encodeNRZ_I(bits) {
+  function encodeNRZ_S(bits) {
     var cur = LEVELS.HIGH;
     return bits.map(function (b) {
       if (b === 0) cur = toggleLevel(cur);
@@ -80,7 +145,8 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
   function encodeRZ(bits) {
     var segs = [];
     bits.forEach(function (b) {
-      segs.push({ level: b === 1 ? LEVELS.HIGH : LEVELS.LOW, half: true });
+      // RZ unipolaire : seul le bit 1 produit une impulsion (+V), le bit 0 reste à 0 V
+      segs.push({ level: b === 1 ? LEVELS.HIGH : LEVELS.ZERO, half: true });
       segs.push({ level: LEVELS.ZERO, half: true });
     });
     return segs;
@@ -89,12 +155,13 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
   function encodeManchester(bits) {
     var segs = [];
     bits.forEach(function (b) {
+      // Convention IEEE 802.3 : 1 = transition descendante (haut→bas), 0 = montante (bas→haut)
       if (b === 1) {
-        segs.push({ level: LEVELS.LOW, half: true });
         segs.push({ level: LEVELS.HIGH, half: true });
+        segs.push({ level: LEVELS.LOW, half: true });
       } else {
-        segs.push({ level: LEVELS.HIGH, half: true });
         segs.push({ level: LEVELS.LOW, half: true });
+        segs.push({ level: LEVELS.HIGH, half: true });
       }
     });
     return segs;
@@ -158,7 +225,8 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
             segs[j + 3] = { level: bPol, v: true };
             lastMark = bPol;
           } else {
-            var vPol = toggleLevel(lastMark);
+            // 000V : le pulse V a la MÊME polarité que la marque précédente (violation AMI)
+            var vPol = lastMark;
             segs[j] = { level: LEVELS.ZERO };
             segs[j + 1] = { level: LEVELS.ZERO };
             segs[j + 2] = { level: LEVELS.ZERO };
@@ -198,8 +266,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       while (j < zStart + zCount) {
         var remaining = zStart + zCount - j;
         if (remaining >= 8) {
-          var v1 = toggleLevel(lastMark);
-          var b1 = toggleLevel(v1);
+          // 000VB0VB : V = même polarité que le pulse précédent (violation), B = opposée (équilibrage)
+          var v1 = lastMark;          // premier V (violation)
+          var b1 = toggleLevel(v1);   // premier B (équilibrage)
+          var v2 = toggleLevel(v1);   // second V (même polarité que B1)
+          var b2 = toggleLevel(v2);   // second B
           var pattern = [
             { level: LEVELS.ZERO },
             { level: LEVELS.ZERO },
@@ -207,11 +278,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
             { level: v1, v: true },
             { level: b1, b: true },
             { level: LEVELS.ZERO },
-            { level: v1, v: true },
-            { level: b1, b: true }
+            { level: v2, v: true },
+            { level: b2, b: true }
           ];
           pattern.forEach(function (p, k) { segs[j + k] = p; });
-          lastMark = b1;
+          lastMark = b2;
           j += 8;
         } else {
           segs[j] = { level: LEVELS.ZERO };
@@ -227,7 +298,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     switch (codeId) {
       case 'NRZ-L': return encodeNRZ_L(bits);
       case 'NRZ-M': return encodeNRZ_M(bits);
-      case 'NRZ-I': return encodeNRZ_I(bits);
+      case 'NRZ-S': return encodeNRZ_S(bits);
       case 'RZ': return encodeRZ(bits);
       case 'MANCHESTER': return encodeManchester(bits);
       case 'DIFF-MAN': return encodeDiffManchester(bits);
@@ -244,9 +315,9 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       if (segs[i].level !== segs[i - 1].level) transitions++;
     }
     var ratio = transitions / Math.max(2 * segs.length, 1);
-    if (ratio <= 0.5) return '0.5 � Tb\u207b\u00b9';
-    if (ratio <= 1) return '1 � Tb\u207b\u00b9';
-    return '2 � Tb\u207b\u00b9';
+    if (ratio <= 0.5) return '0.5 × Tb⁻¹';
+    if (ratio <= 1) return '1 × Tb⁻¹';
+    return '2 × Tb⁻¹';
   }
 
   function drawActiveHighlight(ctx, axis, bitIndex, bitCount) {
@@ -311,6 +382,16 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
 
   function hideTooltip() {
     if (state.tooltipEl) state.tooltipEl.style.display = 'none';
+  }
+
+  function downloadCanvasPNG(canvas, filename) {
+    if (!canvas) return;
+    var link = document.createElement('a');
+    link.download = filename || 'chronogramme.png';
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   function resizeCanvas(canvas) {
@@ -540,7 +621,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     ctx.fillText('0.5/Tb', pad.left + drawW * 0.5, height - 4);
     ctx.fillText('0.75/Tb', pad.left + drawW * 0.75, height - 4);
     ctx.fillText('1/Tb', pad.left + drawW, height - 4);
-    ctx.fillText('Frequence normalisee (Tb?�)', pad.left + drawW / 2, height - 18);
+    ctx.fillText('Fréquence normalisée (Tb⁻¹)', pad.left + drawW / 2, height - 18);
     ctx.textAlign = 'left';
     ctx.fillText('Amplitude normalisee', 4, pad.top + 8);
 
@@ -593,7 +674,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       if (type === 'spectrum') {
         var freq = ((x - pad.left) / Math.max(drawW, 1)).toFixed(3);
         var amp = (1 - (y - pad.top) / Math.max(drawH, 1)).toFixed(3);
-        showTooltip('<strong>Spectre</strong><br>f = ' + freq + ' Tb?�<br>|S(f)| = ' + amp, event.clientX, event.clientY);
+        showTooltip('<strong>Spectre</strong><br>f = ' + freq + ' Tb⁻¹<br>|S(f)| = ' + amp, event.clientX, event.clientY);
         return;
       }
 
@@ -698,6 +779,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
       '<div class="cl-waveform-header">' +
       '  <div class="cl-waveform-title"><span class="cl-dot" style="background:#94a3b8"></span>Signal binaire original</div>' +
       '  <div class="cl-waveform-meta" id="cl-bits-meta"></div>' +
+      '  <button type="button" class="cl-btn" style="flex:0 0 auto;margin-left:8px;padding:4px 10px;font-size:11px" data-download-canvas="cl-canvas-original" data-download-name="signal-binaire">Télécharger PNG</button>' +
       '</div>' +
       '<canvas id="cl-canvas-original" class="cl-canvas is-original"></canvas>' +
       '<div class="cl-bits-display" id="cl-bits-display"></div>';
@@ -728,6 +810,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
         '<div class="cl-waveform-header">' +
         '  <div class="cl-waveform-title"><span class="cl-dot" style="background:' + def.color + '"></span>' + def.label + '</div>' +
         '  <div class="cl-waveform-meta"><span style="color:' + def.color + ';font-weight:700">' + def.desc + '</span></div>' +
+        '  <button type="button" class="cl-btn" style="flex:0 0 auto;margin-left:8px;padding:4px 10px;font-size:11px" data-download-canvas="cl-canvas-' + codeId + '" data-download-name="' + def.label + '">Télécharger PNG</button>' +
         '</div>' +
         '<canvas id="cl-canvas-' + codeId + '" class="cl-canvas"></canvas>';
       stage.appendChild(card);
@@ -737,6 +820,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     spec.className = 'cl-spectrum-card';
     spec.innerHTML = '' +
       '<h3>Densit\u00e9 spectrale de puissance estim\u00e9e (DSP)</h3>' +
+      '<button type="button" class="cl-btn" style="margin-left:8px" data-download-canvas="cl-spectrum" data-download-name="spectre-dsp">Télécharger PNG</button>' +
       '<canvas id="cl-spectrum" class="cl-spectrum"></canvas>' +
       '<div class="cl-spectrum-legend" id="cl-spectrum-legend"></div>';
     stage.appendChild(spec);
@@ -957,6 +1041,16 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
 
     buildCodeCheckboxes();
     buildPresets();
+
+    var stage = document.getElementById('cl-stage');
+    if (stage) stage.addEventListener('click', function (event) {
+      var btn = event.target && event.target.closest ? event.target.closest('[data-download-canvas]') : null;
+      if (!btn) return;
+      var canvas = document.getElementById(btn.getAttribute('data-download-canvas'));
+      var rawName = btn.getAttribute('data-download-name') || 'chronogramme';
+      var safeName = rawName.replace(/[^a-z0-9\-_]+/gi, '-').replace(/^-+|-+$/g, '');
+      downloadCanvasPNG(canvas, safeName + '.png');
+    });
 
     var input = document.getElementById('cl-input');
     if (input) {
