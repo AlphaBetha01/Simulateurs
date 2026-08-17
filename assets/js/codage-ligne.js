@@ -122,6 +122,20 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     }
   }
 
+  function updateShareUrl() {
+    if (!state.bits.length) return;
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('bits', state.bits.join(''));
+      url.searchParams.set('codes', state.selectedCodes.join(','));
+      if (window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(null, '', url);
+      }
+    } catch (e) {
+      // Mise à jour de l'URL indisponible : on ignore silencieusement.
+    }
+  }
+
   function encodeNRZ_L(bits) {
     return bits.map(function (b) { return { level: b === 1 ? LEVELS.HIGH : LEVELS.LOW }; });
   }
@@ -727,6 +741,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
           item.classList.remove('checked');
         }
         renderSimulator();
+        updateShareUrl();
       });
 
       item.appendChild(cb);
@@ -753,6 +768,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
         var input = document.getElementById('cl-input');
         if (input) input.value = bits;
         handleInput(bits);
+        updateShareUrl();
       });
       bar.appendChild(btn);
     });
@@ -957,6 +973,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     updateBitsDisplay();
     renderStatsTable();
     renderSpectrumLegend();
+    writeStoredState();
     requestAnimationFrame(drawAllCanvases);
   }
 
@@ -975,6 +992,7 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     stopAnimation();
     if (input) input.value = DEFAULT_BITS;
     handleInput(DEFAULT_BITS);
+    updateShareUrl();
   }
 
   function startAnimation() {
@@ -1039,6 +1057,10 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     if (initialized) return;
     initialized = true;
 
+    // Restauration de l'état initial : URL > localStorage > valeurs par défaut.
+    resolveInitialState();
+    if (!state.bits.length) state.bits = parseBits(DEFAULT_BITS);
+
     buildCodeCheckboxes();
     buildPresets();
 
@@ -1054,8 +1076,11 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
 
     var input = document.getElementById('cl-input');
     if (input) {
-      input.value = DEFAULT_BITS;
-      input.addEventListener('input', function () { handleInput(input.value); });
+      input.value = state.bits.join('');
+      input.addEventListener('input', function () {
+        handleInput(input.value);
+        updateShareUrl();
+      });
     }
 
     var animBtn = document.getElementById('cl-btn-anim');
@@ -1080,7 +1105,9 @@ LabCommon.initHeader({ bodySection: 'numerisation-codage-ligne', pageId: 'numeri
     }
 
     window.addEventListener('resize', drawAllCanvases);
-    handleInput(DEFAULT_BITS);
+      speedSlider.value = String(state.animSpeed);
+        writeStoredState();
+    renderSimulator();
   }
 
   window.codageLigneAnimate = startAnimation;
