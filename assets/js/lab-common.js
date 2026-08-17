@@ -1,4 +1,4 @@
-﻿(function (global) {
+(function (global) {
   const RECENT_PAGES_KEY = 'labRecentPagesV1';
   const LAB_PROGRESS_KEY = 'labProgressV1';
   const LAB_QUIZ_RESULTS_KEY = 'labQuizResultsV1';
@@ -4780,6 +4780,23 @@
         card.appendChild(text);
         teacherDashboard.appendChild(card);
       });
+
+      // Actions d'export du tableau de bord enseignant (CSV / PDF)
+      const teacherExportActions = document.createElement('div');
+      teacherExportActions.className = 'lab-dashboard-actions';
+      const exportCsvTeacher = document.createElement('button');
+      exportCsvTeacher.className = 'lab-guide-btn';
+      exportCsvTeacher.type = 'button';
+      exportCsvTeacher.textContent = 'Exporter CSV';
+      const exportPdfTeacher = document.createElement('button');
+      exportPdfTeacher.className = 'lab-guide-btn';
+      exportPdfTeacher.type = 'button';
+      exportPdfTeacher.textContent = 'Exporter PDF';
+      exportCsvTeacher.addEventListener('click', function () { exportCsvReport(); });
+      exportPdfTeacher.addEventListener('click', function () { exportPdfReport(); });
+      teacherExportActions.appendChild(exportCsvTeacher);
+      teacherExportActions.appendChild(exportPdfTeacher);
+      teacherDashboard.appendChild(teacherExportActions);
     }
 
     function renderProgressPanel() {
